@@ -56,6 +56,10 @@ export interface App {
   defaultPassword?: string; // Default login password
   dependencies?: string[]; // Required app dependencies
 
+  // Store metadata
+  storeName?: string; // Human-friendly store name
+  storeSlug?: string; // Store slug identifier
+
   // CasaOS-specific fields
   architectures?: string[]; // Supported architectures (amd64, arm64, arm)
   tips?: AppTips; // Pre-installation tips
@@ -82,6 +86,8 @@ export interface InstalledApp {
   icon: string; // Icon path
   status: "running" | "stopped" | "error";
   webUIPort?: number; // Primary port for "Open" action
-  containerName: string; // Docker container name
+  containerName: string; // Docker container name (primary)
+  containers?: string[]; // All container names in compose project
   installedAt: number; // Timestamp
+  source?: string; // Store slug or "custom"
 }

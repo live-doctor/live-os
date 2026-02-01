@@ -13,6 +13,7 @@ import {
   X,
   Home,
   Upload,
+  EyeOff as EyeSlash,
 } from 'lucide-react';
 import { type MouseEvent, type ReactNode } from 'react';
 
@@ -67,16 +68,17 @@ export function FilesToolbar({
   const renderCrumb = (crumb: Breadcrumb, index: number): ReactNode => (
     <div key={crumb.path} className="flex items-center gap-1">
       {index === 0 ? (
-        <Home className="h-4 w-4 text-white/80" />
+        <Home className="h-4 w-4 text-white/80 flex-shrink-0" />
       ) : (
-        <ChevronRight className="h-4 w-4 text-white/50" />
+        <ChevronRight className="h-4 w-4 text-white/50 flex-shrink-0" />
       )}
       <button
-        className={`px-2 py-1 rounded-md text-sm font-medium -tracking-[0.01em] transition-colors ${
+        className={`px-2 py-1 rounded-md text-sm font-medium -tracking-[0.01em] transition-colors max-w-[160px] truncate border ${
           index === breadcrumbs.length - 1
-            ? 'bg-white/15 text-white border border-white/15'
-            : 'hover:bg-white/10 text-white/80 border border-transparent'
+            ? 'bg-white/15 text-white border-white/15'
+            : 'hover:bg-white/10 text-white/80 border-transparent'
         }`}
+        title={crumb.path}
         onClick={() => onNavigate(crumb.path)}
         onContextMenu={(event) => onBreadcrumbContextMenu(event, crumb.path, crumb.label)}
       >
@@ -86,15 +88,15 @@ export function FilesToolbar({
   );
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/30 backdrop-blur">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-white/10 bg-gradient-to-r from-white/5 via-white/5 to-transparent backdrop-blur-xl">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 shadow-sm shadow-black/20">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
             disabled={historyIndex === 0 || loading}
-            className="h-8 w-8 rounded-lg hover:bg-white/5 text-white/60 hover:text-white/90 disabled:opacity-30"
+            className="h-8 w-8 rounded-md hover:bg-white/10 text-white/70 hover:text-white disabled:opacity-30"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -103,77 +105,35 @@ export function FilesToolbar({
             size="icon"
             onClick={onForward}
             disabled={historyIndex >= historyLength - 1 || loading}
-            className="h-8 w-8 rounded-lg hover:bg-white/5 text-white/60 hover:text-white/90 disabled:opacity-30"
+            className="h-8 w-8 rounded-md hover:bg-white/10 text-white/70 hover:text-white disabled:opacity-30"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
-        </div>
-
-        <div className="flex items-center gap-1 text-white">
-          {breadcrumbs.map(renderCrumb)}
-        </div>
-        <div className="flex items-center gap-2">
+          <div className="h-6 w-px bg-white/10 mx-1" />
           <Button
             variant="ghost"
             size="icon"
             onClick={onGoToParent}
             disabled={!canGoToParent || loading}
-            className="h-8 w-8 rounded-lg hover:bg-white/5 text-white/60 hover:text-white/90 disabled:opacity-30"
+            className="h-8 w-8 rounded-md hover:bg-white/10 text-white/70 hover:text-white disabled:opacity-30"
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
         </div>
+
+        <div className="flex items-center gap-1 text-white min-w-0 overflow-hidden">
+          <div className="flex items-center gap-1 min-w-0 overflow-x-auto overflow-y-hidden whitespace-nowrap pr-1 scrollbar-hide">
+            {breadcrumbs.map(renderCrumb)}
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          onClick={onToggleCreateFolder}
-          disabled={loading}
-          className="h-9 px-4 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white text-sm shadow-sm"
-        >
-          <FilePlus className="h-4 w-4 mr-2" />
-          Folder
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={onToggleCreateFile}
-          disabled={loading}
-          className="h-9 px-4 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white text-sm shadow-sm"
-        >
-          <FilePlus className="h-4 w-4 mr-2" />
-          File
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={onUpload}
-          disabled={loading}
-          className="h-9 px-4 rounded-lg border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-sm shadow-sm"
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Upload
-        </Button>
-
-        <label className="flex items-center gap-2 text-xs text-white/70">
-          <span className="relative inline-flex">
-            <input
-              type="checkbox"
-              checked={showHidden}
-              onChange={(event) => onToggleHidden(event.target.checked)}
-              className="peer h-4 w-4 appearance-none rounded border border-white/20 bg-white/10 transition-all checked:bg-white checked:border-white/80 checked:shadow-[0_0_0_2px_rgba(255,255,255,0.18)]"
-            />
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] text-black opacity-0 peer-checked:opacity-100">
-              ✓
-            </span>
-          </span>
-          Hidden
-        </label>
-
+      <div className="flex items-center gap-2 flex-wrap justify-end">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
           <Input
             placeholder="Search"
-            className="h-9 w-48 pl-9 bg-white/10 border-white/15 text-white placeholder:text-white/40 text-sm"
+            className="h-9 w-52 pl-9 bg-white/8 border-white/15 text-white placeholder:text-white/40 text-sm rounded-xl shadow-inner shadow-black/20"
           />
         </div>
 
@@ -181,10 +141,10 @@ export function FilesToolbar({
           variant="ghost"
           size="icon"
           onClick={() => onSetViewMode('grid')}
-          className={`h-9 w-9 rounded-lg border ${
+          className={`h-9 w-9 rounded-xl border ${
             viewMode === 'grid'
-              ? 'border-white/60 bg-white/15 text-white'
-              : 'border-white/15 bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
+              ? 'border-white/50 bg-white/15 text-white'
+              : 'border-white/15 bg-white/8 text-white/70 hover:text-white hover:bg-white/15'
           }`}
         >
           <Grid2x2 className="h-4 w-4" />
@@ -194,10 +154,10 @@ export function FilesToolbar({
           variant="ghost"
           size="icon"
           onClick={() => onSetViewMode('list')}
-          className={`h-9 w-9 rounded-lg border ${
+          className={`h-9 w-9 rounded-xl border ${
             viewMode === 'list'
-              ? 'border-white/60 bg-white/15 text-white'
-              : 'border-white/15 bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
+              ? 'border-white/50 bg-white/15 text-white'
+              : 'border-white/15 bg-white/8 text-white/70 hover:text-white hover:bg-white/15'
           }`}
         >
           <List className="h-4 w-4" />
@@ -206,7 +166,48 @@ export function FilesToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white/70"
+          className={`h-9 w-9 rounded-xl border ${
+            showHidden
+              ? 'border-amber-400/60 bg-amber-400/15 text-amber-100'
+              : 'border-white/15 bg-white/8 text-white/70 hover:text-white'
+          }`}
+          onClick={() => onToggleHidden(!showHidden)}
+        >
+          <EyeSlash className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          onClick={onToggleCreateFolder}
+          disabled={loading}
+          className="h-9 px-4 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white text-sm shadow-sm"
+        >
+          <FilePlus className="h-4 w-4 mr-2" />
+          Folder
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={onToggleCreateFile}
+          disabled={loading}
+          className="h-9 px-4 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white text-sm shadow-sm"
+        >
+          <FilePlus className="h-4 w-4 mr-2" />
+          File
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={onUpload}
+          disabled={loading}
+          className="h-9 px-4 rounded-xl border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-100 text-sm shadow-sm"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Upload
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-xl border border-white/15 bg-white/8 hover:bg-white/15 text-white/80"
           onClick={onQuickCreateFile}
         >
           <FilePlus className="h-4 w-4" />
@@ -216,7 +217,7 @@ export function FilesToolbar({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="h-9 w-9 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
+          className="h-9 w-9 rounded-xl border border-white/15 bg-white/8 hover:bg-white/15 text-white/70 hover:text-white"
         >
           <X className="h-4 w-4" />
         </Button>

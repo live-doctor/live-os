@@ -1,4 +1,5 @@
 import { exec } from "child_process";
+import { readFileSync } from "fs";
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
@@ -8,7 +9,7 @@ import YAML from "yaml";
 export const execAsync = promisify(exec);
 
 export const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
-export const DEFAULT_APP_ICON = "/icons/default-application-icon.png";
+export const DEFAULT_APP_ICON = "/default-application-icon.png";
 export const STORES_ROOT = path.join(process.cwd(), "external-apps");
 export const INTERNAL_APPS_ROOT = path.join(process.cwd(), "internal-apps");
 export const CUSTOM_APPS_ROOT = path.join(process.cwd(), "custom-apps");
@@ -53,6 +54,28 @@ export function getContainerName(appId: string): string {
 }
 
 /**
+ * Guess compose-generated container name from compose file and location
+ */
+export function guessComposeContainerName(composePath: string): string | null {
+  try {
+    const raw = readFileSync(composePath, "utf-8");
+    const doc = YAML.parse(raw) as {
+      name?: string;
+      services?: Record<string, unknown>;
+    };
+    const firstService = doc?.services ? Object.keys(doc.services)[0] : null;
+    if (!firstService) return null;
+    const project = (
+      doc.name || path.basename(path.dirname(composePath))
+    ).toLowerCase();
+    const service = firstService.toLowerCase();
+    return `${project}-${service}-1`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Detect container name from running compose project
  */
 export async function detectComposeContainerName(
@@ -80,10 +103,12 @@ export async function detectComposeContainerName(
 /**
  * Resolve host port from container inspection
  */
-export async function resolveHostPort(containerName: string): Promise<string | null> {
+export async function resolveHostPort(
+  containerName: string,
+): Promise<string | null> {
   try {
     const { stdout } = await execAsync(
-      `docker inspect -f '{{json .NetworkSettings.Ports}}' ${containerName}`
+      `docker inspect -f '{{json .NetworkSettings.Ports}}' ${containerName}`,
     );
 
     const ports = JSON.parse(stdout || "{}") as Record<
@@ -92,12 +117,15 @@ export async function resolveHostPort(containerName: string): Promise<string | n
     >;
 
     const firstMapping = Object.values(ports).find(
-      (mappings) => Array.isArray(mappings) && mappings.length > 0
+      (mappings) => Array.isArray(mappings) && mappings.length > 0,
     );
 
     return firstMapping?.[0]?.HostPort ?? null;
   } catch (error) {
-    console.error(`[Docker] resolveHostPort: failed for ${containerName}:`, error);
+    console.error(
+      `[Docker] resolveHostPort: failed for ${containerName}:`,
+      error,
+    );
     return null;
   }
 }
@@ -106,14 +134,14 @@ export async function resolveHostPort(containerName: string): Promise<string | n
  * Find docker-compose.yml for an app across all store roots
  */
 export async function findComposeForApp(
-  appId: string
+  appId: string,
 ): Promise<{ appDir: string; composePath: string } | null> {
   const target = appId.toLowerCase();
   const composeNames = ["docker-compose.yml", "docker-compose.yaml"];
 
   async function searchDir(
     dir: string,
-    depth: number
+    depth: number,
   ): Promise<{ appDir: string; composePath: string } | null> {
     if (depth > 5) return null;
     const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -156,20 +184,136 @@ export async function findComposeForApp(
     }
   } catch (error) {
     console.error(
-      "[Docker] findComposeForApp: Error searching compose files: " + error
+      "[Docker] findComposeForApp: Error searching compose files: " + error,
     );
   }
 
   console.warn(
-    "[Docker] findComposeForApp: Compose file not found for app: " + appId
+    "[Docker] findComposeForApp: Compose file not found for app: " + appId,
   );
   return null;
 }
 
 /**
+ * List all containers with their compose project labels.
+ * Returns raw container info for grouping.
+ */
+export async function listContainersWithLabels(): Promise<
+  {
+    name: string;
+    status: string;
+    image: string;
+    composeProject: string;
+    composeService: string;
+  }[]
+> {
+  try {
+    const { stdout } = await execAsync(
+      'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Label \\"com.docker.compose.project\\"}}\t{{.Label \\"com.docker.compose.service\\"}}"',
+    );
+    if (!stdout.trim()) return [];
+
+    return stdout
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const [name, status, image, composeProject, composeService] =
+          line.split("\t");
+        return {
+          name: name || "",
+          status: status || "",
+          image: image || "",
+          composeProject: composeProject || "",
+          composeService: composeService || "",
+        };
+      })
+      .filter((c) => c.name);
+  } catch (error) {
+    console.error("[Docker] listContainersWithLabels error:", error);
+    return [];
+  }
+}
+
+/**
+ * Group containers by their compose project label.
+ * Containers without a compose project are treated as their own group.
+ */
+export function groupContainersByProject(
+  containers: {
+    name: string;
+    status: string;
+    image: string;
+    composeProject: string;
+    composeService: string;
+  }[],
+): Map<
+  string,
+  {
+    name: string;
+    status: string;
+    image: string;
+    composeProject: string;
+    composeService: string;
+  }[]
+> {
+  const groups = new Map<string, typeof containers>();
+
+  for (const container of containers) {
+    // Use compose project name as key, or container name for standalone
+    const key = container.composeProject || container.name;
+    const group = groups.get(key) || [];
+    group.push(container);
+    groups.set(key, group);
+  }
+
+  return groups;
+}
+
+/**
+ * Aggregate status for a group of containers.
+ * "running" if primary is up, "stopped" if all down, "error" otherwise.
+ */
+export function aggregateStatus(
+  containers: { status: string }[],
+): "running" | "stopped" | "error" {
+  const statuses = containers.map((c) => {
+    const s = c.status.toLowerCase();
+    if (s.startsWith("up")) return "running";
+    if (s.includes("exited")) return "stopped";
+    return "error";
+  });
+
+  if (statuses.every((s) => s === "running")) return "running";
+  if (statuses.every((s) => s === "stopped")) return "stopped";
+  if (statuses.some((s) => s === "running")) return "running";
+  return "error";
+}
+
+/**
+ * Detect all container names from a compose project directory.
+ */
+export async function detectAllComposeContainerNames(
+  appDir: string,
+): Promise<string[]> {
+  try {
+    const { stdout } = await execAsync(
+      `cd "${appDir}" && docker compose ps --format "{{.Names}}"`,
+    );
+    return stdout
+      .split("\n")
+      .map((n) => n.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Sanitize compose file by removing invalid services (e.g., app_proxy without image)
  */
-export async function sanitizeComposeFile(composePath: string): Promise<string> {
+export async function sanitizeComposeFile(
+  composePath: string,
+): Promise<string> {
   try {
     const raw = await fs.readFile(composePath, "utf-8");
     const doc = YAML.parse(raw);
@@ -207,7 +351,10 @@ export function getSystemDefaults(): {
   return {
     PUID: process.env.PUID || String(process.getuid?.() ?? 1000),
     PGID: process.env.PGID || String(process.getgid?.() ?? 1000),
-    TZ: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    TZ:
+      process.env.TZ ||
+      Intl.DateTimeFormat().resolvedOptions().timeZone ||
+      "UTC",
   };
 }
 
@@ -249,9 +396,7 @@ export async function getContainerNameFromCompose(
     // Determine main service (from x-casaos.main or first service)
     const xCasa = doc["x-casaos"];
     const serviceName =
-      mainService ||
-      xCasa?.main ||
-      Object.keys(doc.services)[0];
+      mainService || xCasa?.main || Object.keys(doc.services)[0];
 
     if (!serviceName) return null;
 

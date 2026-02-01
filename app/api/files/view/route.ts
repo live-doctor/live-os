@@ -3,12 +3,30 @@ import fs from 'fs/promises';
 import { createReadStream } from 'fs';
 import path from 'path';
 
-// Blocked paths for security
-const BLOCKED_PATHS = ['/etc/shadow', '/etc/passwd', '/sys', '/proc'];
+// Allowed root directories for file access (allowlist approach)
+const ALLOWED_ROOTS = ['/DATA', '/home', '/tmp', '/opt'];
 
-function isBlockedPath(filePath: string): boolean {
+// Sensitive paths that are always blocked, even under allowed roots
+const BLOCKED_PATHS = [
+  '/etc', '/sys', '/proc', '/dev', '/boot', '/root',
+  '/var/run', '/var/log/auth', '/run',
+];
+
+function isAllowedPath(filePath: string): boolean {
   const normalized = path.resolve(filePath);
-  return BLOCKED_PATHS.some((blocked) => normalized.startsWith(blocked));
+
+  // Block sensitive paths first
+  if (BLOCKED_PATHS.some((blocked) => normalized.startsWith(blocked))) {
+    return false;
+  }
+
+  // Must be under an allowed root
+  return ALLOWED_ROOTS.some((root) => normalized.startsWith(root));
+}
+
+/** @deprecated Use isAllowedPath instead */
+function isBlockedPath(filePath: string): boolean {
+  return !isAllowedPath(filePath);
 }
 
 // Get MIME type from extension
@@ -77,6 +95,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const normalizedPath = path.resolve(filePath);
+
+    // Reject symlinks pointing outside allowed roots
+    const lstat = await fs.lstat(normalizedPath);
+    if (lstat.isSymbolicLink()) {
+      const realPath = await fs.realpath(normalizedPath);
+      if (!isAllowedPath(realPath)) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+    }
 
     // Verify file exists and is a file
     const stats = await fs.stat(normalizedPath);
@@ -149,6 +176,7 @@ export async function GET(request: NextRequest) {
           controller.close();
         });
         stream.on('error', (err) => {
+          stream.destroy();
           controller.error(err);
         });
       },

@@ -42,6 +42,12 @@ export function formatUptime(seconds: number) {
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
+/** Clamp a number to [0, 1], treating NaN as 0. */
+export function clamp01(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  return Math.min(1, Math.max(0, value));
+}
+
 export function formatBytes(bytes: number, decimals = 1): string {
   if (bytes === 0) return "0 GB";
   const k = 1024;

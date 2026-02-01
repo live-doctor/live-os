@@ -11,6 +11,8 @@ const execAsync = promisify(exec);
 const SHARES_FILE = '.smb-shares.json';
 const SAMBA_CONFIG_DIR = '/etc/samba';
 const SAMBA_SHARES_DIR = `${SAMBA_CONFIG_DIR}/shares.d`;
+const SAMBA_SERVICE = 'smbd';
+const DISCOVERY_SERVICES = ['nmbd', 'wsdd2', 'wsdd'];
 
 export interface SmbShare {
   id: string;
@@ -45,6 +47,63 @@ async function writeSharesFile(data: SharesData): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+async function isServiceActive(service: string): Promise<boolean> {
+  try {
+    await execAsync(`systemctl is-active ${service}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function startServiceIfAvailable(service: string): Promise<boolean> {
+  try {
+    await execAsync(`systemctl enable ${service}`);
+  } catch {
+    // enabling might fail on minimal systems; ignore
+  }
+
+  try {
+    await execAsync(`systemctl start ${service}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureDiscoveryServices(): Promise<void> {
+  for (const service of DISCOVERY_SERVICES) {
+    // best-effort: ignore failures
+    if (!(await isServiceActive(service))) {
+      await startServiceIfAvailable(service);
+    }
+  }
+}
+
+async function ensureSambaRunning(): Promise<{
+  installed: boolean;
+  running: boolean;
+  error?: string;
+}> {
+  try {
+    await execAsync('which smbd');
+  } catch {
+    return { installed: false, running: false, error: 'Samba is not installed' };
+  }
+
+  let running = await isServiceActive(SAMBA_SERVICE);
+  if (!running) {
+    running = await startServiceIfAvailable(SAMBA_SERVICE);
+  }
+
+  if (running) {
+    await ensureDiscoveryServices();
+    return { installed: true, running: true };
+  }
+
+  return { installed: true, running: false, error: 'Samba service is not running' };
+}
+
 function generateShareId(): string {
   return `share-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 }
@@ -66,20 +125,7 @@ export async function checkSambaStatus(): Promise<{
   error?: string;
 }> {
   try {
-    // Check if smbd is installed
-    try {
-      await execAsync('which smbd');
-    } catch {
-      return { installed: false, running: false, error: 'Samba is not installed' };
-    }
-
-    // Check if smbd is running
-    try {
-      await execAsync('systemctl is-active smbd');
-      return { installed: true, running: true };
-    } catch {
-      return { installed: true, running: false, error: 'Samba service is not running' };
-    }
+    return await ensureSambaRunning();
   } catch (error) {
     console.error('Check Samba status error:', error);
     return { installed: false, running: false, error: 'Failed to check Samba status' };
@@ -94,8 +140,6 @@ export async function listSmbShares(): Promise<{
   sambaStatus: { installed: boolean; running: boolean };
 }> {
   try {
-    console.log('[smb-share] listSmbShares');
-
     const sambaStatus = await checkSambaStatus();
     const data = await readSharesFile();
 
@@ -137,8 +181,6 @@ export async function createSmbShare(
   options?: { readOnly?: boolean; guestOk?: boolean }
 ): Promise<{ success: boolean; share?: SmbShare; sharePath?: string; error?: string }> {
   try {
-    console.log('[smb-share] createSmbShare:', dirPath, shareName);
-
     // Verify directory exists
     const stats = await fs.stat(dirPath);
     if (!stats.isDirectory()) {
@@ -216,8 +258,6 @@ export async function removeSmbShare(
   shareId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('[smb-share] removeSmbShare:', shareId);
-
     const data = await readSharesFile();
     const shareIndex = data.shares.findIndex((s) => s.id === shareId);
 

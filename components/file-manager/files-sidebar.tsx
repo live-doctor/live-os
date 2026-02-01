@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { type DefaultDirectory } from '@/app/actions/filesystem';
-import { FolderIcon } from '@/components/icons/files';
-import { DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, Grid3x3, Home, Plus, Star, Trash2 } from 'lucide-react';
+import { type DefaultDirectory } from "@/app/actions/filesystem";
+import { FolderIcon } from "@/components/icons/files";
+import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Clock, Grid3x3, Home, Plus, Star, Trash2 } from "lucide-react";
 
 interface FilesSidebarProps {
   homePath: string;
@@ -32,11 +32,24 @@ export function FilesSidebar({
   onEmptyTrash,
 }: FilesSidebarProps) {
   const isInTrash = currentPath === trashPath;
-  const homeLabel = homePath.split('/').filter(Boolean).pop() || 'Home';
+  const homeLabel = homePath.split("/").filter(Boolean).pop() || "Home";
+  const favoritesSet = new Set(favorites);
+  const baseLocations = shortcuts.map((shortcut) => ({
+    ...shortcut,
+    isFavorite: favoritesSet.has(shortcut.path),
+  }));
+  const extraFavorites = favorites
+    .filter((favPath) => !shortcuts.some((s) => s.path === favPath))
+    .map((favPath) => ({
+      name: getFolderName(favPath),
+      path: favPath,
+      isFavorite: true,
+    }));
+  const locations = [...baseLocations, ...extraFavorites];
 
   // Get folder name from path
   const getFolderName = (path: string) => {
-    const parts = path.split('/').filter(Boolean);
+    const parts = path.split("/").filter(Boolean);
     return parts[parts.length - 1] || path;
   };
 
@@ -66,14 +79,9 @@ export function FilesSidebar({
             <span className="text-sm -tracking-[0.01em]">{homeLabel}</span>
           </button>
 
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors border border-transparent hover:border-white/10">
-            <Clock className="h-4 w-4 text-white/70" />
-            <span className="text-sm -tracking-[0.01em]">Recents</span>
-          </button>
-
           <button
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors border border-transparent hover:border-white/10"
-            onClick={() => onNavigate(getShortcutPath('apps'))}
+            onClick={() => onNavigate(getShortcutPath("AppData"))}
           >
             <Grid3x3 className="h-4 w-4 text-white/70" />
             <span className="text-sm -tracking-[0.01em]">Apps</span>
@@ -85,7 +93,7 @@ export function FilesSidebar({
             </div>
           </div>
 
-          {shortcuts.map((shortcut) => (
+          {locations.map((shortcut) => (
             <button
               key={shortcut.path}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors border border-transparent hover:border-white/10"
@@ -95,37 +103,18 @@ export function FilesSidebar({
                 <FolderIcon className="w-full h-full" />
               </div>
               <span className="text-sm -tracking-[0.01em]">
-                {shortcut.name.charAt(0).toUpperCase() + shortcut.name.slice(1)}
+                {shortcut.name === "AppData"
+                  ? "App"
+                  : shortcut.name.charAt(0).toUpperCase() + shortcut.name.slice(1)}
+                {shortcut.isFavorite && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-[2px] text-[10px] uppercase tracking-[0.12em] text-amber-200 border border-amber-400/30">
+                    <Star className="h-3 w-3" />
+                    Fav
+                  </span>
+                )}
               </span>
             </button>
           ))}
-
-          {favorites.length > 0 && (
-            <>
-              <div className="pt-4 pb-2">
-                <div className="text-xs text-white/50 px-3 -tracking-[0.01em] flex items-center gap-1.5">
-                  <Star className="h-3 w-3" />
-                  Favorites
-                </div>
-              </div>
-
-              {favorites.map((favPath) => (
-                <button
-                  key={favPath}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors border border-transparent hover:border-white/10"
-                  onClick={() => onNavigate(favPath)}
-                  title={favPath}
-                >
-                  <div className="w-5 h-4 flex-shrink-0">
-                    <FolderIcon className="w-full h-full" />
-                  </div>
-                  <span className="text-sm -tracking-[0.01em] truncate">
-                    {getFolderName(favPath)}
-                  </span>
-                </button>
-              ))}
-            </>
-          )}
 
           <div className="pt-4 pb-2">
             <div className="text-xs text-white/50 px-3 -tracking-[0.01em]">
@@ -151,10 +140,11 @@ export function FilesSidebar({
 
       <div className="p-3 border-t border-white/10 space-y-1">
         <button
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors border ${isInTrash
-              ? 'bg-white/10 text-white/90 border-white/10'
-              : 'text-white/60 hover:bg-white/5 hover:text-white border-transparent hover:border-white/10'
-            }`}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors border ${
+            isInTrash
+              ? "bg-white/10 text-white/90 border-white/10"
+              : "text-white/60 hover:bg-white/5 hover:text-white border-transparent hover:border-white/10"
+          }`}
           onClick={() => onNavigate(trashPath)}
         >
           <Trash2 className="w-4 h-4 text-white/50" />

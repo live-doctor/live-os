@@ -38,7 +38,9 @@ export interface InstalledApp {
   status: "running" | "stopped" | "error";
   webUIPort?: number;
   containerName: string;
+  containers?: string[];
   installedAt: number;
+  source?: string;
 }
 
 export interface InstallProgress {
@@ -59,7 +61,7 @@ export interface UseSystemStatusReturn {
   installProgress: InstallProgress[];
   connected: boolean;
   error: string | null;
-  refreshApps: () => void;
+  pushInstallProgress: (update: InstallProgress) => void;
 }
 
 export interface MetricsMessage {

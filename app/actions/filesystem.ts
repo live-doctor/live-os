@@ -9,7 +9,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 const PRIMARY_HOME_ROOT = process.env.LIVEOS_HOME || '/DATA';
 const FALLBACK_HOME_ROOT = path.join(process.cwd(), 'DATA');
-const DEFAULT_DIRECTORIES = ['apps', 'Downloads', 'Documents', 'Photos', 'Devices'] as const;
+const DEFAULT_DIRECTORIES = ['AppData', 'Downloads', 'Documents', 'Photos', 'Devices'] as const;
 let resolvedHomeRoot = PRIMARY_HOME_ROOT;
 
 export interface FileSystemItem {
@@ -40,14 +40,12 @@ async function ensureHomeRoot(): Promise<string> {
     await fs.mkdir(resolvedHomeRoot, { recursive: true });
     return resolvedHomeRoot;
   } catch (error: any) {
-    if (error?.code !== 'EACCES') {
-      throw error;
-    }
-
-    // Fall back to a workspace-local data directory when /DATA is not writable (e.g. local dev)
+    // Any failure (ENOENT on rootless envs, EACCES on restricted) should fall back to workspace-local data dir.
     resolvedHomeRoot = FALLBACK_HOME_ROOT;
     await fs.mkdir(resolvedHomeRoot, { recursive: true });
-    console.warn(`[Filesystem] Falling back to ${resolvedHomeRoot} because ${PRIMARY_HOME_ROOT} is not writable`);
+    console.warn(
+      `[Filesystem] Falling back to ${resolvedHomeRoot} because ${PRIMARY_HOME_ROOT} is not available (${error?.code || 'unknown error'})`
+    );
     return resolvedHomeRoot;
   }
 }
@@ -123,19 +121,28 @@ async function validatePath(requestedPath: string): Promise<{ valid: boolean; sa
       requestedPath = homeRoot;
     }
 
-    // Resolve to absolute path and normalize
-    const sanitized = path.resolve(requestedPath);
+    // Resolve to absolute path, follow symlinks, and normalize
+    const resolved = path.resolve(requestedPath);
+    const real = await fs.realpath(resolved).catch(() => resolved);
+
+    // Enforce sandbox: must reside inside homeRoot
+    const insideHome =
+      real === homeRoot ||
+      real.startsWith(`${homeRoot}${path.sep}`);
+    if (!insideHome) {
+      return { valid: false, sanitized: homeRoot };
+    }
 
     // Prevent access to sensitive system directories
     const blockedPaths = ['/etc/shadow', '/etc/passwd', '/sys', '/proc'];
 
     for (const blocked of blockedPaths) {
-      if (sanitized.startsWith(blocked)) {
+      if (real.startsWith(blocked)) {
         return { valid: false, sanitized: homeRoot };
       }
     }
 
-    return { valid: true, sanitized };
+    return { valid: true, sanitized: real };
   } catch {
     const fallback = await ensureHomeRoot();
     return { valid: false, sanitized: fallback };
@@ -147,7 +154,6 @@ async function validatePath(requestedPath: string): Promise<{ valid: boolean; sa
  */
 export async function readDirectory(dirPath: string): Promise<DirectoryContent> {
   try {
-    console.log("[filesystem] readDirectory requested:", dirPath);
     await ensureDefaultDirectories();
     const mountLabels = await getMountLabels();
 
@@ -477,7 +483,6 @@ export async function moveItems(
   destPath: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('[filesystem] moveItems:', sourcePaths, '->', destPath);
 
     // Validate destination
     const { valid: destValid, sanitized: destSanitized } = await validatePath(destPath);
@@ -528,7 +533,6 @@ export async function copyItems(
   destPath: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('[filesystem] copyItems:', sourcePaths, '->', destPath);
 
     // Validate destination
     const { valid: destValid, sanitized: destSanitized } = await validatePath(destPath);
@@ -662,7 +666,30 @@ export async function trashItem(
     }
 
     // Move to trash
-    await fs.rename(sanitized, trashPath);
+    try {
+      await fs.rename(sanitized, trashPath);
+    } catch (error: any) {
+      // Handle cross-device moves (e.g., network mounts) by falling back to copy+delete
+      if (error?.code === 'EXDEV') {
+        try {
+          await fs.cp(sanitized, trashPath, { recursive: true, force: true });
+          const stats = await fs.lstat(sanitized);
+          if (stats.isDirectory()) {
+            await fs.rm(sanitized, { recursive: true, force: true });
+          } else {
+            await fs.unlink(sanitized);
+          }
+        } catch (copyError: any) {
+          const message =
+            copyError instanceof Error
+              ? copyError.message
+              : 'Failed to move item to trash';
+          return { success: false, error: message };
+        }
+      } else {
+        throw error;
+      }
+    }
 
     return { success: true };
   } catch (error: unknown) {
@@ -743,7 +770,6 @@ export async function compressItems(
   outputName?: string
 ): Promise<{ success: boolean; outputPath?: string; error?: string }> {
   try {
-    console.log('[filesystem] compressItems:', paths);
 
     if (paths.length === 0) {
       return { success: false, error: 'No items to compress' };
@@ -803,7 +829,6 @@ export async function searchFiles(
       return { results: { items: [], total: 0, hasMore: false } };
     }
 
-    console.log('[filesystem] searchFiles:', query, 'in', searchPath);
 
     // Default to home root if no path specified
     const homeRoot = await ensureHomeRoot();
@@ -887,7 +912,6 @@ export async function uncompressArchive(
   destPath?: string
 ): Promise<{ success: boolean; outputPath?: string; error?: string }> {
   try {
-    console.log('[filesystem] uncompressArchive:', archivePath);
 
     const { valid, sanitized } = await validatePath(archivePath);
     if (!valid) {

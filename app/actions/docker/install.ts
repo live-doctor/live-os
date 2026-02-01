@@ -6,18 +6,22 @@ import {
 } from "@/app/api/system/stream/route";
 import type { InstallConfig } from "@/components/app-store/types";
 import { triggerAppsUpdate } from "@/lib/system-status/websocket-server";
+import { spawn } from "child_process";
 import path from "path";
 import { env } from "process";
+import prisma from "@/lib/prisma";
 import { logAction } from "../logger";
 import { getAppMeta, recordInstalledApp } from "./db";
 import { checkDependencies } from "./dependencies";
 import {
   DEFAULT_APP_ICON,
+  detectAllComposeContainerNames,
   detectComposeContainerName,
   execAsync,
   findComposeForApp,
   getContainerName,
   getContainerNameFromCompose,
+  guessComposeContainerName,
   getSystemDefaults,
   sanitizeComposeFile,
   validateAppId,
@@ -49,7 +53,7 @@ export async function installApp(
     ) =>
       sendInstallProgress({
         type: "install-progress",
-        appId,
+        containerName: appId,
         name: meta.name,
         icon: meta.icon,
         progress,
@@ -174,8 +178,13 @@ export async function installApp(
 
     // Execute docker compose up (using Compose V2 syntax)
     const command = `cd "${appDir}" && docker compose -f "${sanitizedComposePath}" up -d`;
-    console.log(`[Docker] installApp: Executing: ${command}`);
+    console.log(`[Docker] installApp: Executing pull then up: ${command}`);
     emitProgress(0.35, "Pulling images");
+    await streamComposePull(appDir, sanitizedComposePath, envVars, (progress, message) =>
+      emitProgress(progress, message ?? "Pulling images"),
+    );
+
+    emitProgress(0.85, "Starting services");
     const { stdout, stderr } = await execAsync(command, { env: envVars });
 
     if (stdout)
@@ -193,7 +202,20 @@ export async function installApp(
 
     const detectedContainer =
       (await detectComposeContainerName(appDir, sanitizedComposePath)) ||
+      guessComposeContainerName(sanitizedComposePath) ||
       containerName;
+
+    // Detect all containers in this compose project
+    const allContainers = await detectAllComposeContainerNames(appDir);
+
+    // Look up store metadata for source tracking
+    const appRecord = await prisma.app.findFirst({
+      where: { appId },
+      include: { store: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const storeSlug = appRecord?.store?.slug;
+    const containerJson = (appRecord?.container as Record<string, unknown>) ?? undefined;
 
     const persistedConfig: Record<string, unknown> = {
       ports: config.ports,
@@ -201,8 +223,16 @@ export async function installApp(
       environment: config.environment,
       composePath: sanitizedComposePath,
       deployMethod: "compose",
+      containers: allContainers.length > 0 ? allContainers : [detectedContainer],
     };
-    await recordInstalledApp(appId, detectedContainer, metaOverride, persistedConfig);
+    await recordInstalledApp(
+      appId,
+      detectedContainer,
+      metaOverride,
+      persistedConfig,
+      storeSlug,
+      containerJson,
+    );
     await triggerAppsUpdate();
     await logAction("install:success", {
       appId,
@@ -217,7 +247,7 @@ export async function installApp(
     await logAction("install:error", { appId, error: errorMessage }, "error");
     sendInstallProgress({
       type: "install-progress",
-      appId,
+      containerName: appId,
       name: meta.name,
       icon: meta.icon,
       progress: 1,
@@ -229,4 +259,72 @@ export async function installApp(
       error: errorMessage || "Failed to install app",
     };
   }
+}
+
+async function streamComposePull(
+  appDir: string,
+  composePath: string,
+  envVars: NodeJS.ProcessEnv,
+  onProgress: (progress: number, message?: string) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const pull = spawn("docker", ["compose", "-f", composePath, "pull"], {
+      cwd: appDir,
+      env: envVars,
+    });
+
+    let events = 0;
+    let lastEmit = Date.now();
+    const maxProgress = 0.85;
+    const minProgress = 0.35;
+
+    const advance = (incMessage?: string) => {
+      events += 1;
+      const pct = Math.min(
+        maxProgress,
+        minProgress + (events / 40) * (maxProgress - minProgress),
+      );
+      const now = Date.now();
+      // throttle to avoid spamming
+      if (now - lastEmit > 200) {
+        onProgress(pct, incMessage);
+        lastEmit = now;
+      }
+    };
+
+    pull.stdout.on("data", (data) => {
+      const lines = data.toString().split("\n");
+      lines.forEach((line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        if (
+          /download/i.test(trimmed) ||
+          /extract/i.test(trimmed) ||
+          /pulling/i.test(trimmed) ||
+          /pull complete/i.test(trimmed)
+        ) {
+          advance(trimmed);
+        }
+      });
+    });
+
+    pull.stderr.on("data", (data) => {
+      const lines = data.toString().split("\n");
+      lines.forEach((line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        advance(trimmed);
+      });
+    });
+
+    pull.on("error", (err) => reject(err));
+    pull.on("close", (code) => {
+      if (code === 0) {
+        onProgress(0.85, "Images pulled");
+        resolve();
+      } else {
+        reject(new Error(`docker compose pull exited with code ${code}`));
+      }
+    });
+  });
 }

@@ -531,6 +531,45 @@ install_cifs_utils() {
     fi
 }
 
+install_samba() {
+    if [ "$DRY_RUN" -eq 1 ]; then
+        print_dry "Install Samba server (smbd/nmbd) and discovery helper (wsdd/wsdd2)"
+        return
+    fi
+
+    if command -v smbd >/dev/null 2>&1; then
+        print_status "Samba already installed"
+    else
+        print_status "Installing Samba server..."
+        if [ -x "$(command -v apt-get)" ]; then
+            apt-get update
+            apt-get install -y samba samba-common-bin wsdd2 || apt-get install -y samba samba-common-bin wsdd || true
+        elif [ -x "$(command -v dnf)" ]; then
+            dnf install -y samba samba-client samba-common-tools wsdd || true
+        elif [ -x "$(command -v yum)" ]; then
+            yum install -y samba samba-client samba-common wsdd || true
+        else
+            print_error "Unsupported package manager. Please install Samba manually (packages: samba, samba-common-bin, wsdd/wsdd2)."
+            return
+        fi
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl enable smbd nmbd wsdd2 wsdd 2>/dev/null || true
+        systemctl start smbd nmbd wsdd2 wsdd 2>/dev/null || true
+    else
+        service smbd start 2>/dev/null || true
+        service nmbd start 2>/dev/null || true
+        service wsdd2 start 2>/dev/null || service wsdd start 2>/dev/null || true
+    fi
+
+    if systemctl is-active --quiet smbd 2>/dev/null || service smbd status >/dev/null 2>&1; then
+        print_status "Samba service is running"
+    else
+        print_error "Samba installed but service is not running; start with: sudo systemctl start smbd"
+    fi
+}
+
 # Install Avahi for mDNS/.local domain support
 install_avahi() {
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -639,10 +678,48 @@ install_nmcli() {
     fi
 }
 
+install_bluez() {
+    if [ "$DRY_RUN" -eq 1 ]; then
+        print_dry "Install Bluetooth stack (bluez + rfkill)"
+        return
+    fi
+
+    if command -v bluetoothctl >/dev/null 2>&1; then
+        print_status "Bluetooth tools already installed (bluez)"
+        return
+    fi
+
+    print_status "Installing Bluetooth tools (bluez)..."
+
+    installed=0
+
+    if [ -x "$(command -v apt-get)" ]; then
+        apt-get update
+        apt-get install -y bluez rfkill && installed=1
+    elif [ -x "$(command -v dnf)" ]; then
+        dnf install -y bluez rfkill && installed=1
+    elif [ -x "$(command -v yum)" ]; then
+        yum install -y bluez rfkill && installed=1
+    fi
+
+    # Fallback to snap if package manager path failed or unavailable
+    if [ $installed -ne 1 ] && command -v snap >/dev/null 2>&1; then
+        print_status "Falling back to snap install bluez..."
+        snap install bluez && installed=1
+    fi
+
+    if command -v bluetoothctl >/dev/null 2>&1; then
+        print_status "Bluetooth tools installed successfully"
+    else
+        print_error "bluez installation may have failed; bluetoothctl not found."
+        print_error "Try installing manually: apt install bluez rfkill OR snap install bluez"
+    fi
+}
+
 # Install UFW firewall
 install_firewall() {
     if [ "$DRY_RUN" -eq 1 ]; then
-        print_dry "Install UFW firewall"
+        print_dry "Install UFW firewall, allow HTTP/SSH/SMB, and enable it"
         return
     fi
 
@@ -670,6 +747,10 @@ install_firewall() {
     if command -v ufw >/dev/null 2>&1; then
         print_status "UFW installed successfully"
 
+        # Baseline policies
+        ufw --force default deny incoming 2>/dev/null || true
+        ufw --force default allow outgoing 2>/dev/null || true
+
         # Allow LiveOS port through firewall
         print_status "Configuring firewall to allow LiveOS port ($HTTP_PORT)..."
         ufw allow "$HTTP_PORT/tcp" comment "LiveOS HTTP" 2>/dev/null || true
@@ -677,15 +758,76 @@ install_firewall() {
         # Allow SSH to prevent lockout
         ufw allow ssh comment "SSH" 2>/dev/null || true
 
+        # Allow SMB file sharing (CIFS/NetBIOS + WSD for discovery)
+        ufw allow 445/tcp comment "SMB 445" 2>/dev/null || true
+        ufw allow 139/tcp comment "SMB 139" 2>/dev/null || true
+        ufw allow 137/udp comment "NetBIOS name service" 2>/dev/null || true
+        ufw allow 138/udp comment "NetBIOS datagram" 2>/dev/null || true
+        ufw allow 3702/udp comment "WSD discovery" 2>/dev/null || true
+
         # Check if firewall is enabled
         if ufw status | grep -q "Status: active"; then
             print_status "UFW firewall is active"
         else
-            print_info "UFW is installed but not enabled."
-            print_info "You can enable it from LiveOS settings or run: sudo ufw enable"
+            print_status "Enabling UFW firewall (non-interactive)..."
+            ufw --force enable 2>/dev/null || true
+            if ufw status | grep -q "Status: active"; then
+                print_status "UFW firewall enabled"
+            else
+                print_error "UFW could not be enabled automatically. Enable manually with: sudo ufw enable"
+            fi
         fi
     else
         print_error "UFW installation failed. Firewall management will not be available."
+    fi
+}
+
+install_fail2ban() {
+    if [ "$DRY_RUN" -eq 1 ]; then
+        print_dry "Install fail2ban and enable SSH jail"
+        return
+    fi
+
+    if command -v fail2ban-client >/dev/null 2>&1; then
+        print_status "fail2ban already installed"
+    else
+        print_status "Installing fail2ban for SSH brute-force protection..."
+        if [ -x "$(command -v apt-get)" ]; then
+            apt-get update
+            apt-get install -y fail2ban
+        elif [ -x "$(command -v dnf)" ]; then
+            dnf install -y fail2ban
+        elif [ -x "$(command -v yum)" ]; then
+            yum install -y fail2ban
+        else
+            print_error "Unsupported package manager. Please install fail2ban manually."
+            return
+        fi
+    fi
+
+    # Minimal jail for SSH
+    if [ -d /etc/fail2ban/jail.d ]; then
+        cat > /etc/fail2ban/jail.d/liveos-ssh.conf <<'EOF'
+[sshd]
+enabled = true
+port    = ssh
+maxretry = 5
+findtime = 10m
+bantime  = 15m
+EOF
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl enable fail2ban 2>/dev/null || true
+        systemctl restart fail2ban 2>/dev/null || true
+    else
+        service fail2ban restart 2>/dev/null || true
+    fi
+
+    if fail2ban-client status sshd >/dev/null 2>&1; then
+        print_status "fail2ban SSH jail enabled"
+    else
+        print_error "fail2ban installed but SSH jail not active; check /etc/fail2ban logs"
     fi
 }
 
@@ -1026,11 +1168,15 @@ if [ "$NO_DEP" -eq 0 ]; then
     fi
     install_archive_tools
     install_cifs_utils
+    install_samba
+    install_firewall
+    install_fail2ban
     install_nodejs
     install_docker
     ensure_docker_permissions
     install_avahi
     install_nmcli
+    install_bluez
 fi
 
 # Setup the application

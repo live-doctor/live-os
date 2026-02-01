@@ -1,7 +1,7 @@
 "use client";
 
 import { progressBar, text, card } from "@/components/ui/design-tokens";
-import { cn } from "@/lib/utils";
+import { cn, clamp01 } from "@/lib/utils";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { InstallProgress } from "@/hooks/system-status-types";
@@ -48,7 +48,7 @@ export function InstallProgressOverlay({ installs }: InstallProgressOverlayProps
                   </p>
                 </div>
                 <span className="text-xs text-white/70">
-                  {Math.round(clamp(install.progress) * 100)}%
+                  {Math.round(clamp01(install.progress) * 100)}%
                 </span>
               </div>
 
@@ -60,7 +60,7 @@ export function InstallProgressOverlay({ installs }: InstallProgressOverlayProps
                       ? "bg-red-400"
                       : "bg-cyan-400"
                   )}
-                  style={{ width: `${clamp(install.progress) * 100}%` }}
+                  style={{ width: `${clamp01(install.progress) * 100}%` }}
                 />
               </div>
             </div>
@@ -79,9 +79,4 @@ function statusLabel(install: InstallProgress) {
     return "Completed";
   }
   return install.message || "Installing…";
-}
-
-function clamp(value: number) {
-  if (Number.isNaN(value)) return 0;
-  return Math.min(1, Math.max(0, value));
 }

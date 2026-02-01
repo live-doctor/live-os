@@ -104,6 +104,8 @@ export async function getAppStoreApps(): Promise<App[]> {
         repo: record.repo ?? undefined,
         composePath: record.composePath,
         container: (record as any)?.container ?? undefined,
+        storeName: record.store?.name ?? undefined,
+        storeSlug: record.store?.slug ?? undefined,
       }));
       await logAction("appstore:list:done", { count: apps.length });
       return apps;
@@ -165,6 +167,9 @@ export async function importAppStore(
 
   const storeSlug = slugify(url);
   const targetDir = path.join(STORE_ROOT, storeSlug);
+  const urlNameFallback =
+    url.split("/").pop()?.replace(/\.zip$/i, "") || storeSlug;
+  let resolvedStoreName = meta?.name ?? urlNameFallback ?? storeSlug;
 
   try {
     await logAction("appstore:import:start", { url, storeSlug });
@@ -210,6 +215,13 @@ export async function importAppStore(
     await fs.mkdir(targetDir, { recursive: true });
     await extractZipBuffer(buffer, targetDir);
 
+    // Try to derive a friendly name from the extracted folder if none was provided.
+    if (!meta?.name) {
+      resolvedStoreName =
+        (await deriveStoreName(targetDir, urlNameFallback, storeSlug)) ??
+        resolvedStoreName;
+    }
+
     const storeFormat = await detectStoreFormat(targetDir);
     const parsedApps =
       storeFormat === "casaos"
@@ -223,7 +235,7 @@ export async function importAppStore(
       where: { slug: storeSlug },
       update: {
         url,
-        name: meta?.name ?? storeSlug,
+        name: resolvedStoreName,
         description: meta?.description,
         localPath: targetDir,
         manifestHash: zipHash,
@@ -231,7 +243,7 @@ export async function importAppStore(
       create: {
         slug: storeSlug,
         url,
-        name: meta?.name ?? storeSlug,
+        name: resolvedStoreName,
         description: meta?.description,
         localPath: targetDir,
         manifestHash: zipHash,
@@ -241,6 +253,11 @@ export async function importAppStore(
     for (const app of parsedApps) {
       const categories = app.category ?? [];
       const screenshots = app.screenshots ?? [];
+      const developer =
+        app.developer === undefined || app.developer === null
+          ? null
+          : String(app.developer);
+
       await prisma.app.upsert({
         where: { storeId_appId: { storeId: store.id, appId: app.id } },
         update: {
@@ -250,7 +267,7 @@ export async function importAppStore(
           tagline: app.tagline,
           overview: app.overview,
           category: categories,
-          developer: app.developer,
+          developer,
           screenshots,
           version: app.version,
           port: Number.isFinite(app.port as number)
@@ -271,7 +288,7 @@ export async function importAppStore(
           tagline: app.tagline,
           overview: app.overview,
           category: categories,
-          developer: app.developer,
+          developer,
           screenshots,
           version: app.version,
           port: Number.isFinite(app.port as number)
@@ -426,6 +443,30 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+async function deriveStoreName(
+  targetDir: string,
+  fallback: string,
+  storeSlug: string,
+): Promise<string | null> {
+  try {
+    const entries = await fs.readdir(targetDir, { withFileTypes: true });
+    const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
+    if (dirs.length === 1) {
+      return dirs[0];
+    }
+    if (dirs.length > 1) {
+      // Prefer a folder that matches the slug or fallback
+      const matchSlug = dirs.find((d) => d.includes(storeSlug));
+      if (matchSlug) return matchSlug;
+      const matchFallback = dirs.find((d) => d.includes(fallback));
+      if (matchFallback) return matchFallback;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 /**
  * Get details about all imported stores.
  */
@@ -572,24 +613,28 @@ export async function getComposeForApp(appId: string): Promise<{
       return { success: false, error: "Missing appId" };
     }
 
-    const app = await prisma.app.findFirst({
+    // Primary: look up from InstalledApp (single source of truth)
+    const installed = await prisma.installedApp.findFirst({
       where: { appId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
     });
 
-    if (!app) {
+    if (!installed) {
       return { success: false, error: "App metadata not found" };
     }
 
+    const config = installed.installConfig as Record<string, unknown> | null;
+    const composePath = (config?.composePath as string) ?? undefined;
+
     let content: string | undefined;
-    if (app.composePath) {
-      const composeResult = await getAppComposeContent(app.composePath);
+    if (composePath) {
+      const composeResult = await getAppComposeContent(composePath);
       if (composeResult.success && composeResult.content) {
         content = composeResult.content;
       }
     }
 
-    const container = (app as any)?.container ?? undefined;
+    const container = (installed.container as Record<string, unknown>) ?? undefined;
 
     if (!content && !container) {
       return {
@@ -601,9 +646,9 @@ export async function getComposeForApp(appId: string): Promise<{
     return {
       success: true,
       content,
-      appTitle: app.title || app.name || app.appId,
-      appIcon: app.icon || undefined,
-      container: container || undefined,
+      appTitle: installed.name || installed.appId,
+      appIcon: installed.icon || undefined,
+      container: (container as any) || undefined,
     };
   } catch (error) {
     console.error("Failed to load compose for app:", error);

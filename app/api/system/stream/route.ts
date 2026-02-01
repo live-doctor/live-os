@@ -1,13 +1,17 @@
-import { getNetworkStats, getStorageInfo, getSystemStatus } from '@/app/actions/system-status';
-import prisma from '@/lib/prisma';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import {
+  getNetworkStats,
+  getStorageInfo,
+  getSystemStatus,
+} from "@/app/actions/system-status";
+import prisma from "@/lib/prisma";
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
-const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || '';
+const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 
 type MetricsPayload = {
-  type: 'metrics';
+  type: "metrics";
   systemStatus: unknown;
   storageInfo: unknown;
   networkStats: unknown;
@@ -16,12 +20,12 @@ type MetricsPayload = {
 };
 
 export type InstallProgressPayload = {
-  type: 'install-progress';
-  appId: string;
+  type: "install-progress";
+  containerName: string;
   name: string;
   icon: string;
   progress: number; // 0-1
-  status: 'starting' | 'running' | 'completed' | 'error';
+  status: "starting" | "running" | "completed" | "error";
   message?: string;
 };
 
@@ -30,7 +34,7 @@ type Client = {
   fast: boolean;
 };
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const encoder = new TextEncoder();
 const clients = new Set<Client>();
@@ -71,89 +75,110 @@ async function getInstalledApps() {
       prisma.app.findMany(),
     ]);
     const metaByContainer = new Map(
-      knownApps.map((app) => [app.containerName, app])
+      knownApps.map((app) => [app.containerName, app]),
     );
-    const metaByAppId = new Map(knownApps.map((app) => [app.appId, app]));
     const storeMetaById = new Map(storeApps.map((app) => [app.appId, app]));
 
+    // Get containers with compose labels for grouping
     const { stdout } = await execAsync(
-      'docker ps -a --format "{{.Names}}\\t{{.Status}}\\t{{.Image}}"'
+      'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Label \\"com.docker.compose.project\\"}}\t{{.Label \\"com.docker.compose.service\\"}}"',
     );
 
     if (!stdout.trim()) return [];
 
-    const lines = stdout.trim().split('\n');
-    const normalize = (value: string | undefined) =>
-      (value || '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '');
+    const lines = stdout.trim().split("\n");
 
-    const fuzzyFindAppId = (containerName: string) => {
-      const normalized = normalize(containerName);
-      if (!normalized) return null;
-      const candidates = Array.from(
-        new Set([
-          ...metaByAppId.keys(),
-          ...storeMetaById.keys(),
-        ])
-      );
-      for (const candidate of candidates) {
-        if (normalized.includes(normalize(candidate))) {
-          return candidate;
-        }
-      }
-      return null;
-    };
+    // Parse containers
+    const containers = lines.map((line) => {
+      const [name, status, image, composeProject, composeService] =
+        line.split("\t");
+      return {
+        name: name || "",
+        status: status || "",
+        image: image || "",
+        composeProject: composeProject || "",
+        composeService: composeService || "",
+      };
+    }).filter((c) => c.name);
 
-    return await Promise.all(
-      lines.map(async (line) => {
-        const [containerName, status, image] = line.split('\t');
+    // Group by compose project
+    const groups = new Map<string, typeof containers>();
+    for (const container of containers) {
+      const key = container.composeProject || container.name;
+      const group = groups.get(key) || [];
+      group.push(container);
+      groups.set(key, group);
+    }
 
-        let appStatus: 'running' | 'stopped' | 'error' = 'error';
-        if (status.toLowerCase().startsWith('up')) {
-          appStatus = 'running';
-        } else if (status.toLowerCase().includes('exited')) {
-          appStatus = 'stopped';
-        }
+    const results = [];
 
-        const meta = metaByContainer.get(containerName);
+    for (const [projectKey, groupContainers] of groups) {
+      const primaryContainer =
+        groupContainers.find((c) => metaByContainer.has(c.name)) ||
+        groupContainers[0];
 
-        const appId =
-          meta?.appId ||
-          getAppIdFromContainerName(containerName) ||
-          (image ? image.split('/').pop()?.split(':')[0] : null) ||
-          fuzzyFindAppId(containerName) ||
-          null;
+      const containerNames = groupContainers.map((c) => c.name);
 
-        // If fuzzy matched, prefer DB meta over store meta
-        const dbMeta =
-          meta ||
-          (appId ? metaByAppId.get(appId) : undefined);
-        const storeMeta = appId ? storeMetaById.get(appId) : undefined;
-        const hostPort = await resolveHostPort(containerName);
+      const meta = metaByContainer.get(primaryContainer.name);
+      const anyMeta =
+        meta ||
+        groupContainers
+          .map((c) => metaByContainer.get(c.name))
+          .find(Boolean);
 
-        const fallbackName = containerName
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, (c) => c.toUpperCase());
+      const resolvedAppId =
+        anyMeta?.appId ||
+        getAppIdFromContainerName(primaryContainer.name);
 
-        return {
-          id: containerName,
-          appId: appId || containerName,
-          name:
-            dbMeta?.name ||
-            storeMeta?.title ||
-            storeMeta?.name ||
-            fallbackName,
-          icon: dbMeta?.icon || storeMeta?.icon || '/default-application-icon.png',
-          status: appStatus,
-          webUIPort: hostPort ? Number(hostPort) : undefined,
-          containerName,
-          installedAt: dbMeta?.createdAt?.getTime?.() || Date.now(),
-        };
-      })
-    );
+      const storeMeta = storeMetaById.get(resolvedAppId);
+
+      // Aggregate status
+      const statuses = groupContainers.map((c) => {
+        const s = c.status.toLowerCase();
+        if (s.startsWith("up")) return "running";
+        if (s.includes("exited")) return "stopped";
+        return "error";
+      });
+      let appStatus: "running" | "stopped" | "error" = "error";
+      if (statuses.every((s) => s === "running")) appStatus = "running";
+      else if (statuses.every((s) => s === "stopped")) appStatus = "stopped";
+      else if (statuses.some((s) => s === "running")) appStatus = "running";
+
+      const hostPort = await resolveHostPort(primaryContainer.name);
+
+      const fallbackName = primaryContainer.name
+        .replace(/[-_]/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const dbContainers = (anyMeta?.installConfig as Record<string, unknown>)
+        ?.containers as string[] | undefined;
+
+      results.push({
+        id: primaryContainer.name,
+        appId: resolvedAppId || primaryContainer.name,
+        name:
+          anyMeta?.name ||
+          storeMeta?.title ||
+          storeMeta?.name ||
+          fallbackName,
+        icon:
+          anyMeta?.icon ||
+          storeMeta?.icon ||
+          "/default-application-icon.png",
+        status: appStatus,
+        webUIPort: hostPort ? Number(hostPort) : undefined,
+        containerName: primaryContainer.name,
+        containers:
+          containerNames.length > 1
+            ? containerNames
+            : dbContainers || containerNames,
+        installedAt: anyMeta?.createdAt?.getTime?.() || Date.now(),
+      });
+    }
+
+    return results;
   } catch (error) {
-    console.error('[SSE] Failed to collect installed apps:', error);
+    console.error("[SSE] Failed to collect installed apps:", error);
     return [];
   }
 }
@@ -161,7 +186,7 @@ async function getInstalledApps() {
 async function resolveHostPort(containerName: string): Promise<string | null> {
   try {
     const { stdout } = await execAsync(
-      `docker inspect -f '{{json .NetworkSettings.Ports}}' ${containerName}`
+      `docker inspect -f '{{json .NetworkSettings.Ports}}' ${containerName}`,
     );
 
     const ports = JSON.parse(stdout || "{}") as Record<
@@ -170,7 +195,7 @@ async function resolveHostPort(containerName: string): Promise<string | null> {
     >;
 
     const firstMapping = Object.values(ports).find(
-      (mappings) => Array.isArray(mappings) && mappings.length > 0
+      (mappings) => Array.isArray(mappings) && mappings.length > 0,
     );
 
     return firstMapping?.[0]?.HostPort ?? null;
@@ -193,22 +218,35 @@ function hasFastClients() {
   return false;
 }
 
-async function pollAndBroadcast() {
+export async function pollAndBroadcast() {
   if (isPolling || clients.size === 0) return;
   isPolling = true;
   try {
-    const [systemStatus, storageInfo, networkStats, installedApps, runningApps] = await Promise.all([
+    const [
+      systemStatus,
+      storageInfo,
+      networkStats,
+      installedApps,
+      runningApps,
+    ] = await Promise.all([
       getSystemStatus(),
       getStorageInfo(),
       getNetworkStats(),
       getInstalledApps(),
       getRunningApps(),
     ]);
-    latestPayload = { type: 'metrics', systemStatus, storageInfo, networkStats, installedApps, runningApps };
+    latestPayload = {
+      type: "metrics",
+      systemStatus,
+      storageInfo,
+      networkStats,
+      installedApps,
+      runningApps,
+    };
     broadcast(latestPayload);
   } catch (error) {
-    console.error('[SSE] Metrics fetch error:', error);
-    broadcast({ type: 'error', message: 'Failed to fetch metrics' });
+    console.error("[SSE] Metrics fetch error:", error);
+    broadcast({ type: "error", message: "Failed to fetch metrics" });
   } finally {
     isPolling = false;
   }
@@ -220,47 +258,47 @@ async function pollAndBroadcast() {
 async function getRunningApps() {
   try {
     const { stdout } = await execAsync(
-      'docker stats --no-stream --format "{{ json . }}"'
+      'docker stats --no-stream --format "{{ json . }}"',
     );
 
     if (!stdout.trim()) return [];
 
     const parseMemoryString = (memStr: string): number => {
-      const cleaned = memStr.replace(/,/g, '').trim();
+      const cleaned = memStr.replace(/,/g, "").trim();
       const match = cleaned.match(/^([\d.]+)\s*([a-zA-Z]+)?$/);
       if (!match) return 0;
 
-      const value = parseFloat(match[1] || '0');
+      const value = parseFloat(match[1] || "0");
       if (!Number.isFinite(value)) return 0;
 
-      const unit = (match[2] || 'b').toLowerCase();
+      const unit = (match[2] || "b").toLowerCase();
 
-      if (unit.startsWith('t')) return value * 1024 ** 4;
-      if (unit.startsWith('g')) return value * 1024 ** 3;
-      if (unit.startsWith('m')) return value * 1024 ** 2;
-      if (unit.startsWith('k')) return value * 1024;
+      if (unit.startsWith("t")) return value * 1024 ** 4;
+      if (unit.startsWith("g")) return value * 1024 ** 3;
+      if (unit.startsWith("m")) return value * 1024 ** 2;
+      if (unit.startsWith("k")) return value * 1024;
       return value;
     };
     const parseNetString = (netStr: string): number => {
-      const cleaned = netStr.replace(/,/g, '').trim();
+      const cleaned = netStr.replace(/,/g, "").trim();
       const match = cleaned.match(/^([\d.]+)\s*([a-zA-Z]+)?$/);
       if (!match) return 0;
 
-      const value = parseFloat(match[1] || '0');
+      const value = parseFloat(match[1] || "0");
       if (!Number.isFinite(value)) return 0;
 
-      const unit = (match[2] || 'b').toLowerCase();
+      const unit = (match[2] || "b").toLowerCase();
 
-      if (unit.startsWith('t')) return value * 1024 ** 4;
-      if (unit.startsWith('g')) return value * 1024 ** 3;
-      if (unit.startsWith('m')) return value * 1024 ** 2;
-      if (unit.startsWith('k')) return value * 1024;
+      if (unit.startsWith("t")) return value * 1024 ** 4;
+      if (unit.startsWith("g")) return value * 1024 ** 3;
+      if (unit.startsWith("m")) return value * 1024 ** 2;
+      if (unit.startsWith("k")) return value * 1024;
       return value;
     };
 
     return stdout
       .trim()
-      .split('\n')
+      .split("\n")
       .flatMap((line) => {
         try {
           const parsed = JSON.parse(line) as {
@@ -273,21 +311,23 @@ async function getRunningApps() {
           const name = parsed.Name ?? "";
           if (!name) return [];
 
-          const cpuUsage = parseFloat(parsed.CPUPerc?.replace('%', '') || '0');
-          const memPercent = parseFloat(parsed.MemPerc?.replace('%', '') || '0');
-          const memParts = parsed.MemUsage?.split(' / ') || [];
-          const netParts = parsed.NetIO?.split(' / ') || [];
-          const memoryUsage = parseMemoryString(memParts[0]?.trim() || '0');
-          const memoryLimit = parseMemoryString(memParts[1]?.trim() || '0');
-          const netRx = parseNetString(netParts[0]?.trim() || '0');
-          const netTx = parseNetString(netParts[1]?.trim() || '0');
+          const cpuUsage = parseFloat(parsed.CPUPerc?.replace("%", "") || "0");
+          const memPercent = parseFloat(
+            parsed.MemPerc?.replace("%", "") || "0",
+          );
+          const memParts = parsed.MemUsage?.split(" / ") || [];
+          const netParts = parsed.NetIO?.split(" / ") || [];
+          const memoryUsage = parseMemoryString(memParts[0]?.trim() || "0");
+          const memoryLimit = parseMemoryString(memParts[1]?.trim() || "0");
+          const netRx = parseNetString(netParts[0]?.trim() || "0");
+          const netTx = parseNetString(netParts[1]?.trim() || "0");
 
           return [
             {
               id: name,
-              name: name.replace(/-/g, ' ').replace(/\\b\\w/g, (c) =>
-                c.toUpperCase(),
-              ),
+              name: name
+                .replace(/-/g, " ")
+                .replace(/\\b\\w/g, (c) => c.toUpperCase()),
               cpuUsage: Number.isFinite(cpuUsage) ? cpuUsage : 0,
               memoryUsage: Number.isFinite(memoryUsage) ? memoryUsage : 0,
               memoryLimit: Number.isFinite(memoryLimit) ? memoryLimit : 0,
@@ -302,7 +342,7 @@ async function getRunningApps() {
       })
       .sort((a, b) => b.cpuUsage - a.cpuUsage);
   } catch (error) {
-    console.error('[SSE] Failed to collect running apps:', error);
+    console.error("[SSE] Failed to collect running apps:", error);
     return [];
   }
 }
@@ -337,7 +377,7 @@ function stopPoller() {
 }
 
 export async function GET(request: Request) {
-  const wantsFast = new URL(request.url).searchParams.get('fast') === '1';
+  const wantsFast = new URL(request.url).searchParams.get("fast") === "1";
   let clientRef: Client | null = null;
 
   const stream = new ReadableStream<Uint8Array>({
@@ -371,10 +411,10 @@ export async function GET(request: Request) {
 
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
     },
   });
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { getAppComposeContent } from '@/app/actions/appstore';
@@ -17,11 +16,12 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Settings2 } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CustomDeployDialog, type CustomDeployInitialData } from './custom-deploy-dialog';
 import type { App, InstallConfig } from './types';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
+import { clamp01 } from '@/lib/utils';
 
 interface AppInstallDialogProps {
   open: boolean;
@@ -41,11 +41,12 @@ export function AppInstallDialog({
   const [customizeDialogOpen, setCustomizeDialogOpen] = useState(false);
   const [customizeData, setCustomizeData] = useState<CustomDeployInitialData | null>(null);
   const [loadingCompose, setLoadingCompose] = useState(false);
-  const { installProgress } = useSystemStatus({ fast: true });
+  const { installProgress, pushInstallProgress } = useSystemStatus({ fast: true });
+  const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activeProgress = installProgress.find((p) => p.appId === app.id);
   const progressValue =
     activeProgress && typeof activeProgress.progress === "number"
-      ? clamp(activeProgress.progress)
+      ? clamp01(activeProgress.progress)
       : null;
   const progressPercent =
     progressValue !== null ? Math.round(progressValue * 100) : null;
@@ -61,8 +62,40 @@ export function AppInstallDialog({
     }
   }, [open, app]);
 
+  // Cleanup timer on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const handleInstall = async () => {
     setInstalling(true);
+    pushInstallProgress({
+      appId: app.id,
+      name: app.title || app.name,
+      icon: app.icon,
+      progress: 0,
+      status: "starting",
+      message: "Starting install…",
+    });
+    // Optimistic ticker while server work runs
+    let optimistic = 0.08;
+    if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+    progressTimerRef.current = setInterval(() => {
+      optimistic = Math.min(0.9, optimistic + 0.05);
+      pushInstallProgress({
+        appId: app.id,
+        name: app.title || app.name,
+        icon: app.icon,
+        progress: optimistic,
+        status: "running",
+        message: "Installing…",
+      });
+    }, 1200);
 
     try {
       const result = await installApp(app.id, config, {
@@ -78,13 +111,40 @@ export function AppInstallDialog({
           window.open(url, "_blank", "noopener,noreferrer");
         }
         onOpenChange(false);
+        pushInstallProgress({
+          appId: app.id,
+          name: app.title || app.name,
+          icon: app.icon,
+          progress: 1,
+          status: "completed",
+          message: "Installation complete",
+        });
       } else {
         toast.error(result.error || 'Failed to install application');
+        pushInstallProgress({
+          appId: app.id,
+          name: app.title || app.name,
+          icon: app.icon,
+          progress: 1,
+          status: "error",
+          message: result.error || "Install failed",
+        });
       }
-    } catch (error: any) {
-      // Error handled by toast
+    } catch {
       toast.error('Failed to install application');
+      pushInstallProgress({
+        appId: app.id,
+        name: app.title || app.name,
+        icon: app.icon,
+        progress: 1,
+        status: "error",
+        message: "Install failed",
+      });
     } finally {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
       setInstalling(false);
     }
   };
@@ -297,15 +357,25 @@ export function AppInstallDialog({
 
 export function getDefaultInstallConfig(app: App): InstallConfig {
   const defaultPorts =
-    app.container?.ports?.map((port: any) => ({
-      container: port.container || port.target?.toString() || '',
-      published: port.published || port.container || port.target?.toString() || '',
+    app.container?.ports?.map((port) => ({
+      container: port.container || '',
+      published: port.published || port.container || '',
       protocol: port.protocol || 'tcp',
     })) || [];
 
+  // Move the web UI port (from x-casaos port_map) to the front
+  if (app.port) {
+    const webUIPortStr = app.port.toString();
+    const idx = defaultPorts.findIndex((p) => p.container === webUIPortStr);
+    if (idx > 0) {
+      const [webUIPort] = defaultPorts.splice(idx, 1);
+      defaultPorts.unshift(webUIPort);
+    }
+  }
+
   const defaultVolumes =
-    app.container?.volumes?.map((vol: any) => ({
-      container: vol.container || vol.target || '',
+    app.container?.volumes?.map((vol) => ({
+      container: vol.container || '',
       source: (vol.source || `/DATA/AppData/${app.id}`)
         .replace(/\$\{?AppID\}?/g, app.id)
         .replace(/\$\{?APP_ID\}?/g, app.id),
@@ -322,9 +392,4 @@ export function getDefaultInstallConfig(app: App): InstallConfig {
     volumes: defaultVolumes,
     environment: defaultEnv,
   };
-}
-
-function clamp(value: number) {
-  if (Number.isNaN(value)) return 0;
-  return Math.min(1, Math.max(0, value));
 }
