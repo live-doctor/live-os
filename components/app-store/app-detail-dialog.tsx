@@ -27,6 +27,7 @@ import { AppScreenshots } from "./app-screenshots";
 import type { App, InstalledApp } from "./types";
 import type { InstallProgress } from "@/hooks/system-status-types";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
+import { clamp01 } from "@/lib/utils";
 
 interface AppDetailDialogProps {
   open: boolean;
@@ -64,7 +65,7 @@ export function AppDetailDialog({
       : null;
   const progressValue =
     activeProgress && typeof activeProgress.progress === "number"
-      ? clamp(activeProgress.progress)
+      ? clamp01(activeProgress.progress)
       : null;
   const progressPercent =
     progressValue !== null ? Math.round(progressValue * 100) : null;
@@ -73,6 +74,16 @@ export function AppDetailDialog({
       activeProgress.status !== "completed" &&
       activeProgress.status !== "error",
   );
+
+  // Cleanup timer on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleQuickInstall = async () => {
     setInstalling(true);
@@ -364,9 +375,4 @@ export function AppDetailDialog({
       )}
     </>
   );
-}
-
-function clamp(value: number) {
-  if (Number.isNaN(value)) return 0;
-  return Math.min(1, Math.max(0, value));
 }

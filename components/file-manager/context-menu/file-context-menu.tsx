@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import type { FileSystemItem } from '@/app/actions/filesystem';
-import { createPortal } from 'react-dom';
-import { type RefObject, useMemo } from 'react';
-import { menuSections } from './constants';
-import { ContextMenuHeader } from './context-menu-header';
-import { ContextMenuItem } from './context-menu-item';
-import { ContextMenuSeparator } from './context-menu-separator';
-import type { ClipboardState, ContextMenuAction, ContextMenuSectionConfig } from './types';
-import { useContextMenuActions } from './use-context-menu-actions';
+import type { FileSystemItem } from "@/app/actions/filesystem";
+import { type RefObject, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { menuSections } from "./constants";
+import { ContextMenuHeader } from "./context-menu-header";
+import { ContextMenuItem } from "./context-menu-item";
+import { ContextMenuSeparator } from "./context-menu-separator";
+import type {
+  ClipboardState,
+  ContextMenuAction,
+  ContextMenuSectionConfig,
+} from "./types";
+import { useContextMenuActions } from "./use-context-menu-actions";
 
 interface ContextMenuState {
   x: number;
@@ -19,6 +23,7 @@ interface ContextMenuState {
 interface FilesContextMenuProps {
   contextMenu: ContextMenuState;
   menuRef: RefObject<HTMLDivElement | null>;
+  portalContainer?: HTMLElement | null;
   currentPath: string;
   clipboard: ClipboardState;
   favorites: string[];
@@ -37,6 +42,7 @@ interface FilesContextMenuProps {
 export function FilesContextMenu({
   contextMenu,
   menuRef,
+  portalContainer,
   currentPath,
   clipboard,
   favorites,
@@ -90,34 +96,47 @@ export function FilesContextMenu({
     handleAction(actionId, item);
   };
 
-  return createPortal(
-    <div
-      ref={menuRef}
-      className="fixed z-[60] bg-gradient-to-b from-[#0b0b0f]/95 to-[#101018]/95 border border-white/10 rounded-xl shadow-2xl text-white text-sm min-w-[240px] overflow-hidden backdrop-blur-lg"
-      style={{ top: contextMenu.y, left: contextMenu.x }}
-      onClick={(event) => event.stopPropagation()}
-    >
-      <ContextMenuHeader item={item} />
+  // Portal into the Radix Dialog portal container (not document.body)
+  // to avoid being marked `inert` by Radix's focus trap.
+  const target =
+    portalContainer?.closest("[data-radix-portal]") ??
+    portalContainer ??
+    document.body;
 
-      <div className="p-1">
-        {visibleSections.map((section, sectionIndex) => (
-          <div key={section.id}>
-            {sectionIndex > 0 && <ContextMenuSeparator />}
-            {section.items.map((menuItem) => (
-              <ContextMenuItem
-                key={menuItem.id}
-                id={menuItem.id}
-                label={menuItem.label}
-                shortcut={menuItem.shortcut}
-                icon={menuItem.icon}
-                danger={menuItem.danger}
-                onClick={handleItemClick}
-              />
-            ))}
-          </div>
-        ))}
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[140] cursor-default"
+        onClick={onClose}
+      />
+      <div
+        ref={menuRef}
+        className="fixed z-[150] bg-gradient-to-b from-[#0b0b0f]/95 via-[#0f111a]/95 to-[#0b0f1a]/95 border border-white/10 rounded-2xl shadow-2xl shadow-black/40 text-white text-sm min-w-[240px] overflow-hidden backdrop-blur-xl ring-1 ring-white/5"
+        style={{ top: contextMenu.y, left: contextMenu.x }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <ContextMenuHeader item={item} />
+
+        <div className="p-1">
+          {visibleSections.map((section, sectionIndex) => (
+            <div key={section.id}>
+              {sectionIndex > 0 && <ContextMenuSeparator />}
+              {section.items.map((menuItem) => (
+                <ContextMenuItem
+                  key={menuItem.id}
+                  id={menuItem.id}
+                  label={menuItem.label}
+                  shortcut={menuItem.shortcut}
+                  icon={menuItem.icon}
+                  danger={menuItem.danger}
+                  onClick={handleItemClick}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>,
-    document.body
+    </>,
+    target,
   );
 }

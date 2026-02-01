@@ -164,6 +164,112 @@ ensure_cifs_utils() {
     fi
 }
 
+ensure_firewall() {
+    print_status "Ensuring UFW firewall is installed and configured..."
+
+    local liveos_port=80
+    if [ -f "$INSTALL_DIR/.env" ]; then
+        liveos_port=$(grep -E '^PORT=' "$INSTALL_DIR/.env" | tail -1 | cut -d'=' -f2)
+        liveos_port=${liveos_port:-80}
+    fi
+
+    if ! command -v ufw >/dev/null 2>&1; then
+        if [ -x "$(command -v apt-get)" ]; then
+            apt-get update
+            apt-get install -y ufw
+        elif [ -x "$(command -v dnf)" ]; then
+            dnf install -y ufw
+        elif [ -x "$(command -v yum)" ]; then
+            yum install -y ufw
+        else
+            print_error "Unsupported package manager. Please install UFW manually."
+            return
+        fi
+    fi
+
+    # Allow required services
+    ufw allow "${liveos_port}/tcp" comment "LiveOS HTTP" 2>/dev/null || true
+    ufw allow 443/tcp comment "HTTPS (if enabled)" 2>/dev/null || true
+    ufw allow ssh comment "SSH" 2>/dev/null || true
+    ufw allow 445/tcp comment "SMB 445" 2>/dev/null || true
+    ufw allow 139/tcp comment "SMB 139" 2>/dev/null || true
+    ufw allow 137/udp comment "NetBIOS name service" 2>/dev/null || true
+    ufw allow 138/udp comment "NetBIOS datagram" 2>/dev/null || true
+    ufw allow 3702/udp comment "WSD discovery" 2>/dev/null || true
+
+    if ufw status | grep -q "Status: active"; then
+        print_status "UFW already active"
+    else
+        print_status "Enabling UFW (keeps existing defaults)..."
+        ufw --force enable 2>/dev/null || true
+    fi
+}
+
+ensure_fail2ban() {
+    print_status "Ensuring fail2ban is installed and SSH jail enabled..."
+
+    if ! command -v fail2ban-client >/dev/null 2>&1; then
+        if [ -x "$(command -v apt-get)" ]; then
+            apt-get update
+            apt-get install -y fail2ban
+        elif [ -x "$(command -v dnf)" ]; then
+            dnf install -y fail2ban
+        elif [ -x "$(command -v yum)" ]; then
+            yum install -y fail2ban
+        else
+            print_error "Unsupported package manager. Please install fail2ban manually."
+            return
+        fi
+    fi
+
+    if [ -d /etc/fail2ban/jail.d ]; then
+        cat > /etc/fail2ban/jail.d/liveos-ssh.conf <<'EOF'
+[sshd]
+enabled = true
+port    = ssh
+maxretry = 5
+findtime = 10m
+bantime  = 15m
+EOF
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl enable fail2ban 2>/dev/null || true
+        systemctl restart fail2ban 2>/dev/null || true
+    else
+        service fail2ban restart 2>/dev/null || true
+    fi
+}
+
+ensure_samba() {
+    print_status "Ensuring Samba server is installed (SMB file sharing)..."
+
+    if ! command -v smbd >/dev/null 2>&1; then
+        if [ -x "$(command -v apt-get)" ]; then
+            apt-get update
+            apt-get install -y samba samba-common-bin wsdd2 || apt-get install -y samba samba-common-bin wsdd || true
+        elif [ -x "$(command -v dnf)" ]; then
+            dnf install -y samba samba-client samba-common-tools wsdd || true
+        elif [ -x "$(command -v yum)" ]; then
+            yum install -y samba samba-client samba-common wsdd || true
+        else
+            print_error "Unsupported package manager. Please install Samba manually."
+            return
+        fi
+    else
+        print_status "Samba already installed"
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl enable smbd nmbd wsdd2 wsdd 2>/dev/null || true
+        systemctl start smbd nmbd wsdd2 wsdd 2>/dev/null || true
+    else
+        service smbd start 2>/dev/null || true
+        service nmbd start 2>/dev/null || true
+        service wsdd2 start 2>/dev/null || service wsdd start 2>/dev/null || true
+    fi
+}
+
 ensure_bluez() {
     print_status "Ensuring Bluetooth tools (bluez + rfkill) are installed..."
 
@@ -237,6 +343,12 @@ update_from_artifact() {
     latest_version="$(strip_v "$latest_tag")"
 
     print_info "Latest available version: $latest_version"
+
+    # Ensure system dependencies needed for features are present
+    ensure_cifs_utils
+    ensure_samba
+    ensure_firewall
+    ensure_fail2ban
 
     if [ "$LOCAL_VERSION" = "$latest_version" ]; then
         print_status "LiveOS is already up to date!"
@@ -384,6 +496,9 @@ update_from_source() {
 
     ensure_archive_tools
     ensure_cifs_utils
+    ensure_samba
+    ensure_firewall
+    ensure_fail2ban
     ensure_bluez
     ensure_migrations_ready
 

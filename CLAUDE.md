@@ -944,7 +944,6 @@ components/file-manager/
 ├── file-creation-row.tsx       # Inline create input
 ├── use-files-dialog.ts         # Main hook (⚠️ 650+ lines - needs split)
 ├── context-menu/               # Right-click menu system
-│   ├── file-context-menu.tsx
 │   ├── use-context-menu-actions.ts
 │   ├── file-clipboard-context.tsx
 │   └── constants.ts

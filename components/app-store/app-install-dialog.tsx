@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { getAppComposeContent } from '@/app/actions/appstore';
@@ -22,6 +21,7 @@ import { toast } from 'sonner';
 import { CustomDeployDialog, type CustomDeployInitialData } from './custom-deploy-dialog';
 import type { App, InstallConfig } from './types';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
+import { clamp01 } from '@/lib/utils';
 
 interface AppInstallDialogProps {
   open: boolean;
@@ -46,7 +46,7 @@ export function AppInstallDialog({
   const activeProgress = installProgress.find((p) => p.appId === app.id);
   const progressValue =
     activeProgress && typeof activeProgress.progress === "number"
-      ? clamp(activeProgress.progress)
+      ? clamp01(activeProgress.progress)
       : null;
   const progressPercent =
     progressValue !== null ? Math.round(progressValue * 100) : null;
@@ -61,6 +61,16 @@ export function AppInstallDialog({
       setConfig(getDefaultInstallConfig(app));
     }
   }, [open, app]);
+
+  // Cleanup timer on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleInstall = async () => {
     setInstalling(true);
@@ -120,8 +130,7 @@ export function AppInstallDialog({
           message: result.error || "Install failed",
         });
       }
-    } catch (error: any) {
-      // Error handled by toast
+    } catch {
       toast.error('Failed to install application');
       pushInstallProgress({
         appId: app.id,
@@ -348,16 +357,16 @@ export function AppInstallDialog({
 
 export function getDefaultInstallConfig(app: App): InstallConfig {
   const defaultPorts =
-    app.container?.ports?.map((port: any) => ({
-      container: port.container || port.target?.toString() || '',
-      published: port.published || port.container || port.target?.toString() || '',
+    app.container?.ports?.map((port) => ({
+      container: port.container || '',
+      published: port.published || port.container || '',
       protocol: port.protocol || 'tcp',
     })) || [];
 
   // Move the web UI port (from x-casaos port_map) to the front
   if (app.port) {
     const webUIPortStr = app.port.toString();
-    const idx = defaultPorts.findIndex((p: any) => p.container === webUIPortStr);
+    const idx = defaultPorts.findIndex((p) => p.container === webUIPortStr);
     if (idx > 0) {
       const [webUIPort] = defaultPorts.splice(idx, 1);
       defaultPorts.unshift(webUIPort);
@@ -365,8 +374,8 @@ export function getDefaultInstallConfig(app: App): InstallConfig {
   }
 
   const defaultVolumes =
-    app.container?.volumes?.map((vol: any) => ({
-      container: vol.container || vol.target || '',
+    app.container?.volumes?.map((vol) => ({
+      container: vol.container || '',
       source: (vol.source || `/DATA/AppData/${app.id}`)
         .replace(/\$\{?AppID\}?/g, app.id)
         .replace(/\$\{?APP_ID\}?/g, app.id),
@@ -383,9 +392,4 @@ export function getDefaultInstallConfig(app: App): InstallConfig {
     volumes: defaultVolumes,
     environment: defaultEnv,
   };
-}
-
-function clamp(value: number) {
-  if (Number.isNaN(value)) return 0;
-  return Math.min(1, Math.max(0, value));
 }

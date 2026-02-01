@@ -3,25 +3,31 @@
 import type { FileSystemItem } from "@/app/actions/filesystem";
 import { trashItem } from "@/app/actions/filesystem";
 import {
-    FileClipboardProvider,
-    FilesContextMenu,
-    useFileClipboard,
+  FileClipboardProvider,
+  FilesContextMenu,
+  useFileClipboard,
 } from "@/components/file-manager/context-menu";
 import { FileCreationRow } from "@/components/file-manager/file-creation-row";
 import { FileEditorModal } from "@/components/file-manager/file-editor-modal";
 import { FileUploadZone } from "@/components/file-manager/file-upload-zone";
 import {
-    FileViewer,
-    getViewerType,
+  FileViewer,
+  getViewerType,
 } from "@/components/file-manager/file-viewer";
 import { FilesContent } from "@/components/file-manager/files-content";
 import { FilesSidebar } from "@/components/file-manager/files-sidebar";
 import { FilesToolbar } from "@/components/file-manager/files-toolbar";
-import { NetworkStorageDialog } from "@/components/file-manager/network-storage-dialog";
+import { NetworkStorageDialog } from "@/components/file-manager/network-storage";
 import { SmbShareDialog } from "@/components/file-manager/smb-share-dialog";
 import { useFilesDialog } from "@/components/file-manager/use-files-dialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+type InteractOutsideEvent = {
+  target: EventTarget | null;
+  detail?: { originalEvent?: Event };
+  preventDefault: () => void;
+};
 import { toast } from "sonner";
 
 interface FilesDialogProps {
@@ -95,6 +101,12 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
   );
   const [viewerItem, setViewerItem] = useState<FileSystemItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const portalAnchorRef = useCallback((node: HTMLDivElement | null) => {
+    setPortalContainer(node);
+  }, []);
   const selectedItem = contextMenu.item;
 
   const isDirty = editorContent !== editorOriginalContent;
@@ -160,8 +172,6 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
   // Handle rename with prompt
   const handleRename = useCallback(
     (item: FileSystemItem) => {
-      const newName = prompt(`Rename "${item.name}" to:`, item.name);
-      if (!newName || newName === item.name) return;
       renameItem(item);
     },
     [renameItem],
@@ -233,8 +243,16 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
         showCloseButton={false}
         className="max-w-[95vw] sm:max-w-[1400px] max-h-[90vh] bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl shadow-black/50 p-0 gap-0 overflow-hidden ring-1 ring-white/5"
         aria-describedby="files-description"
+        onInteractOutside={(event: InteractOutsideEvent) => {
+          const originalTarget = (event.detail?.originalEvent?.target ||
+            event.target) as Node | null;
+          const target = originalTarget ?? null;
+          if (target && contextMenuRef.current?.contains(target)) {
+            event.preventDefault();
+          }
+        }}
       >
-        <div className="flex h-[90vh]">
+        <div ref={portalAnchorRef} className="flex h-[90vh]">
           <FilesSidebar
             homePath={homePath}
             shortcuts={shortcuts}
@@ -321,24 +339,6 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
                 {showHidden && `(${content?.items.length} total)`}
               </div>
             </div>
-
-            <FilesContextMenu
-              contextMenu={contextMenu}
-              menuRef={contextMenuRef}
-              currentPath={currentPath}
-              clipboard={clipboard}
-              favorites={favorites}
-              onCut={cut}
-              onCopy={copy}
-              onClearClipboard={clearClipboard}
-              onRefresh={refresh}
-              onOpen={handleOpenItem}
-              onOpenInEditor={openFileInEditor}
-              onPreview={(item) => setViewerItem(item)}
-              onRename={handleRename}
-              onShareNetwork={handleShareNetwork}
-              onClose={closeContextMenu}
-            />
           </div>
         </div>
       </DialogContent>
@@ -375,6 +375,25 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
           onNavigate={setViewerItem}
         />
       )}
+
+      <FilesContextMenu
+        contextMenu={contextMenu}
+        menuRef={contextMenuRef}
+        portalContainer={portalContainer}
+        currentPath={currentPath}
+        clipboard={clipboard}
+        favorites={favorites}
+        onCut={cut}
+        onCopy={copy}
+        onClearClipboard={clearClipboard}
+        onRefresh={refresh}
+        onOpen={handleOpenItem}
+        onOpenInEditor={openFileInEditor}
+        onPreview={(item) => setViewerItem(item)}
+        onRename={handleRename}
+        onShareNetwork={handleShareNetwork}
+        onClose={closeContextMenu}
+      />
     </Dialog>
   );
 }

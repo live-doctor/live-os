@@ -191,16 +191,39 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
           {children}
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="bg-white/90 dark:bg-black/90 backdrop-blur-md border-white/20 dark:border-white/10"
+          className="min-w-[240px] rounded-2xl border border-white/10 bg-gradient-to-b from-[#0b0b0f]/95 via-[#0f111a]/95 to-[#0b0f1a]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-xl ring-1 ring-white/5 py-2"
           align="start"
         >
-          <DropdownMenuItem onClick={handleOpen} disabled={loading}>
+          <div className="px-3 pb-2 flex items-center gap-2">
+            <div
+              className="h-2 w-2 rounded-full"
+              style={{
+                backgroundColor:
+                  app.status === "running" ? "#34d399" : "#fbbf24",
+              }}
+            />
+            <div className="text-sm font-semibold truncate">{app.name}</div>
+            <span className="ml-auto text-[11px] px-2 py-[2px] rounded-full border border-white/15 bg-white/5 text-white/70 uppercase tracking-[0.12em]">
+              {app.status === "running" ? "Running" : "Stopped"}
+            </span>
+          </div>
+          <DropdownMenuSeparator className="bg-white/10" />
+
+          <DropdownMenuItem
+            onClick={handleOpen}
+            disabled={loading}
+            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+          >
             <ExternalLink className="mr-2 h-4 w-4" />
             Open
           </DropdownMenuItem>
 
           {app.status === "running" ? (
-            <DropdownMenuItem onClick={handleStop} disabled={loading}>
+            <DropdownMenuItem
+              onClick={handleStop}
+              disabled={loading}
+              className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+            >
               {loading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -209,7 +232,11 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
               Stop
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem onClick={handleStart} disabled={loading}>
+            <DropdownMenuItem
+              onClick={handleStart}
+              disabled={loading}
+              className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+            >
               {loading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -219,7 +246,11 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
             </DropdownMenuItem>
           )}
 
-          <DropdownMenuItem onClick={handleRestart} disabled={loading}>
+          <DropdownMenuItem
+            onClick={handleRestart}
+            disabled={loading}
+            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+          >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -231,6 +262,7 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
           <DropdownMenuItem
             onClick={() => setShowLogs(true)}
             disabled={loading}
+            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
           >
             <FileText className="mr-2 h-4 w-4" />
             View Logs
@@ -239,6 +271,7 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
           <DropdownMenuItem
             onClick={handleEditDeploy}
             disabled={loading || customLoading}
+            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
           >
             {customLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -248,12 +281,12 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
             Edit / Redeploy
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-white/10" />
 
           <DropdownMenuItem
             onClick={() => setShowUninstallConfirm(true)}
             disabled={loading}
-            className="text-red-600 dark:text-red-400"
+            className="text-red-400 focus:bg-red-500/10 hover:bg-red-500/10"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Uninstall

@@ -164,6 +164,7 @@ export function useContextMenuActions({
             const result = await addFavorite(item.path);
             if (result.success) {
               toast.success('Added to favorites');
+              onRefresh();
             } else {
               toast.error(result.error || 'Failed to add to favorites');
             }
@@ -177,6 +178,7 @@ export function useContextMenuActions({
             const result = await removeFavorite(item.path);
             if (result.success) {
               toast.success('Removed from favorites');
+              onRefresh();
             } else {
               toast.error(result.error || 'Failed to remove from favorites');
             }

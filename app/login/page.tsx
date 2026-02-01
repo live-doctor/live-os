@@ -37,7 +37,6 @@ export default function LoginPage() {
 
     try {
       const result = await login(username, pin);
-      console.log("Login result:", result);
       if (result.success) {
         // Use full page reload to ensure cookie is sent with next request
         window.location.href = "/";
