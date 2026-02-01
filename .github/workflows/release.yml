@@ -89,8 +89,10 @@ jobs:
             postcss.config.mjs \
             components.json \
             recommend-list.json \
-            install.sh \
-            update.sh
+            scripts/install.sh \
+            scripts/setup.sh \
+            scripts/uninstall.sh \
+            scripts/update.sh
 
           sha256sum "${TARBALL}" > "${TARBALL}.sha256"
 

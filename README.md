@@ -41,7 +41,7 @@ From the App Store dialog, you can import additional CasaOS-compatible stores by
 Install LiveOS with a single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash
 ```
 
 This downloads a **pre-built release** for your architecture (amd64 or arm64) - no compilation needed on your device.
@@ -51,7 +51,7 @@ This downloads a **pre-built release** for your architecture (amd64 or arm64) - 
 If you prefer to build on the device (or no release is available yet):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/install.sh | sudo bash -s -- --from-source
+curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --from-source
 ```
 
 This clones the repo, installs dependencies, compiles native modules, and builds the project locally. Requires git, Node.js 20, and build tools (gcc, make, python3).
@@ -60,16 +60,16 @@ This clones the repo, installs dependencies, compiles native modules, and builds
 
 ```bash
 # Dry run - preview what would happen
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/install.sh | sudo bash -s -- --dry-run
+curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --dry-run
 
 # Install a specific version
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/install.sh | sudo bash -s -- --version v1.0.7
+curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --version v1.0.7
 
 # Skip dependency installation
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/install.sh | sudo bash -s -- --no-dep
+curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --no-dep
 
 # Build from source using a specific branch
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/install.sh | sudo bash -s -- --from-source --branch develop
+curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --from-source --branch develop
 ```
 
 ### Custom port & domain
@@ -79,7 +79,7 @@ By default, LiveOS runs on port 80. To customize:
 ```bash
 export LIVEOS_HTTP_PORT=8080
 export LIVEOS_DOMAIN=home.local
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/install.sh | sudo -E bash
+curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo -E bash
 ```
 
 Or enter them when prompted during installation.
@@ -97,7 +97,7 @@ After installation, access LiveOS at:
 ## Updating
 
 ```bash
-cd /opt/live-os && sudo bash update.sh
+cd /opt/live-os && sudo bash scripts/update.sh
 ```
 
 This checks the latest GitHub release, downloads the new build, backs up your `.env`, database, and external apps, then restores everything after extraction.
@@ -105,13 +105,13 @@ This checks the latest GitHub release, downloads the new build, backs up your `.
 To update from source instead:
 
 ```bash
-cd /opt/live-os && sudo bash update.sh --from-source
+cd /opt/live-os && sudo bash scripts/update.sh --from-source
 ```
 
 ## Uninstalling
 
 ```bash
-cd /opt/live-os && sudo bash uninstall.sh
+cd /opt/live-os && sudo bash scripts/uninstall.sh
 ```
 
 This stops the service, removes the systemd unit, and deletes the installation directory. Optionally cleans up Docker resources and data.
