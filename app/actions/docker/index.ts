@@ -4,13 +4,16 @@
  * Structure:
  * - utils.ts: Validation, helpers, file operations
  * - db.ts: Database operations for installed apps
- * - install.ts: App installation logic
+ * - deploy.ts: Unified app deployment (install, custom deploy, redeploy)
  * - lifecycle.ts: Start, stop, restart, update, uninstall
  * - query.ts: Read-only operations (list apps, status, logs)
  */
 
-// Re-export all functions for backward compatibility
-export { installApp } from "./install";
+// Deployment (unified pipeline)
+export { deployApp, convertDockerRunToCompose } from "./deploy";
+export type { DeployOptions } from "./deploy";
+
+// Lifecycle
 export {
   startApp,
   stopApp,
@@ -20,6 +23,8 @@ export {
   listTrashedApps,
   emptyTrash,
 } from "./lifecycle";
+
+// Queries
 export {
   getInstalledApps,
   getAppById,

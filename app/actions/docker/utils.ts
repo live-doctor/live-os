@@ -101,10 +101,13 @@ export async function detectComposeContainerName(
 }
 
 /**
- * Resolve host port from container inspection
+ * Resolve host port from container inspection.
+ * When preferredContainerPort is given, return the host port mapped to that
+ * specific container port (e.g. "9000/tcp") instead of the first arbitrary one.
  */
 export async function resolveHostPort(
   containerName: string,
+  preferredContainerPort?: number | string | null,
 ): Promise<string | null> {
   try {
     const { stdout } = await execAsync(
@@ -116,6 +119,19 @@ export async function resolveHostPort(
       { HostIp: string; HostPort: string }[] | null
     >;
 
+    // If a preferred port is given, try to match it first
+    if (preferredContainerPort) {
+      const portStr = String(preferredContainerPort);
+      for (const [key, mappings] of Object.entries(ports)) {
+        if (!Array.isArray(mappings) || mappings.length === 0) continue;
+        // key format is "9000/tcp" or "9000/udp"
+        if (key.startsWith(`${portStr}/`)) {
+          return mappings[0].HostPort;
+        }
+      }
+    }
+
+    // Fallback: first available mapping
     const firstMapping = Object.values(ports).find(
       (mappings) => Array.isArray(mappings) && mappings.length > 0,
     );
@@ -309,34 +325,46 @@ export async function detectAllComposeContainerNames(
 }
 
 /**
- * Sanitize compose file by removing invalid services (e.g., app_proxy without image)
+ * Sanitize compose file by removing invalid services (e.g., app_proxy without image).
+ * Returns both the sanitized path (for docker to run) and the original path (for DB storage).
+ *
+ * The sanitized file is written as a dotfile in the same directory as the original
+ * so that Docker Compose derives the correct project name from the parent folder.
  */
 export async function sanitizeComposeFile(
   composePath: string,
-): Promise<string> {
+): Promise<{ sanitizedPath: string; originalPath: string }> {
   try {
     const raw = await fs.readFile(composePath, "utf-8");
     const doc = YAML.parse(raw);
+    let needsSanitization = false;
+
     if (doc?.services?.app_proxy) {
       const proxy = doc.services.app_proxy;
       if (!proxy.image && !proxy.build) {
         delete doc.services.app_proxy;
+        needsSanitization = true;
         console.log(
           "[Docker] sanitizeCompose: removed app_proxy service with no image/build",
         );
       }
     }
 
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "liveos-compose-"));
-    const tmpPath = path.join(tmpDir, path.basename(composePath));
-    await fs.writeFile(tmpPath, YAML.stringify(doc), "utf-8");
-    return tmpPath;
+    if (!needsSanitization) {
+      return { sanitizedPath: composePath, originalPath: composePath };
+    }
+
+    // Write in the same directory so Docker Compose uses the correct project name
+    const dir = path.dirname(composePath);
+    const sanitizedPath = path.join(dir, ".docker-compose.sanitized.yml");
+    await fs.writeFile(sanitizedPath, YAML.stringify(doc), "utf-8");
+    return { sanitizedPath, originalPath: composePath };
   } catch (error) {
     console.warn(
       "[Docker] sanitizeCompose: failed, using original compose file: ",
       (error as Error)?.message || error,
     );
-    return composePath;
+    return { sanitizedPath: composePath, originalPath: composePath };
   }
 }
 
@@ -444,4 +472,66 @@ export async function resolveContainerName(
   }
 
   return getContainerName(appId);
+}
+
+/** Files that are NOT data files — skip when pre-seeding */
+const STORE_META_FILES = new Set([
+  "docker-compose.yml",
+  "docker-compose.yaml",
+  ".docker-compose.sanitized.yml",
+  "umbrel-app.yml",
+  "appfile.json",
+  "icon.png",
+  "icon.svg",
+  "thumbnail.png",
+  "thumbnail.jpg",
+]);
+
+/**
+ * Pre-seed data files from a store app directory to APP_DATA_DIR.
+ *
+ * Umbrel apps often include files (entrypoint.sh, default-password, torrc.template, etc.)
+ * alongside the compose file. The compose references them via ${APP_DATA_DIR}/filename.
+ * If those files don't exist when Docker mounts them, Docker creates directories instead,
+ * which causes "is a directory" errors.
+ *
+ * This copies all non-metadata files from the store app dir to APP_DATA_DIR.
+ * Existing files are NOT overwritten (preserves user modifications on redeploy).
+ */
+export async function preSeedDataFiles(
+  storeAppDir: string,
+  appDataDir: string,
+): Promise<void> {
+  try {
+    const entries = await fs.readdir(storeAppDir, { withFileTypes: true });
+    const dataFiles = entries.filter(
+      (e) => e.isFile() && !STORE_META_FILES.has(e.name.toLowerCase()),
+    );
+
+    if (dataFiles.length === 0) return;
+
+    await fs.mkdir(appDataDir, { recursive: true });
+
+    for (const entry of dataFiles) {
+      const dest = path.join(appDataDir, entry.name);
+      try {
+        await fs.access(dest);
+        // File already exists — don't overwrite
+      } catch {
+        const src = path.join(storeAppDir, entry.name);
+        await fs.copyFile(src, dest);
+        // Preserve executable bit for scripts
+        if (entry.name.endsWith(".sh")) {
+          await fs.chmod(dest, 0o755);
+        }
+        console.log(`[Docker] preSeedDataFiles: Copied ${entry.name} → ${dest}`);
+      }
+    }
+  } catch (error) {
+    console.warn(
+      "[Docker] preSeedDataFiles: Failed to seed data files:",
+      (error as Error)?.message || error,
+    );
+    // Non-fatal — some apps don't need pre-seeded files
+  }
 }

@@ -317,6 +317,20 @@ enable_unattended_upgrades() {
   fi
 }
 
+install_tlp() {
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install tlp and enable service"; return; fi
+  if [ -x "$(command -v apt-get)" ]; then
+    apt-get update
+    apt-get install -y tlp
+    systemctl enable --now tlp 2>/dev/null || true
+  fi
+}
+
+disable_sleep_targets() {
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Mask sleep/suspend/hibernate targets"; return; fi
+  systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target 2>/dev/null || true
+}
+
 # ─── Run sequence ───────────────────────────────────────────────────────────
 
 if [ "$DRY_RUN" -eq 1 ]; then
@@ -339,6 +353,8 @@ ensure_docker_permissions
 install_avahi
 install_nmcli
 install_bluez
+install_tlp
+disable_sleep_targets
 
 # Optional hardening/monitoring (apt-based)
 apply_sysctl_tuning

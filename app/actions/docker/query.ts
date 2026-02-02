@@ -193,18 +193,21 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
       | "path-only"
       | "unresolved" = "unresolved";
 
-    // 1) Prefer published host port from Docker (works for bridge mode)
-    let hostPort: string | null = null;
-    for (const name of containerCandidates) {
-      hostPort = await resolveHostPort(name);
-      if (hostPort) break;
-    }
     // 2) Pull app metadata for fallback port/path
     const appMeta = await prisma.app.findFirst({
       where: { appId },
       orderBy: { createdAt: "desc" },
       select: { port: true, path: true },
     });
+
+    // 1) Prefer published host port from Docker (works for bridge mode)
+    //    Pass the known web UI port so we pick the right mapping
+    //    (e.g. Portainer exposes 8000, 9000, 9443 — we want 9000)
+    let hostPort: string | null = null;
+    for (const name of containerCandidates) {
+      hostPort = await resolveHostPort(name, appMeta?.port);
+      if (hostPort) break;
+    }
     const pathSuffix =
       appMeta?.path && appMeta.path.length > 0
         ? appMeta.path.startsWith("/")

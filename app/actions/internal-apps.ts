@@ -2,7 +2,7 @@
 
 import fs from "fs/promises";
 import path from "path";
-import { installApp } from "./docker";
+import { deployApp } from "./docker/deploy";
 import type { InstallConfig } from "@/components/app-store/types";
 import { logAction } from "./logger";
 
@@ -49,9 +49,13 @@ export async function installInternalApp(appId: string): Promise<{
       environment: [],
     };
 
-    const result = await installApp(appId, config, {
-      name: manifest.title || manifest.name || appId,
-      icon: manifest.icon,
+    const result = await deployApp({
+      appId,
+      config,
+      meta: {
+        name: manifest.title || manifest.name || appId,
+        icon: manifest.icon,
+      },
     });
 
     if (!result.success) {

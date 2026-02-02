@@ -12,6 +12,7 @@ import { VERSION } from "@/lib/config";
 import { X } from "lucide-react";
 import { useCallback } from "react";
 import { AdvancedSettingsDialog } from "./advanced-settings-dialog";
+import { BluetoothDialog } from "./bluetooth-dialog";
 import { BluetoothSection } from "./bluetooth-section";
 import { FirewallDialog } from "./firewall";
 import { NetworkDevicesDialog } from "./network-devices-dialog";
@@ -116,24 +117,35 @@ export function SettingsDialog({
                 powered={d.bluetoothDisplay?.powered}
                 blocked={d.bluetoothDisplay?.blocked}
                 adapter={d.bluetoothDisplay?.adapter}
-                devices={d.bluetoothDisplay?.devices ?? d.hardware?.bluetooth?.devices}
-                firstDevice={d.bluetoothDisplay?.firstName ?? d.hardware?.bluetooth?.firstName}
+                devices={
+                  d.bluetoothDisplay?.devices ?? d.hardware?.bluetooth?.devices
+                }
+                firstDevice={
+                  d.bluetoothDisplay?.firstName ??
+                  d.hardware?.bluetooth?.firstName
+                }
                 available={d.bluetoothDisplay?.available}
-                loading={d.bluetoothLoading}
                 error={d.bluetoothError ?? d.bluetoothDisplay?.error ?? null}
-                onToggle={d.handleToggleBluetooth}
-                onRefresh={d.refreshBluetooth}
+                onOpenDialog={() => d.setBluetoothDialogOpen(true)}
               />
               <NetworkDevicesSection
                 deviceCount={d.lanDevices.length}
-                loading={d.lanDevicesLoading}
-                error={d.lanDevicesError}
-                onRefresh={d.fetchLanDevices}
                 onOpenDialog={() => d.setNetworkDevicesOpen(true)}
               />
               <FirewallSection
                 onOpenDialog={() => d.handleFirewallDialogChange(true)}
                 enabled={d.firewallEnabled}
+              />
+              <StorageSection
+                onOpenDialog={() => d.setStorageDialogOpen(true)}
+              />
+              <LanguageSection />
+              <AdvancedSettingsSection
+                onOpenDialog={() => d.setAdvancedDialogOpen(true)}
+              />
+
+              <TroubleshootSection
+                onOpenDialog={() => d.setLogsDialogOpen(true)}
               />
               <UpdateSection
                 currentVersion={VERSION}
@@ -143,10 +155,6 @@ export function SettingsDialog({
                 onCheck={d.handleCheckUpdate}
                 checking={d.checkingUpdate}
               />
-              <TroubleshootSection onOpenDialog={() => d.setLogsDialogOpen(true)} />
-              <StorageSection onOpenDialog={() => d.setStorageDialogOpen(true)} />
-              <LanguageSection />
-              <AdvancedSettingsSection onOpenDialog={() => d.setAdvancedDialogOpen(true)} />
               {d.hardware && (
                 <SystemDetailsCard
                   hardware={d.hardware}
@@ -158,7 +166,10 @@ export function SettingsDialog({
         </ScrollArea>
 
         {d.wifiDialogOpen && (
-          <WifiDialog open={d.wifiDialogOpen} onOpenChange={d.setWifiDialogOpen} />
+          <WifiDialog
+            open={d.wifiDialogOpen}
+            onOpenChange={d.setWifiDialogOpen}
+          />
         )}
         {d.networkDevicesOpen && (
           <NetworkDevicesDialog
@@ -169,8 +180,22 @@ export function SettingsDialog({
             initialError={d.lanDevicesError}
           />
         )}
+        {d.bluetoothDialogOpen && (
+          <BluetoothDialog
+            open={d.bluetoothDialogOpen}
+            onOpenChange={d.setBluetoothDialogOpen}
+            status={d.bluetoothDisplay || undefined}
+            loading={d.bluetoothLoading}
+            error={d.bluetoothError}
+            onToggle={d.handleToggleBluetooth}
+            onRefresh={d.refreshBluetooth}
+          />
+        )}
         {d.logsDialogOpen && (
-          <LiveOsTailDialog open={d.logsDialogOpen} onOpenChange={d.setLogsDialogOpen} />
+          <LiveOsTailDialog
+            open={d.logsDialogOpen}
+            onOpenChange={d.setLogsDialogOpen}
+          />
         )}
         {d.firewallDialogOpen && (
           <FirewallDialog
@@ -186,8 +211,14 @@ export function SettingsDialog({
           cpuPower={d.systemStats?.cpu?.power}
           memory={d.systemStats?.memory}
         />
-        <AdvancedSettingsDialog open={d.advancedDialogOpen} onOpenChange={d.setAdvancedDialogOpen} />
-        <StorageDialog open={d.storageDialogOpen} onOpenChange={d.setStorageDialogOpen} />
+        <AdvancedSettingsDialog
+          open={d.advancedDialogOpen}
+          onOpenChange={d.setAdvancedDialogOpen}
+        />
+        <StorageDialog
+          open={d.storageDialogOpen}
+          onOpenChange={d.setStorageDialogOpen}
+        />
       </DialogContent>
     </Dialog>
   );

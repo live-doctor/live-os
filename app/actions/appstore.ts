@@ -593,13 +593,14 @@ export async function getAppComposeContent(
 
 /**
  * Fetch docker-compose content for an installed app by its appId.
- * Looks up the app in the store DB to resolve composePath and returns content + metadata.
+ * Looks up the app in the InstalledApp DB, with fallback to App table for composePath.
  */
 export async function getComposeForApp(appId: string): Promise<{
   success: boolean;
   content?: string;
   appTitle?: string;
   appIcon?: string;
+  source?: string;
   container?: {
     image: string;
     ports: { container: string; published: string }[];
@@ -613,7 +614,6 @@ export async function getComposeForApp(appId: string): Promise<{
       return { success: false, error: "Missing appId" };
     }
 
-    // Primary: look up from InstalledApp (single source of truth)
     const installed = await prisma.installedApp.findFirst({
       where: { appId },
       orderBy: { updatedAt: "desc" },
@@ -627,6 +627,8 @@ export async function getComposeForApp(appId: string): Promise<{
     const composePath = (config?.composePath as string) ?? undefined;
 
     let content: string | undefined;
+
+    // Try reading compose from InstalledApp.installConfig.composePath
     if (composePath) {
       const composeResult = await getAppComposeContent(composePath);
       if (composeResult.success && composeResult.content) {
@@ -634,6 +636,23 @@ export async function getComposeForApp(appId: string): Promise<{
       }
     }
 
+    // Fallback: if composePath was missing or pointed to deleted /tmp file,
+    // look up App.composePath from the store App table
+    if (!content) {
+      const appRecord = await prisma.app.findFirst({
+        where: { appId },
+        orderBy: { createdAt: "desc" },
+        select: { composePath: true },
+      });
+      if (appRecord?.composePath) {
+        const fallbackResult = await getAppComposeContent(appRecord.composePath);
+        if (fallbackResult.success && fallbackResult.content) {
+          content = fallbackResult.content;
+        }
+      }
+    }
+
+     
     const container = (installed.container as Record<string, unknown>) ?? undefined;
 
     if (!content && !container) {
@@ -648,6 +667,8 @@ export async function getComposeForApp(appId: string): Promise<{
       content,
       appTitle: installed.name || installed.appId,
       appIcon: installed.icon || undefined,
+      source: installed.source || undefined,
+       
       container: (container as any) || undefined,
     };
   } catch (error) {

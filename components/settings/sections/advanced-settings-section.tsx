@@ -1,5 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
+import {
+  SettingsSectionShell,
+  settingsActionButtonWideClass,
+} from "./section-shell";
 
 type AdvancedSettingsSectionProps = {
   onOpenDialog: () => void;
@@ -9,29 +13,21 @@ export function AdvancedSettingsSection({
   onOpenDialog,
 }: AdvancedSettingsSectionProps) {
   return (
-    <div className="bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/15 shadow-lg shadow-black/25 space-y-4">
-      <div className="flex items-center gap-3">
-        <span className="rounded-full border border-white/15 bg-white/10 p-2">
-          <Settings className="h-4 w-4 text-white" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-white -tracking-[0.01em]">
-            Advanced
-          </h4>
-          <p className="text-xs text-white/60">
-            Network tweaks and maintenance tools
-          </p>
-        </div>
+    <SettingsSectionShell
+      icon={<Settings className="h-4 w-4 text-white" />}
+      title="Advanced"
+      subtitle="Network tweaks and maintenance tools"
+      actions={
         <Button
           variant="ghost"
           size="sm"
-          className="border border-white/15 bg-white/10 hover:bg-white/20 text-white text-xs shadow-sm"
+          className={settingsActionButtonWideClass}
           onClick={onOpenDialog}
         >
           Open
         </Button>
-      </div>
-    </div>
+      }
+    />
   );
 }
 

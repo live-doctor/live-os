@@ -1,4 +1,9 @@
 import Image from "next/image";
+import { Image as ImageIcon } from "lucide-react";
+import {
+  SettingsSectionShell,
+  settingsCardClass,
+} from "./section-shell";
 import type { WallpaperOption } from "./types";
 
 type WallpaperSectionProps = {
@@ -17,15 +22,13 @@ export function WallpaperSection({
   onSelect,
 }: WallpaperSectionProps) {
   return (
-    <div className="bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/15 shadow-lg shadow-black/25">
-      <div className="mb-4">
-        <h4 className="text-lg font-semibold text-white mb-1">Wallpaper</h4>
-        <p className="text-sm text-white/60">
-          Your LiveOS wallpaper and theme{" "}
-          {saving && <span className="text-white/70 text-xs">Saving…</span>}
-        </p>
-      </div>
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide ">
+    <SettingsSectionShell
+      icon={<ImageIcon className="h-4 w-4 text-white" />}
+      title="Wallpaper"
+      subtitle={`Your LiveOS wallpaper and theme${saving ? " • Saving…" : ""}`}
+      className={settingsCardClass}
+    >
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {wallpapersLoading && (
           <div className="text-xs text-white/60 py-2">
             Loading wallpapers...
@@ -59,6 +62,6 @@ export function WallpaperSection({
           </button>
         ))}
       </div>
-    </div>
+    </SettingsSectionShell>
   );
 }

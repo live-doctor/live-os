@@ -36,6 +36,44 @@ export type LanDevicesResult = {
   error?: string;
 };
 
+export type WifiRadioState = {
+  enabled: boolean | null;
+  error?: string;
+};
+
+export async function getWifiRadioState(): Promise<WifiRadioState> {
+  try {
+    const { stdout } = await execFileAsync("nmcli", ["radio", "wifi"], {
+      timeout: EXEC_TIMEOUT,
+    });
+    const state = stdout.trim().toLowerCase();
+    if (state === "enabled" || state === "disabled") {
+      return { enabled: state === "enabled" };
+    }
+    return { enabled: null, error: `Unexpected state: ${state}` };
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    const message = err?.message || "Failed to read WiFi state";
+    await logAction("network:wifi:radio:error", { error: message }, "error");
+    return { enabled: null, error: message };
+  }
+}
+
+export async function setWifiRadio(enabled: boolean): Promise<WifiRadioState> {
+  try {
+    await execFileAsync("nmcli", ["radio", "wifi", enabled ? "on" : "off"], {
+      timeout: EXEC_TIMEOUT,
+    });
+    await logAction("network:wifi:radio:set", { enabled });
+    return { enabled };
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    const message = err?.message || "Failed to change WiFi state";
+    await logAction("network:wifi:radio:set:error", { error: message }, "error");
+    return { enabled: null, error: message };
+  }
+}
+
 // Decode avahi escaped characters (e.g. \032 for space)
 const decodeAvahiValue = (value: string): string =>
   value
@@ -120,7 +158,11 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     }
   } catch (error) {
     const msg = (error as Error)?.message || "Unknown error";
-    await logAction("network:wifi:list:systeminformation:error", { error: msg });
+    await logAction(
+      "network:wifi:list:systeminformation:error",
+      { error: msg },
+      "error",
+    );
     errors.push(`systeminformation: ${msg}`);
   }
 
@@ -177,9 +219,13 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     return { networks: dedupeNetworks(networks) };
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
-    await logAction("network:wifi:list:nmcli:error", {
-      error: err?.message || "unknown",
-    });
+    await logAction(
+      "network:wifi:list:nmcli:error",
+      {
+        error: err?.message || "unknown",
+      },
+      "error",
+    );
 
     if (err.code === "ENOENT") {
       errors.push("nmcli: command not found (NetworkManager not installed)");
@@ -196,6 +242,11 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
   }
 
   // Both methods failed
+  await logAction(
+    "network:wifi:list:failed",
+    { errors: errors.length ? errors : undefined },
+    "error",
+  );
   return {
     networks: [],
     error: `Failed to scan WiFi networks.\n${errors.join("\n")}`,
@@ -220,10 +271,14 @@ export async function connectToWifi(
     await logAction("network:wifi:connect:success", { ssid });
     return { success: true };
   } catch (error) {
-    await logAction("network:wifi:connect:error", {
-      ssid,
-      error: (error as Error)?.message || "failed",
-    });
+    await logAction(
+      "network:wifi:connect:error",
+      {
+        ssid,
+        error: (error as Error)?.message || "failed",
+      },
+      "error",
+    );
     return {
       success: false,
       error: (error as Error)?.message || "Failed to connect",

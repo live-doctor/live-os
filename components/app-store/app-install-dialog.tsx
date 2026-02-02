@@ -1,7 +1,7 @@
 'use client';
 
 import { getAppComposeContent } from '@/app/actions/appstore';
-import { getAppWebUI, installApp } from '@/app/actions/docker';
+import { getAppWebUI, deployApp } from '@/app/actions/docker';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -98,9 +98,11 @@ export function AppInstallDialog({
     }, 1200);
 
     try {
-      const result = await installApp(app.id, config, {
-        name: app.title || app.name,
-        icon: app.icon,
+      const result = await deployApp({
+        appId: app.id,
+        composePath: app.composePath,
+        config,
+        meta: { name: app.title || app.name, icon: app.icon },
       });
 
       if (result.success) {

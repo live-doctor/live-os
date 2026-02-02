@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { pollAndBroadcast } from "@/app/api/system/stream/route";
 import prisma from "@/lib/prisma";
 import { exec } from "child_process";
 import type { Server } from "http";
@@ -564,4 +565,19 @@ export async function triggerAppsUpdate(): Promise<void> {
     data: { installedApps },
     timestamp: Date.now(),
   });
+  // Also push fresh data to SSE clients so the frontend updates immediately.
+  // Retry once after a short delay if the SSE poller is busy.
+  if (!(await tryPollSSE())) {
+    await new Promise((r) => setTimeout(r, 300));
+    await tryPollSSE();
+  }
+}
+
+async function tryPollSSE(): Promise<boolean> {
+  try {
+    await pollAndBroadcast();
+    return true;
+  } catch {
+    return false;
+  }
 }

@@ -2,8 +2,8 @@
 
 import {
   convertDockerRunToCompose,
-  deployCustomCompose,
-} from "@/app/actions/custom-deploy";
+  deployApp,
+} from "@/app/actions/docker";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,10 @@ export interface CustomDeployInitialData {
   dockerCompose?: string;
   appIcon?: string;
   appTitle?: string;
+  /** Preserve store association on redeploy */
+  source?: string;
+  /** Preserve container metadata on redeploy */
+  containerMeta?: Record<string, unknown>;
 }
 
 interface CustomDeployDialogProps {
@@ -40,6 +44,7 @@ export function CustomDeployDialog({
   const [dockerCompose, setDockerCompose] = useState(
     initialData?.dockerCompose ?? "",
   );
+  const isEditMode = Boolean(initialData?.appName && initialData?.dockerCompose);
 
   useEffect(() => {
     if (!open) return;
@@ -82,7 +87,15 @@ export function CustomDeployDialog({
     setLoading(true);
 
     try {
-      const result = await deployCustomCompose(appName, dockerCompose);
+      const result = await deployApp({
+        appId: appName,
+        composeContent: dockerCompose,
+        source: initialData?.source ?? "custom",
+        containerMeta: initialData?.containerMeta,
+        meta: initialData?.appTitle
+          ? { name: initialData.appTitle, icon: initialData.appIcon }
+          : undefined,
+      });
 
       if (result.success) {
         toast.success(`Successfully deployed ${appName}`);
@@ -137,18 +150,20 @@ export function CustomDeployDialog({
                   background: "rgba(255, 255, 255, 0.05)",
                   border: "1px solid rgba(255, 255, 255, 0.15)",
                 }}
-                disabled={loading}
+                disabled={loading || isEditMode}
               />
               <p className="text-xs text-zinc-400">
                 This will be used as the container/app identifier
               </p>
             </div>
 
-            {/* Docker Run Converter */}
-            <DockerRunConverter
-              loading={loading}
-              onConverted={handleConvertDockerRun}
-            />
+            {/* Docker Run Converter — only for new deploys */}
+            {!isEditMode && (
+              <DockerRunConverter
+                loading={loading}
+                onConverted={handleConvertDockerRun}
+              />
+            )}
 
             {/* Docker Compose Editor */}
             <DockerComposeTab

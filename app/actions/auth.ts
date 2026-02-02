@@ -98,6 +98,83 @@ export async function registerUser(
   });
 }
 
+type UpdateCredentialsInput = {
+  newUsername?: string;
+  newPin?: string;
+  currentPin: string;
+};
+
+/**
+ * Update the current user's username and/or PIN
+ */
+export async function updateCredentials(
+  input: UpdateCredentialsInput,
+): Promise<AuthResult> {
+  return withActionLogging("auth:updateCredentials", async () => {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const { newUsername, newPin } = input;
+    const normalizedPin = input.currentPin.replace(/\D/g, "").slice(0, PIN_LENGTH);
+
+    if (normalizedPin.length !== PIN_LENGTH) {
+      return { success: false, error: "Current PIN is required" };
+    }
+
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+    if (!dbUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    const validPin = await bcrypt.compare(normalizedPin, dbUser.pin);
+    if (!validPin) {
+      return { success: false, error: "Current PIN is incorrect" };
+    }
+
+    const data: { username?: string; pin?: string } = {};
+
+    if (newUsername) {
+      const username = newUsername.trim();
+      if (username.length < 3) {
+        return { success: false, error: "Username must be at least 3 characters" };
+      }
+      const existing = await prisma.user.findUnique({ where: { username } });
+      if (existing && existing.id !== user.id) {
+        return { success: false, error: "Username already taken" };
+      }
+      data.username = username;
+    }
+
+    if (newPin !== undefined) {
+      const normalizedNewPin = newPin.replace(/\D/g, "").slice(0, PIN_LENGTH);
+      if (!PIN_REGEX.test(normalizedNewPin)) {
+        return { success: false, error: `New PIN must be exactly ${PIN_LENGTH} digits` };
+      }
+      const samePin = await bcrypt.compare(normalizedNewPin, dbUser.pin);
+      if (samePin) {
+        return { success: false, error: "New PIN must be different from current PIN" };
+      }
+      data.pin = await bcrypt.hash(normalizedNewPin, 10);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return { success: false, error: "No changes provided" };
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data,
+    });
+
+    return {
+      success: true,
+      user: { id: updated.id, username: updated.username, role: updated.role as Role },
+    };
+  });
+}
+
 /**
  * Login with username and PIN
  */

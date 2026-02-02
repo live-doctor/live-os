@@ -1,6 +1,13 @@
 "use client";
 
-import { connectToWifi, listWifiNetworks, type WifiNetwork } from "@/app/actions/network";
+import {
+  connectToWifi,
+  listWifiNetworks,
+  setWifiRadio,
+  getWifiRadioState,
+  type WifiNetwork,
+  type WifiRadioState,
+} from "@/app/actions/network";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
@@ -22,6 +29,8 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
   const [password, setPassword] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [radio, setRadio] = useState<WifiRadioState>({ enabled: null });
+  const [toggling, setToggling] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -29,6 +38,15 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
     setWarning(null);
     setConnectError(null);
     try {
+      const radioState = await getWifiRadioState();
+      setRadio(radioState);
+
+      if (radioState.enabled === false) {
+        setNetworks([]);
+        setLoading(false);
+        return;
+      }
+
       const result = await listWifiNetworks();
       setNetworks(result.networks);
       const connected = result.networks.find((n) => n.connected);
@@ -46,6 +64,20 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
       setLoading(false);
     }
   }, []);
+
+  const handleToggleRadio = useCallback(async () => {
+    if (radio.enabled === null) return;
+    setToggling(true);
+    const next = !(radio.enabled ?? false);
+    const result = await setWifiRadio(next);
+    setRadio(result);
+    setToggling(false);
+    if (result.enabled) {
+      refresh();
+    } else {
+      setNetworks([]);
+    }
+  }, [radio.enabled, refresh]);
 
   useEffect(() => {
     if (open) refresh();
@@ -83,7 +115,13 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl bg-zinc-950/90 backdrop-blur-2xl border border-white/10 p-0 overflow-hidden">
-        <WifiDialogHeader loading={loading} onRefresh={refresh} />
+        <WifiDialogHeader
+          loading={loading}
+          onRefresh={refresh}
+          radioEnabled={radio.enabled}
+          toggling={toggling}
+          onToggleRadio={handleToggleRadio}
+        />
 
         <ScrollArea className="max-h-[420px] px-6 pb-4">
           <div className="space-y-3">

@@ -6,6 +6,7 @@ import {
   type InstallProgressPayload,
 } from "@/app/api/system/stream/route";
 import { triggerAppsUpdate } from "@/lib/system-status/websocket-server";
+import prisma from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
 import { logAction } from "../logger";
@@ -28,6 +29,40 @@ import {
 const TRASH_ROOT = "/DATA/AppTrash";
 
 /**
+ * Resolve compose file for an app, checking DB first then filesystem.
+ */
+async function resolveComposeForLifecycle(
+  appId: string,
+): Promise<{ appDir: string; composePath: string } | null> {
+  // Check DB first (InstalledApp.installConfig.composePath)
+  const installed = await prisma.installedApp.findFirst({
+    where: { appId },
+    orderBy: { updatedAt: "desc" },
+    select: { installConfig: true },
+  });
+
+  const config = installed?.installConfig as Record<string, unknown> | null;
+  const dbComposePath = config?.composePath as string | undefined;
+
+  if (dbComposePath) {
+    const fullPath = path.isAbsolute(dbComposePath)
+      ? dbComposePath
+      : path.join(process.cwd(), dbComposePath);
+    try {
+      await fs.access(fullPath);
+      return { appDir: path.dirname(fullPath), composePath: fullPath };
+    } catch {
+      console.warn(
+        `[Docker] resolveComposeForLifecycle: DB composePath not found on disk: ${fullPath}`,
+      );
+    }
+  }
+
+  // Fallback to filesystem search
+  return findComposeForApp(appId);
+}
+
+/**
  * Run a compose lifecycle command (start/stop/restart) if a compose file exists.
  * Falls back to plain docker command for legacy containers.
  */
@@ -35,14 +70,14 @@ async function composeLifecycle(
   appId: string,
   action: "start" | "stop" | "restart",
 ): Promise<boolean> {
-  const resolved = await findComposeForApp(appId);
+  const resolved = await resolveComposeForLifecycle(appId);
   if (resolved) {
-    const sanitized = await sanitizeComposeFile(resolved.composePath);
+    const { sanitizedPath } = await sanitizeComposeFile(resolved.composePath);
     console.log(
-      `[Docker] ${action}App: Using compose for "${appId}" at ${sanitized}`,
+      `[Docker] ${action}App: Using compose for "${appId}" at ${sanitizedPath}`,
     );
     await execAsync(
-      `cd "${resolved.appDir}" && docker compose -f "${sanitized}" ${action}`,
+      `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" ${action}`,
     );
     return true;
   }
@@ -182,7 +217,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
 
   emitProgress(0.05, "Starting update", "starting");
 
-  const resolved = await findComposeForApp(containerName);
+  const resolved = await resolveComposeForLifecycle(containerName);
   if (!resolved) {
     console.warn(`[Docker] updateApp: compose not found for ${containerName}`);
     emitProgress(1, "Compose file not found", "error");
@@ -195,7 +230,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
   );
 
   try {
-    const sanitized = await sanitizeComposeFile(resolved.composePath);
+    const { sanitizedPath } = await sanitizeComposeFile(resolved.composePath);
     const envVars: NodeJS.ProcessEnv = {
       ...process.env,
       CONTAINER_NAME: containerName,
@@ -203,13 +238,13 @@ export async function updateApp(containerName: string): Promise<boolean> {
 
     emitProgress(0.2, "Pulling latest images");
     await execAsync(
-      `cd "${resolved.appDir}" && docker compose -f "${sanitized}" pull`,
+      `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" pull`,
       { env: envVars },
     );
 
     emitProgress(0.6, "Recreating containers");
     await execAsync(
-      `cd "${resolved.appDir}" && docker compose -f "${sanitized}" up -d`,
+      `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" up -d`,
       { env: envVars },
     );
 
@@ -224,7 +259,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
       if (backupPath) {
         emitProgress(0.9, "Rolling back to previous version");
         await restoreComposeFile(backupPath, resolved.composePath);
-        const rollbackSanitized = await sanitizeComposeFile(
+        const { sanitizedPath: rollbackSanitized } = await sanitizeComposeFile(
           resolved.composePath,
         );
         await execAsync(
@@ -259,11 +294,15 @@ export async function updateApp(containerName: string): Promise<boolean> {
         ...process.env,
         CONTAINER_NAME: containerName,
       };
-      const rollbackSanitized = await sanitizeComposeFile(
-        resolved.composePath,
-      ).catch(() => resolved.composePath);
+      let rollbackPath = resolved.composePath;
+      try {
+        const { sanitizedPath } = await sanitizeComposeFile(resolved.composePath);
+        rollbackPath = sanitizedPath;
+      } catch {
+        // Use original
+      }
       await execAsync(
-        `cd "${resolved.appDir}" && docker compose -f "${rollbackSanitized}" up -d`,
+        `cd "${resolved.appDir}" && docker compose -f "${rollbackPath}" up -d`,
         { env: envVars },
       ).catch(() => null);
     }
@@ -295,17 +334,17 @@ export async function uninstallApp(appId: string): Promise<boolean> {
     ) as string[];
 
     // Try docker compose down (covers multiple service names)
-    const resolved = await findComposeForApp(appId);
+    const resolved = await resolveComposeForLifecycle(appId);
     if (resolved) {
       try {
-        const sanitizedCompose = await sanitizeComposeFile(
+        const { sanitizedPath } = await sanitizeComposeFile(
           resolved.composePath,
         );
         console.log(
-          `[Docker] uninstallApp: docker compose down for "${appId}" at ${sanitizedCompose}`,
+          `[Docker] uninstallApp: docker compose down for "${appId}" at ${sanitizedPath}`,
         );
         await execAsync(
-          `cd "${resolved.appDir}" && docker compose -f "${sanitizedCompose}" down -v --remove-orphans`,
+          `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" down -v --remove-orphans`,
         );
       } catch (composeErr) {
         console.warn(

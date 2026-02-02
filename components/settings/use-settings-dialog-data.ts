@@ -9,7 +9,6 @@ import { getSystemInfo, getUptime } from "@/app/actions/system";
 import { type UpdateStatus, checkForUpdates } from "@/app/actions/update";
 import { useRebootTracker } from "@/hooks/useRebootTracker";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
-import { VERSION } from "@/lib/config";
 import { formatBytes, formatUptime } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -61,6 +60,7 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
   const [networkDevicesOpen, setNetworkDevicesOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [advancedDialogOpen, setAdvancedDialogOpen] = useState(false);
+  const [bluetoothDialogOpen, setBluetoothDialogOpen] = useState(false);
 
   // Fetch helpers
   const fetchSystemInfo = useCallback(async () => {
@@ -276,6 +276,8 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     bluetoothLoading,
     bluetoothError,
     // Dialog states
+    bluetoothDialogOpen,
+    setBluetoothDialogOpen,
     wifiDialogOpen,
     setWifiDialogOpen,
     firewallDialogOpen,
