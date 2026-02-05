@@ -321,6 +321,15 @@ fi
 
 cd "$INSTALL_DIR"
 
+# Run setup to ensure system deps are present (BlueZ, arp-scan, etc.)
+SETUP_SCRIPT="$INSTALL_DIR/scripts/setup.sh"
+if [ -x "$SETUP_SCRIPT" ]; then
+    print_status "Running setup.sh to ensure dependencies are present..."
+    bash "$SETUP_SCRIPT"
+else
+    print_info "setup.sh not found; skipping dependency refresh"
+fi
+
 # Get current local package version
 if [ -f package.json ]; then
     LOCAL_VERSION=$(get_version_from_file "package.json")

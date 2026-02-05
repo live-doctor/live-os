@@ -159,10 +159,11 @@ export async function setBluetoothPower(
       await runCommand("rfkill", ["block", "bluetooth"]).catch(() => undefined);
     }
   } catch (error) {
-    commandError = (error as Error)?.message || "Failed to set Bluetooth power";
+    const errMsg = (error as Error)?.message || "Failed to set Bluetooth power";
+    commandError = errMsg;
     await logBt(
       actionName("power:error"),
-      { target: enabled, adapter, error: commandError },
+      { target: enabled, adapter, error: errMsg, hint: "check bluetoothd status / rfkill / permissions" },
       "error",
     );
 
@@ -188,6 +189,7 @@ export async function setBluetoothPower(
       success,
       blocked: status.blocked,
       available: status.available,
+      error: success ? undefined : commandError ?? status.error,
     },
     success ? "info" : "warn",
   );

@@ -1,7 +1,7 @@
 "use server";
 
-import si from "systeminformation";
 import { execFileAsync } from "@/lib/exec";
+import si from "systeminformation";
 import { logAction } from "../maintenance/logger";
 const EXEC_TIMEOUT = 8000;
 const RESOLVE_TIMEOUT = 2000;
@@ -118,7 +118,9 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
   await logNet("network:wifi:list:start");
   const errors: string[] = [];
   const connectedSsids = new Set<string>();
-  await logNet("network:wifi:list:debug", { message: "Scanning for networks..." });
+  await logNet("network:wifi:list:debug", {
+    message: "Scanning for networks...",
+  });
 
   // Try to detect the currently connected SSID
   try {
@@ -242,7 +244,9 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     } else if (err.message?.includes("not running")) {
       errors.push("nmcli: NetworkManager is not running");
     } else if (err.message?.toLowerCase?.().includes("scanning not allowed")) {
-      errors.push("nmcli: Scanning not allowed (device unavailable or unmanaged)");
+      errors.push(
+        "nmcli: Scanning not allowed (device unavailable or unmanaged)",
+      );
     } else {
       errors.push(`nmcli: ${err.message || "Unknown error"}`);
     }
@@ -288,6 +292,7 @@ export async function connectToWifi(
       {
         ssid,
         error: (error as Error)?.message || "failed",
+        output: (error as Error & { stdout?: string })?.stdout || undefined,
       },
       "error",
     );
@@ -316,7 +321,7 @@ export async function listLanDevices(): Promise<LanDevicesResult> {
     const source =
       partial.source === "avahi" || current?.source === "avahi"
         ? "avahi"
-        : partial.source ?? current?.source ?? "arp";
+        : (partial.source ?? current?.source ?? "arp");
     devices.set(ip, {
       ip,
       mac: partial.mac ?? current?.mac,
@@ -346,7 +351,11 @@ export async function listLanDevices(): Promise<LanDevicesResult> {
           );
           const ip = parts[7];
           const displayName = host || name;
-          if (ip) upsertDevice(ip, { name: displayName || undefined, source: "avahi" });
+          if (ip)
+            upsertDevice(ip, {
+              name: displayName || undefined,
+              source: "avahi",
+            });
         }
       });
   } catch (error) {
@@ -451,9 +460,7 @@ export async function listLanDevices(): Promise<LanDevicesResult> {
         { timeout: RESOLVE_TIMEOUT },
       );
       // Format: 192.168.1.10\tMy-Device.local
-      const host = stdout
-        .split(/\s+/)[1]
-        ?.replace(/\.local\.?$/, "");
+      const host = stdout.split(/\s+/)[1]?.replace(/\.local\.?$/, "");
       const cleanHost = host ? decodeAvahiValue(host) : "";
       if (cleanHost) {
         upsertDevice(device.ip, { name: cleanHost });

@@ -369,6 +369,32 @@ disable_sleep_targets() {
   systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target 2>/dev/null || true
 }
 
+install_arp_scan() {
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install arp-scan (or net-tools fallback)"; return; fi
+
+  if command -v arp-scan >/dev/null 2>&1; then
+    print_status "arp-scan already installed"
+    return;
+  fi
+
+  if [ -x "$(command -v apt-get)" ]; then
+    apt-get update && apt-get install -y arp-scan || apt-get install -y net-tools
+  elif [ -x "$(command -v dnf)" ]; then
+    dnf install -y arp-scan || dnf install -y net-tools
+  elif [ -x "$(command -v yum)" ]; then
+    yum install -y arp-scan || yum install -y net-tools
+  else
+    print_error "Unsupported package manager for arp-scan/net-tools"
+    return
+  fi
+
+  if command -v arp-scan >/dev/null 2>&1 || command -v arp >/dev/null 2>&1; then
+    print_status "ARP scanning tools installed"
+  else
+    print_error "Failed to install arp-scan/net-tools; LAN discovery may be limited"
+  fi
+}
+
 # ─── Run sequence ───────────────────────────────────────────────────────────
 
 if [ "$DRY_RUN" -eq 1 ]; then
@@ -392,6 +418,7 @@ install_avahi
 install_nmcli
 ensure_nm_manages_wifi
 install_bluez
+install_arp_scan
 install_tlp
 disable_sleep_targets
 
