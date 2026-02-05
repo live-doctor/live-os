@@ -15,7 +15,6 @@ import { logAction } from "../maintenance/logger";
 import { getAppMeta, recordInstalledApp } from "./db";
 import { checkDependencies } from "./dependencies";
 import {
-  buildCasaOSEnvVars,
   buildDefaultEnvVars,
   buildUmbrelEnvVars,
   detectStoreType,
@@ -145,7 +144,7 @@ export async function deployApp(
     emitProgress(0.15, "Configuring deployment");
 
     // Build environment variables based on store type
-    // Different stores (CasaOS, Umbrel, custom) expect different env vars
+    // Umbrel and custom stores may expect different env vars
     const envVars = await buildEnvVars(appId, storeType, config);
 
     // Resolve container name
@@ -416,9 +415,9 @@ async function tearDownExisting(appDir: string, appId: string): Promise<void> {
 /**
  * Build environment variables based on store type.
  *
- * Different app stores (CasaOS, Umbrel, custom) expect different
- * environment variables. This function dispatches to the appropriate
- * builder based on the detected store type.
+ * Umbrel and custom stores may expect different environment variables.
+ * This function dispatches to the appropriate builder based on the
+ * detected store type.
  */
 async function buildEnvVars(
   appId: string,
@@ -429,14 +428,6 @@ async function buildEnvVars(
     case "umbrel":
       console.log(`[Docker] buildEnvVars: Using Umbrel env builder for "${appId}"`);
       return buildUmbrelEnvVars(appId, config);
-
-    case "casaos":
-      console.log(`[Docker] buildEnvVars: Using CasaOS env builder for "${appId}"`);
-      // Extract preferred web UI port from config or container metadata
-      const preferredPort = config?.webUIPort
-        ? parseInt(config.webUIPort, 10)
-        : undefined;
-      return buildCasaOSEnvVars(appId, config, preferredPort);
 
     case "custom":
     default:

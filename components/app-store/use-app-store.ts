@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  getAppStoreApps,
-  getCasaOsRecommendList,
-} from "@/app/actions/appstore";
+import { getAppStoreApps } from "@/app/actions/appstore";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { App } from "./types";
@@ -23,7 +20,6 @@ export function useAppStore(open: boolean) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("discover");
-  const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [customDeployOpen, setCustomDeployOpen] = useState(false);
   const [communityStoreOpen, setCommunityStoreOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -42,12 +38,8 @@ export function useAppStore(open: boolean) {
     try {
       setLoading(true);
       setError(null);
-      const [loadedApps, recommended] = await Promise.all([
-        getAppStoreApps(),
-        getCasaOsRecommendList(),
-      ]);
+      const loadedApps = await getAppStoreApps();
       setApps(loadedApps);
-      setRecommendedIds(recommended);
     } catch {
       setError("Unable to load applications. Please try again.");
     } finally {
@@ -87,12 +79,8 @@ export function useAppStore(open: boolean) {
     });
   }, [apps, searchQuery, selectedCategory]);
 
-  const discoverApps = useMemo(() => {
-    if (recommendedIds.length === 0) return apps;
-    const byId = new Map(apps.map((app) => [app.id.toLowerCase(), app]));
-    const ordered = recommendedIds.map((id) => byId.get(id)).filter(Boolean) as App[];
-    return ordered.length > 0 ? ordered : apps;
-  }, [apps, recommendedIds]);
+  // For discover view, prioritize apps with screenshots
+  const discoverApps = useMemo(() => apps, [apps]);
 
   const featuredApps = useMemo(() => {
     const withScreenshots = discoverApps.filter(

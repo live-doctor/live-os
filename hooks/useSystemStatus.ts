@@ -16,6 +16,7 @@ let sharedState: SharedState = {
   networkStats: null,
   runningApps: [],
   installedApps: [],
+  otherContainers: [],
   installProgress: [],
   connected: false,
   error: null,
@@ -138,6 +139,7 @@ function connectEventSource(wantFast: boolean) {
 
         if (data.type === "metrics") {
           const nextInstalled = data.installedApps ?? sharedState.installedApps;
+          const nextOtherContainers = data.otherContainers ?? sharedState.otherContainers;
           const rawRunning = data.runningApps ?? sharedState.runningApps;
           const runningWithIcons = rawRunning.map((app) => {
             const appIdNorm = normalizeId(app.id);
@@ -170,6 +172,7 @@ function connectEventSource(wantFast: boolean) {
             storageStats: data.storageInfo ?? sharedState.storageStats,
             networkStats: data.networkStats ?? sharedState.networkStats,
             installedApps: nextInstalled,
+            otherContainers: nextOtherContainers,
             runningApps: runningWithIcons,
             error: null,
           });
@@ -259,6 +262,7 @@ export function useSystemStatus(
     networkStats: state.networkStats,
     runningApps: state.runningApps,
     installedApps: state.installedApps,
+    otherContainers: state.otherContainers,
     installProgress: state.installProgress,
     connected: state.connected,
     error: state.error,

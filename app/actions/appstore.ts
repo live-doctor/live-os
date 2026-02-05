@@ -12,12 +12,6 @@ import path from "path";
 import YAML from "yaml";
 import { logAction, withActionLogging } from "./maintenance/logger";
 import {
-  CASAOS_OFFICIAL_ZIP,
-  getCasaCommunityStores,
-  isLikelyCasaStore,
-  parseCasaOSStore,
-} from "./store/casa-store";
-import {
   getUmbrelCommunityStores,
   isLikelyUmbrelStore,
   parseUmbrelStore,
@@ -26,10 +20,8 @@ import {
 import { listFiles, resolveAsset } from "./store/utils";
 
 const STORE_ROOT = path.join(process.cwd(), "external-apps");
-const CASAOS_RECOMMEND_LIST_URL =
-  "https://raw.githubusercontent.com/doctor-io/homeio/refs/heads/main/recommend-list.json";
 
-type StoreFormat = "casaos" | "umbrel";
+type StoreFormat = "umbrel";
 
 /**
  * List all imported app stores (directory names).
@@ -117,34 +109,8 @@ export async function getAppStoreApps(): Promise<App[]> {
   });
 }
 
-export async function getCasaOsRecommendList(): Promise<string[]> {
-  return withActionLogging("appstore:casaos:recommendations", async () => {
-    try {
-      const response = await fetch(CASAOS_RECOMMEND_LIST_URL, {
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        return [];
-      }
-
-      const parsed = (await response.json()) as Array<
-        { appid?: string } | string
-      >;
-      const ids = parsed
-        .map((item) => (typeof item === "string" ? item : item?.appid))
-        .filter(Boolean)
-        .map((id) => String(id).toLowerCase());
-
-      return Array.from(new Set(ids));
-    } catch (error) {
-      console.warn("[appstore] Failed to read CasaOS recommend list:", error);
-      return [];
-    }
-  });
-}
-
 /**
- * Download and extract a CasaOS- or Umbrel-compatible app store ZIP into external-apps/<slug>
+ * Download and extract an Umbrel-compatible app store ZIP into external-apps/<slug>
  * and persist store/app metadata to the database.
  */
 export async function importAppStore(
@@ -224,11 +190,9 @@ export async function importAppStore(
         resolvedStoreName;
     }
 
-    const storeFormat = await detectStoreFormat(targetDir);
-    const parsedApps =
-      storeFormat === "casaos"
-        ? await parseCasaOSStore(targetDir, storeSlug)
-        : await parseUmbrelStore(targetDir, storeSlug);
+    const storeFormat: StoreFormat = "umbrel";
+    const parsedApps = await parseUmbrelStore(targetDir, storeSlug);
+
     if (parsedApps.length === 0) {
       throw new Error("No applications found in the downloaded store archive.");
     }
@@ -338,46 +302,6 @@ export async function importAppStore(
 }
 
 /**
- * Best-effort bootstrap of the official CasaOS store.
- */
-export async function ensureDefaultCasaStoreInstalled(): Promise<{
-  success: boolean;
-  skipped?: boolean;
-  error?: string;
-}> {
-  const slug = slugify(CASAOS_OFFICIAL_ZIP);
-  const targetDir = path.join(STORE_ROOT, slug);
-
-  try {
-    await fs.mkdir(STORE_ROOT, { recursive: true });
-    const dirExists = await fs
-      .stat(targetDir)
-      .then(() => true)
-      .catch(() => false);
-    const storeExists = await prisma.store.findFirst({ where: { slug } });
-
-    if (dirExists && storeExists) {
-      return { success: true, skipped: true };
-    }
-
-    await logAction("appstore:bootstrap:casaos:start");
-    const result = await importAppStore(CASAOS_OFFICIAL_ZIP, {
-      name: "CasaOS App Store",
-      description: "Official CasaOS application catalog",
-    });
-
-    return result.success
-      ? { success: true, skipped: false }
-      : { success: false, error: result.error };
-  } catch (error: any) {
-    await logAction("appstore:bootstrap:casaos:error", {
-      error: error?.message || "unknown",
-    });
-    return { success: false, error: error?.message || "Unknown error" };
-  }
-}
-
-/**
  * Best-effort bootstrap of the official Umbrel store.
  */
 export async function ensureDefaultUmbrelStoreInstalled(): Promise<{
@@ -418,20 +342,15 @@ export async function ensureDefaultUmbrelStoreInstalled(): Promise<{
 }
 
 /**
- * Bootstrap both default stores (CasaOS and Umbrel).
+ * Bootstrap default store (Umbrel).
  */
 export async function ensureDefaultStoresInstalled(): Promise<void> {
-  await Promise.all([
-    ensureDefaultCasaStoreInstalled().catch((error) =>
-      console.error("[AppStore] Failed to bootstrap CasaOS store:", error),
-    ),
-    ensureDefaultUmbrelStoreInstalled().catch((error) =>
-      console.error("[AppStore] Failed to bootstrap Umbrel store:", error),
-    ),
-  ]);
+  await ensureDefaultUmbrelStoreInstalled().catch((error) =>
+    console.error("[AppStore] Failed to bootstrap Umbrel store:", error),
+  );
 }
 
-export { getCasaCommunityStores, getUmbrelCommunityStores };
+export { getUmbrelCommunityStores };
 
 async function extractZipBuffer(
   buffer: Buffer,
@@ -485,13 +404,6 @@ async function findZipExtractor(): Promise<
   }
 
   return null;
-}
-
-async function detectStoreFormat(storeDir: string): Promise<StoreFormat> {
-  const files = await listFiles(storeDir);
-  if (isLikelyUmbrelStore(files)) return "umbrel";
-  if (isLikelyCasaStore(files)) return "casaos";
-  return "casaos";
 }
 
 function slugify(value: string): string {
@@ -793,50 +705,28 @@ export async function getAppMedia(appId: string): Promise<{
     let screenshots = baseScreens;
     let thumbnail: string | undefined;
 
-    if ((!screenshots.length || !thumbnail) && app.composePath) {
-      const compose = await getAppComposeContent(app.composePath);
-      if (compose.success && compose.content) {
-        try {
-          const doc = YAML.parse(compose.content) as {
-            ["x-casaos"]?: Record<string, unknown>;
-            x_casaos?: Record<string, unknown>;
-          };
-          const xCasa = (doc["x-casaos"] || doc.x_casaos || {}) as Record<
-            string,
-            unknown
-          >;
-          const rawScreens =
-            (xCasa.screenshot_link as unknown) ??
-            xCasa.screenshot ??
-            xCasa.screenshots ??
-            xCasa.gallery ??
-            [];
-          const list = Array.isArray(rawScreens)
-            ? rawScreens
-            : [rawScreens].filter(Boolean);
-          const appDir = path.dirname(
-            path.isAbsolute(app.composePath)
-              ? app.composePath
-              : path.join(process.cwd(), app.composePath),
-          );
-          screenshots = list
-            .map((item) =>
-              typeof item === "string"
-                ? resolveAsset(item, storeSlug, appDir)
-                : undefined,
-            )
-            .filter(Boolean) as string[];
+    // Try to get gallery from umbrel-app.yml if screenshots not in DB
+    if (!screenshots.length && app.composePath) {
+      const appDir = path.dirname(
+        path.isAbsolute(app.composePath)
+          ? app.composePath
+          : path.join(process.cwd(), app.composePath),
+      );
+      const umbrelManifestPath = path.join(appDir, "umbrel-app.yml");
 
-          const thumbRaw = xCasa.thumbnail as string | undefined;
-          if (thumbRaw) {
-            thumbnail = resolveAsset(thumbRaw, storeSlug, appDir);
-          }
-        } catch (parseError) {
-          console.warn(
-            "[appstore] Failed to parse compose for media:",
-            parseError,
-          );
+      try {
+        const manifestContent = await fs.readFile(umbrelManifestPath, "utf-8");
+        const manifest = YAML.parse(manifestContent) as {
+          gallery?: string[];
+        };
+
+        if (Array.isArray(manifest.gallery) && manifest.gallery.length > 0) {
+          screenshots = manifest.gallery
+            .map((item) => resolveAsset(item, storeSlug, appDir))
+            .filter(Boolean) as string[];
         }
+      } catch {
+        // umbrel-app.yml not found or parse error, use empty screenshots
       }
     }
 

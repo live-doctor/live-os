@@ -1,35 +1,33 @@
- 
-
 /**
- * Port configuration with optional description from CasaOS x-casaos
+ * Port configuration with optional description
  */
 export interface PortConfig {
   container: string;
   published: string;
   protocol: string;
-  description?: string; // From x-casaos.ports[].description
+  description?: string;
 }
 
 /**
- * Volume configuration with optional description from CasaOS x-casaos
+ * Volume configuration with optional description
  */
 export interface VolumeConfig {
   container: string;
   source: string;
-  description?: string; // From x-casaos.volumes[].description
+  description?: string;
 }
 
 /**
- * Environment variable with optional description from CasaOS x-casaos
+ * Environment variable with optional description
  */
 export interface EnvConfig {
   key: string;
   value: string;
-  description?: string; // From x-casaos.envs[].description
+  description?: string;
 }
 
 /**
- * Pre-installation tips from CasaOS x-casaos.tips
+ * Pre-installation tips
  */
 export interface AppTips {
   beforeInstall?: string; // Markdown content to show before install
@@ -61,7 +59,7 @@ export interface App {
   storeName?: string; // Human-friendly store name
   storeSlug?: string; // Store slug identifier
 
-  // CasaOS-specific fields
+  // Additional app metadata
   architectures?: string[]; // Supported architectures (amd64, arm64, arm)
   tips?: AppTips; // Pre-installation tips
   thumbnail?: string; // Featured display image URL

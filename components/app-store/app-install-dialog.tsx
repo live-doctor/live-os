@@ -367,7 +367,7 @@ export function getDefaultInstallConfig(app: App): InstallConfig {
       protocol: port.protocol || 'tcp',
     })) || [];
 
-  // Move the web UI port (from x-casaos port_map) to the front
+  // Move the web UI port to the front for better UX
   if (app.port) {
     const webUIPortStr = app.port.toString();
     const idx = defaultPorts.findIndex((p) => p.container === webUIPortStr);

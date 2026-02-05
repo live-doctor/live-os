@@ -1,6 +1,5 @@
 "use client";
 import {
-  getCasaCommunityStores,
   getImportedStoreDetails,
   getUmbrelCommunityStores,
   importAppStore,
@@ -13,11 +12,13 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clipboard, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+
 interface CommunityStoreDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImported?: () => void;
 }
+
 export function CommunityStoreDialog({
   open,
   onOpenChange,
@@ -32,7 +33,6 @@ export function CommunityStoreDialog({
   const [stores, setStores] = useState<CommunityStore[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [customUrl, setCustomUrl] = useState("");
   const [importingUrl, setImportingUrl] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
@@ -45,16 +45,13 @@ export function CommunityStoreDialog({
       try {
         setLoading(true);
         setError(null);
-        const [casaStores, umbrelStores, imported] = await Promise.all([
-          getCasaCommunityStores(),
+        const [umbrelStores, imported] = await Promise.all([
           getUmbrelCommunityStores(),
           getImportedStoreDetails(),
         ]);
-        // Combine both store types
-        setStores([...casaStores, ...umbrelStores]);
+        setStores(umbrelStores);
         setImportedStores(normalizeImported(imported));
-      } catch (err) {
-        // Error handled by toast
+      } catch {
         setError("Unable to load community stores right now.");
       } finally {
         setLoading(false);
@@ -62,17 +59,17 @@ export function CommunityStoreDialog({
     };
     loadStores();
   }, [open]);
+
   const handleCopy = async (url: string) => {
     if (typeof navigator === "undefined") return;
     try {
       await navigator.clipboard.writeText(url);
-      setCopiedUrl(url);
-      setTimeout(() => setCopiedUrl(null), 1800);
-    } catch (err) {
-      // Error handled by toast
+      setTimeout(() => {}, 1800);
+    } catch {
       setError("Copy failed. Please copy manually.");
     }
   };
+
   const handleImport = async (
     url: string,
     meta?: { name?: string; description?: string }
@@ -95,6 +92,7 @@ export function CommunityStoreDialog({
     setImportedStores(normalizeImported(imported));
     onImported?.();
   };
+
   const handleRemoveStore = async (slug: string) => {
     setRemovingStore(slug);
     try {
@@ -102,8 +100,7 @@ export function CommunityStoreDialog({
       const imported = await getImportedStoreDetails();
       setImportedStores(normalizeImported(imported));
       onImported?.();
-    } catch (err) {
-      // Error handled by toast
+    } catch {
       setError("Failed to remove store");
     } finally {
       setRemovingStore(null);
@@ -116,8 +113,7 @@ export function CommunityStoreDialog({
         <DialogHeader>
           <DialogTitle>Import Community App Store</DialogTitle>
           <DialogDescription className="text-zinc-300">
-            Browse CasaOS community app stores or add a custom store URL.
-            Stores use CasaOS docker-compose files with x-casaos metadata.
+            Browse Umbrel community app stores or add a custom store URL.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -210,12 +206,4 @@ export function CommunityStoreDialog({
       </DialogContent>
     </Dialog>
   );
-}
-
-function formatHost(url: string): string {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url;
-  }
 }

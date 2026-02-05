@@ -43,6 +43,17 @@ export interface InstalledApp {
   storeId?: string;
 }
 
+/**
+ * Unmanaged Docker container (not installed through Homeio)
+ */
+export interface OtherContainer {
+  id: string;
+  name: string;
+  image: string;
+  status: "running" | "stopped" | "error";
+  webUIPort?: number;
+}
+
 export interface InstallProgress {
   appId: string;
   name: string;
@@ -58,6 +69,7 @@ export interface UseSystemStatusReturn {
   networkStats: NetworkStats | null;
   runningApps: AppUsage[];
   installedApps: InstalledApp[];
+  otherContainers: OtherContainer[];
   installProgress: InstallProgress[];
   connected: boolean;
   error: string | null;
@@ -70,6 +82,7 @@ export interface MetricsMessage {
   storageInfo?: StorageStats;
   networkStats?: NetworkStats;
   installedApps?: InstalledApp[];
+  otherContainers?: OtherContainer[];
   runningApps?: AppUsage[];
 }
 
@@ -89,6 +102,7 @@ export type SharedState = {
   networkStats: NetworkStats | null;
   runningApps: AppUsage[];
   installedApps: InstalledApp[];
+  otherContainers: OtherContainer[];
   installProgress: InstallProgress[];
   connected: boolean;
   error: string | null;

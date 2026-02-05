@@ -4,7 +4,7 @@
 
 import prisma from "@/lib/prisma";
 
-export type StoreType = "casaos" | "umbrel" | "custom";
+export type StoreType = "umbrel" | "custom";
 
 /**
  * Detect store type from store ID.
@@ -24,7 +24,6 @@ export async function detectStoreType(storeId?: string, composePath?: string): P
       if (store?.format) {
         const format = store.format.toLowerCase();
         if (format === "umbrel") return "umbrel";
-        if (format === "casaos") return "casaos";
       }
     } catch {
       // Database lookup failed, fall back to heuristics
@@ -38,10 +37,9 @@ export async function detectStoreType(storeId?: string, composePath?: string): P
     return "umbrel";
   }
 
-  // If we have a storeId but couldn't find it in DB,
-  // it's likely a store app, default to casaos (most common)
+  // If we have a storeId, assume it's an Umbrel store app
   if (storeId) {
-    return "casaos";
+    return "umbrel";
   }
 
   return "custom";

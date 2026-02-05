@@ -3,6 +3,13 @@
 import { execFileAsync } from "@/lib/exec";
 import { logAction } from "../maintenance/logger";
 const EXEC_TIMEOUT_MS = 6000;
+const currentUser = () =>
+  process.env.SUDO_USER || process.env.LOGNAME || process.env.USER || "unknown";
+const logBt = (
+  event: string,
+  meta: Record<string, unknown> = {},
+  level: "info" | "warn" | "error" = "info",
+) => logAction(event, { user: currentUser(), ...meta }, level);
 
 export type BluetoothStatus = {
   available: boolean;
@@ -138,7 +145,7 @@ export async function setBluetoothPower(
     return { success: false, status: unavailableStatus, error: unavailableStatus.error ?? undefined };
   }
 
-  await logAction(actionName("power:set"), { target: enabled, adapter });
+  await logBt(actionName("power:set"), { target: enabled, adapter });
 
   let commandError: string | undefined;
 
@@ -153,7 +160,7 @@ export async function setBluetoothPower(
     }
   } catch (error) {
     commandError = (error as Error)?.message || "Failed to set Bluetooth power";
-    await logAction(
+    await logBt(
       actionName("power:error"),
       { target: enabled, adapter, error: commandError },
       "error",
@@ -173,7 +180,7 @@ export async function setBluetoothPower(
   const status = await getBluetoothStatus();
   const success = status.powered === enabled;
 
-  await logAction(
+  await logBt(
     actionName("power:result"),
     {
       target: enabled,

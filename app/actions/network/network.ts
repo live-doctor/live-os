@@ -7,6 +7,13 @@ const EXEC_TIMEOUT = 8000;
 const RESOLVE_TIMEOUT = 2000;
 const MAX_REVERSE_LOOKUPS = 16;
 const MAX_HOSTNAME_LOOKUPS = 12;
+const currentUser = () =>
+  process.env.SUDO_USER || process.env.LOGNAME || process.env.USER || "unknown";
+const logNet = (
+  event: string,
+  meta: Record<string, unknown> = {},
+  level: "info" | "warn" | "error" = "info",
+) => logAction(event, { user: currentUser(), ...meta }, level);
 
 export type WifiNetwork = {
   ssid: string;
@@ -51,7 +58,7 @@ export async function getWifiRadioState(): Promise<WifiRadioState> {
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     const message = err?.message || "Failed to read WiFi state";
-    await logAction("network:wifi:radio:error", { error: message }, "error");
+    await logNet("network:wifi:radio:error", { error: message }, "error");
     return { enabled: null, error: message };
   }
 }
@@ -61,12 +68,12 @@ export async function setWifiRadio(enabled: boolean): Promise<WifiRadioState> {
     await execFileAsync("nmcli", ["radio", "wifi", enabled ? "on" : "off"], {
       timeout: EXEC_TIMEOUT,
     });
-    await logAction("network:wifi:radio:set", { enabled });
+    await logNet("network:wifi:radio:set", { enabled });
     return { enabled };
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     const message = err?.message || "Failed to change WiFi state";
-    await logAction("network:wifi:radio:set:error", { error: message }, "error");
+    await logNet("network:wifi:radio:set:error", { error: message }, "error");
     return { enabled: null, error: message };
   }
 }
@@ -108,10 +115,10 @@ function sanitizeSsid(value: string): string {
 }
 
 export async function listWifiNetworks(): Promise<WifiListResult> {
-  await logAction("network:wifi:list:start");
+  await logNet("network:wifi:list:start");
   const errors: string[] = [];
   const connectedSsids = new Set<string>();
-  await logAction("network:wifi:list:debug", { message: "Scanning for networks..." });
+  await logNet("network:wifi:list:debug", { message: "Scanning for networks..." });
 
   // Try to detect the currently connected SSID
   try {
@@ -135,7 +142,7 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       timeoutPromise,
     ]);
     if (Array.isArray(wifiNetworks) && wifiNetworks.length > 0) {
-      await logAction("network:wifi:list:systeminformation", {
+      await logNet("network:wifi:list:systeminformation", {
         count: wifiNetworks.length,
       });
       return {
@@ -155,7 +162,7 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     }
   } catch (error) {
     const msg = (error as Error)?.message || "Unknown error";
-    await logAction(
+    await logNet(
       "network:wifi:list:systeminformation:error",
       { error: msg },
       "error",
@@ -216,10 +223,11 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     return { networks: dedupeNetworks(networks) };
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
-    await logAction(
+    await logNet(
       "network:wifi:list:nmcli:error",
       {
         error: err?.message || "unknown",
+        code: err?.code,
       },
       "error",
     );
@@ -233,15 +241,22 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       };
     } else if (err.message?.includes("not running")) {
       errors.push("nmcli: NetworkManager is not running");
+    } else if (err.message?.toLowerCase?.().includes("scanning not allowed")) {
+      errors.push("nmcli: Scanning not allowed (device unavailable or unmanaged)");
     } else {
       errors.push(`nmcli: ${err.message || "Unknown error"}`);
     }
   }
 
   // Both methods failed
-  await logAction(
+  await logNet(
     "network:wifi:list:failed",
-    { errors: errors.length ? errors : undefined },
+    {
+      errors: errors.length ? errors : undefined,
+      warning: errors.length
+        ? "Scanning failed; see errors array"
+        : "Unknown WiFi scan failure",
+    },
     "error",
   );
   return {
@@ -265,10 +280,10 @@ export async function connectToWifi(
 
   try {
     await execFileAsync("nmcli", args, { timeout: EXEC_TIMEOUT });
-    await logAction("network:wifi:connect:success", { ssid });
+    await logNet("network:wifi:connect:success", { ssid });
     return { success: true };
   } catch (error) {
-    await logAction(
+    await logNet(
       "network:wifi:connect:error",
       {
         ssid,
@@ -288,7 +303,7 @@ export async function connectToWifi(
  * Returns a deduped list of devices with best-effort names and IPs.
  */
 export async function listLanDevices(): Promise<LanDevicesResult> {
-  await logAction("network:lan:list:start");
+  await logNet("network:lan:list:start");
   const devices = new Map<string, LanDevice>(); // key by IP
   const errors: string[] = [];
   let avahiResolved = false;
@@ -452,7 +467,7 @@ export async function listLanDevices(): Promise<LanDevicesResult> {
     a.ip.localeCompare(b.ip),
   );
 
-  await logAction("network:lan:list:done", {
+  await logNet("network:lan:list:done", {
     count: result.length,
     errors: errors.length ? errors : undefined,
   });

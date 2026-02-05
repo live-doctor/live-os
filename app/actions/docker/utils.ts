@@ -211,8 +211,26 @@ export async function findComposeForApp(
 }
 
 /**
+ * Known helper/infrastructure service names that shouldn't appear as standalone apps.
+ * These are secondary services in multi-service composes.
+ */
+const HELPER_SERVICE_PATTERNS = [
+  /^docker$/i,       // Docker-in-Docker
+  /^dind$/i,         // DinD
+  /^tor$/i,          // Tor (Umbrel)
+  /^proxy$/i,        // Proxy services
+  /^redis$/i,        // Redis cache
+  /^db$/i,           // Generic database
+  /^postgres$/i,     // PostgreSQL
+  /^mysql$/i,        // MySQL
+  /^mariadb$/i,      // MariaDB
+  /^mongodb$/i,      // MongoDB
+];
+
+/**
  * List all containers with their compose project labels.
  * Returns raw container info for grouping.
+ * Filters out known helper/infrastructure services.
  */
 export async function listContainersWithLabels(): Promise<
   {
@@ -243,7 +261,16 @@ export async function listContainersWithLabels(): Promise<
           composeService: composeService || "",
         };
       })
-      .filter((c) => c.name);
+      .filter((c) => {
+        if (!c.name) return false;
+        // Skip helper services that have a compose project (they're part of a multi-service app)
+        if (c.composeProject && c.composeService) {
+          if (HELPER_SERVICE_PATTERNS.some((p) => p.test(c.composeService))) {
+            return false;
+          }
+        }
+        return true;
+      });
   } catch (error) {
     console.error("[Docker] listContainersWithLabels error:", error);
     return [];
@@ -342,13 +369,14 @@ const UMBREL_INTERNAL_SERVICES = [
  * - Umbrel's app_proxy service (internal proxy with no image)
  * - Services without image or build instructions
  * - Umbrel-specific infrastructure services
+ * - Adds port mappings when removing app_proxy (extracts APP_PORT)
  *
  * The sanitized file is written as a dotfile in the same directory as the original
  * so that Docker Compose derives the correct project name from the parent folder.
  */
 export async function sanitizeComposeFile(
   composePath: string,
-  storeType?: "casaos" | "umbrel" | "custom",
+  storeType?: "umbrel" | "custom",
 ): Promise<{ sanitizedPath: string; originalPath: string }> {
   try {
     const raw = await fs.readFile(composePath, "utf-8");
@@ -360,9 +388,40 @@ export async function sanitizeComposeFile(
       return { sanitizedPath: composePath, originalPath: composePath };
     }
 
+    // Extract port info from app_proxy before removing it
+    let appProxyPort: string | undefined;
+    let appProxyHost: string | undefined;
+    const appProxy = doc.services["app_proxy"] as {
+      environment?: Record<string, string> | string[];
+    } | undefined;
+
+    if (appProxy?.environment) {
+      const env = appProxy.environment;
+      if (Array.isArray(env)) {
+        // Format: ["APP_PORT=9000", "APP_HOST=service_name"]
+        for (const item of env) {
+          if (typeof item === "string") {
+            if (item.startsWith("APP_PORT=")) {
+              appProxyPort = item.split("=")[1];
+            } else if (item.startsWith("APP_HOST=")) {
+              appProxyHost = item.split("=")[1];
+            }
+          }
+        }
+      } else if (typeof env === "object") {
+        // Format: { APP_PORT: "9000", APP_HOST: "service_name" }
+        appProxyPort = env.APP_PORT;
+        appProxyHost = env.APP_HOST;
+      }
+    }
+
+    if (appProxyPort) {
+      console.log(`[Docker] sanitizeCompose: extracted APP_PORT=${appProxyPort} from app_proxy`);
+    }
+
     // Check each service for validity
     for (const [serviceName, service] of Object.entries(doc.services)) {
-      const svc = service as { image?: string; build?: unknown };
+      const svc = service as { image?: string; build?: unknown; ports?: unknown[] };
       let shouldRemove = false;
 
       // Remove services without image or build
@@ -381,6 +440,44 @@ export async function sanitizeComposeFile(
         delete doc.services[serviceName];
         removedServices.push(serviceName);
         needsSanitization = true;
+      }
+    }
+
+    // If we extracted a port from app_proxy, add it to the target service
+    if (appProxyPort && removedServices.includes("app_proxy")) {
+      // Find the target service - either by APP_HOST reference or the main service
+      const serviceNames = Object.keys(doc.services);
+      let targetService: string | undefined;
+
+      if (appProxyHost) {
+        // APP_HOST format is usually "projectname_servicename_1" or just "servicename"
+        // Try to match by service name
+        for (const svcName of serviceNames) {
+          if (appProxyHost.includes(svcName) || svcName === appProxyHost) {
+            targetService = svcName;
+            break;
+          }
+        }
+      }
+
+      // Fallback: use the first remaining service (usually the main app)
+      if (!targetService && serviceNames.length > 0) {
+        // Prefer a service that's not 'docker' or 'dind' (helper services)
+        targetService = serviceNames.find(
+          (n) => !["docker", "dind"].includes(n.toLowerCase())
+        ) || serviceNames[0];
+      }
+
+      if (targetService) {
+        const svc = doc.services[targetService] as { ports?: unknown[] };
+        // Only add port if not already defined
+        if (!svc.ports || svc.ports.length === 0) {
+          svc.ports = [`${appProxyPort}:${appProxyPort}`];
+          needsSanitization = true;
+          console.log(
+            `[Docker] sanitizeCompose: added port ${appProxyPort} to service "${targetService}"`,
+          );
+        }
       }
     }
 
@@ -415,7 +512,7 @@ export async function sanitizeComposeFile(
 }
 
 /**
- * Get system defaults for CasaOS reserved variables
+ * Get system defaults for common Docker environment variables
  */
 export function getSystemDefaults(): {
   PUID: string;
@@ -433,7 +530,7 @@ export function getSystemDefaults(): {
 }
 
 /**
- * Get host architecture for filtering CasaOS apps
+ * Get host architecture for Docker image selection
  */
 export function getHostArchitecture(): string {
   const arch = os.arch();
@@ -451,7 +548,7 @@ export function getHostArchitecture(): string {
 
 /**
  * Read container name from compose file
- * CasaOS compose files often have container_name set explicitly
+ * Some compose files have container_name set explicitly
  */
 export async function getContainerNameFromCompose(
   composePath: string,
@@ -462,15 +559,12 @@ export async function getContainerNameFromCompose(
     const doc = YAML.parse(raw) as {
       name?: string;
       services?: Record<string, { container_name?: string }>;
-      "x-casaos"?: { main?: string };
     };
 
     if (!doc?.services) return null;
 
-    // Determine main service (from x-casaos.main or first service)
-    const xCasa = doc["x-casaos"];
-    const serviceName =
-      mainService || xCasa?.main || Object.keys(doc.services)[0];
+    // Determine main service (from parameter or first service)
+    const serviceName = mainService || Object.keys(doc.services)[0];
 
     if (!serviceName) return null;
 

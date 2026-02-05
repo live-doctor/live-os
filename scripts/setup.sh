@@ -263,6 +263,44 @@ install_nmcli() {
   }
 }
 
+ensure_nm_manages_wifi() {
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Configure NetworkManager to manage WiFi devices"; return; fi
+  command -v nmcli >/dev/null 2>&1 || { print_info "Skipping NM WiFi management (nmcli not installed)"; return; }
+
+  local conf="/etc/NetworkManager/NetworkManager.conf"
+  if [ -f "$conf" ]; then
+    # Force managed=true under [ifupdown]
+    if grep -q "^[[:space:]]*managed=" "$conf"; then
+      sed -i 's/^[[:space:]]*managed=.*/managed=true/' "$conf"
+    elif grep -q "^[[:space:]]*\\[ifupdown\\]" "$conf"; then
+      sed -i '/^\[ifupdown\]/a managed=true' "$conf"
+    else
+      cat <<'EOF' >> "$conf"
+[ifupdown]
+managed=true
+EOF
+    fi
+  else
+    cat <<'EOF' > "$conf"
+[ifupdown]
+managed=true
+EOF
+  fi
+
+  # Clear any unmanaged-devices entries that might block WiFi
+  sed -i '/^unmanaged-devices=/d' "$conf" 2>/dev/null || true
+
+  # Mark existing WiFi devices as managed
+  local wifi_devices
+  wifi_devices=$(nmcli -t -f DEVICE,TYPE device 2>/dev/null | awk -F: '$2=="wifi"{print $1}')
+  for dev in $wifi_devices; do
+    nmcli device set "$dev" managed yes 2>/dev/null || true
+  done
+
+  command -v systemctl >/dev/null 2>&1 && systemctl restart NetworkManager 2>/dev/null || true
+  print_status "NetworkManager configured to manage WiFi interfaces"
+}
+
 install_bluez() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install Bluetooth stack (bluez + rfkill)"; return; fi
   command -v bluetoothctl >/dev/null 2>&1 && { print_status "Bluetooth tools already present"; return; }
@@ -352,6 +390,7 @@ install_docker
 ensure_docker_permissions
 install_avahi
 install_nmcli
+ensure_nm_manages_wifi
 install_bluez
 install_tlp
 disable_sleep_targets

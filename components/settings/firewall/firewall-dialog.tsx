@@ -79,15 +79,39 @@ export function FirewallDialog({ open, onOpenChange }: FirewallDialogProps) {
   }, [open]);
 
   const handleToggleFirewall = async () => {
+    const wasEnabled = data.status.enabled;
+    const newEnabled = !wasEnabled;
     setActionLoading(true);
-    const action = data.status.enabled ? disableFirewall : enableFirewall;
+
+    const action = wasEnabled ? disableFirewall : enableFirewall;
     const result = await action();
 
     if (result.success) {
-      toast.success(
-        data.status.enabled ? "Firewall disabled" : "Firewall enabled",
-      );
-      await fetchStatus();
+      // Update UI with new state - trust the action succeeded
+      setData((prev) => ({
+        ...prev,
+        status: { ...prev.status, enabled: newEnabled },
+        // Clear rules when disabling (they won't be accessible anyway)
+        rules: newEnabled ? prev.rules : [],
+      }));
+      toast.success(wasEnabled ? "Firewall disabled" : "Firewall enabled");
+
+      // If enabling, fetch rules after a delay
+      if (newEnabled) {
+        await new Promise((r) => setTimeout(r, 800));
+        const freshResult = await getFirewallStatus();
+        if (!freshResult.error) {
+          setData((prev) => ({
+            ...prev,
+            rules: freshResult.rules,
+            status: {
+              ...prev.status,
+              defaultIncoming: freshResult.status.defaultIncoming,
+              defaultOutgoing: freshResult.status.defaultOutgoing,
+            },
+          }));
+        }
+      }
     } else {
       toast.error(result.error || "Failed to toggle firewall");
     }

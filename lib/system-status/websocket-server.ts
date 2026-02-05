@@ -51,6 +51,14 @@ export interface InstalledApp {
   storeId?: string;
 }
 
+export interface OtherContainer {
+  id: string;
+  name: string;
+  image: string;
+  status: "running" | "stopped" | "error";
+  webUIPort?: number;
+}
+
 export interface SystemUpdateMessage {
   type: "system-update";
   data: {
@@ -68,6 +76,7 @@ export interface AppsUpdateMessage {
   type: "apps-update";
   data: {
     installedApps: InstalledApp[];
+    otherContainers: OtherContainer[];
   };
   timestamp: number;
 }
@@ -352,10 +361,15 @@ async function collectRunningAppUsage(): Promise<AppUsage[]> {
   }
 }
 
+interface CollectedApps {
+  installedApps: InstalledApp[];
+  otherContainers: OtherContainer[];
+}
+
 /**
- * Collect installed Docker containers
+ * Collect installed Docker containers and unmanaged containers
  */
-async function collectInstalledApps(): Promise<InstalledApp[]> {
+async function collectInstalledApps(): Promise<CollectedApps> {
   try {
     const [knownApps, storeApps] = await Promise.all([
       prisma.installedApp.findMany(),
@@ -366,16 +380,23 @@ async function collectInstalledApps(): Promise<InstalledApp[]> {
     );
     const storeMetaById = new Map(storeApps.map((app) => [app.appId, app]));
 
+    // Get set of managed container names for quick lookup
+    const managedContainerNames = new Set(knownApps.map((app) => app.containerName));
+
     const { stdout } = await execAsync(
       'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Labels}}"',
     );
 
-    if (!stdout.trim()) return [];
+    if (!stdout.trim()) return { installedApps: [], otherContainers: [] };
 
     const lines = stdout.trim().split("\n");
-    const apps = await Promise.all(
+
+    const installedApps: InstalledApp[] = [];
+    const otherContainers: OtherContainer[] = [];
+
+    await Promise.all(
       lines.map(async (line) => {
-        const [containerName, status, , labelsRaw] = line.split("\t");
+        const [containerName, status, image, labelsRaw] = line.split("\t");
 
         const labels: Record<string, string> = {};
         if (labelsRaw) {
@@ -385,8 +406,26 @@ async function collectInstalledApps(): Promise<InstalledApp[]> {
           });
         }
 
+        // Skip helper containers entirely
         if (labels["homeio.helper"] === "true") {
-          return null;
+          return;
+        }
+
+        // Skip known helper/infrastructure containers from multi-service composes
+        const lowerName = containerName.toLowerCase();
+        const helperPatterns = [
+          /-docker-\d+$/,      // Docker-in-Docker services (e.g., portainer-docker-1)
+          /-dind-\d+$/,        // DinD services
+          /-tor-\d+$/,         // Tor services (Umbrel)
+          /-proxy-\d+$/,       // Proxy services
+          /-redis-\d+$/,       // Redis helper services
+          /-db-\d+$/,          // Database helper services
+          /-postgres-\d+$/,    // Postgres helper services
+          /-mysql-\d+$/,       // MySQL helper services
+          /-mariadb-\d+$/,     // MariaDB helper services
+        ];
+        if (helperPatterns.some((pattern) => pattern.test(lowerName))) {
+          return;
         }
 
         let appStatus: "running" | "stopped" | "error" = "error";
@@ -396,36 +435,53 @@ async function collectInstalledApps(): Promise<InstalledApp[]> {
           appStatus = "stopped";
         }
 
-        const meta = metaByContainer.get(containerName);
-        const appId =
-          labels["homeio.appId"] ||
-          meta?.appId ||
-          getAppIdFromContainerName(containerName);
-        const storeMeta = appId ? storeMetaById.get(appId) : undefined;
         const hostPort = await resolveHostPort(containerName);
+        const webUIPort = hostPort ? parseInt(hostPort, 10) : undefined;
 
-        return {
-          id: containerName,
-          appId,
-          name:
-            meta?.name ||
-            storeMeta?.title ||
-            storeMeta?.name ||
-            containerName
+        // Check if this is a managed app (in DB)
+        if (managedContainerNames.has(containerName)) {
+          const meta = metaByContainer.get(containerName);
+          const appId =
+            labels["homeio.appId"] ||
+            meta?.appId ||
+            getAppIdFromContainerName(containerName);
+          const storeMeta = appId ? storeMetaById.get(appId) : undefined;
+
+          installedApps.push({
+            id: containerName,
+            appId,
+            name:
+              meta?.name ||
+              storeMeta?.title ||
+              storeMeta?.name ||
+              containerName
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase()),
+            icon: meta?.icon || storeMeta?.icon || DEFAULT_APP_ICON,
+            status: appStatus,
+            containerName,
+            installedAt: meta?.createdAt?.getTime?.() || Date.now(),
+            webUIPort,
+            storeId: (meta as any)?.storeId || undefined,
+          });
+        } else {
+          // Unmanaged container (started via SSH, docker run, etc.)
+          otherContainers.push({
+            id: containerName,
+            name: containerName
               .replace(/-/g, " ")
               .replace(/\b\w/g, (c) => c.toUpperCase()),
-          icon: meta?.icon || storeMeta?.icon || DEFAULT_APP_ICON,
-          status: appStatus,
-          containerName,
-          installedAt: meta?.createdAt?.getTime?.() || Date.now(),
-          webUIPort: hostPort ? parseInt(hostPort, 10) : undefined,
-          storeId: (meta as any)?.storeId || undefined,
-        };
+            image: image || "unknown",
+            status: appStatus,
+            webUIPort,
+          });
+        }
       }),
     );
-    return apps.filter(Boolean) as InstalledApp[];
+
+    return { installedApps, otherContainers };
   } catch {
-    return [];
+    return { installedApps: [], otherContainers: [] };
   }
 }
 
@@ -445,10 +501,10 @@ function startBroadcasting(): void {
 
   // Installed apps every 10 seconds
   const broadcastInstalledApps = async () => {
-    const installedApps = await collectInstalledApps();
+    const { installedApps, otherContainers } = await collectInstalledApps();
     broadcast({
       type: "apps-update",
-      data: { installedApps },
+      data: { installedApps, otherContainers },
       timestamp: Date.now(),
     });
   };
@@ -501,12 +557,12 @@ export function initializeSystemStatusWebSocket(server: Server): void {
       }
     });
 
-    collectInstalledApps().then((installedApps) => {
+    collectInstalledApps().then(({ installedApps, otherContainers }) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(
           JSON.stringify({
             type: "apps-update",
-            data: { installedApps },
+            data: { installedApps, otherContainers },
             timestamp: Date.now(),
           }),
         );
@@ -562,10 +618,10 @@ export function initializeSystemStatusWebSocket(server: Server): void {
  * Trigger an immediate apps update (for use after install/uninstall)
  */
 export async function triggerAppsUpdate(): Promise<void> {
-  const installedApps = await collectInstalledApps();
+  const { installedApps, otherContainers } = await collectInstalledApps();
   broadcast({
     type: "apps-update",
-    data: { installedApps },
+    data: { installedApps, otherContainers },
     timestamp: Date.now(),
   });
   // Also push fresh data to SSE clients so the frontend updates immediately.

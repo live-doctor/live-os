@@ -13,6 +13,7 @@ type MetricsPayload = {
   storageInfo: unknown;
   networkStats: unknown;
   installedApps: unknown;
+  otherContainers: unknown;
   runningApps: unknown;
 };
 
@@ -65,7 +66,32 @@ export function sendInstallProgress(update: InstallProgressPayload) {
   broadcast(update);
 }
 
-async function getInstalledApps() {
+interface InstalledAppResult {
+  id: string;
+  appId: string;
+  name: string;
+  icon: string;
+  status: "running" | "stopped" | "error";
+  webUIPort?: number;
+  containerName: string;
+  containers: string[];
+  installedAt: number;
+}
+
+interface OtherContainerResult {
+  id: string;
+  name: string;
+  image: string;
+  status: "running" | "stopped" | "error";
+  webUIPort?: number;
+}
+
+interface CollectedAppsResult {
+  installedApps: InstalledAppResult[];
+  otherContainers: OtherContainerResult[];
+}
+
+async function getInstalledApps(): Promise<CollectedAppsResult> {
   try {
     const [knownApps, storeApps] = await Promise.all([
       prisma.installedApp.findMany(),
@@ -76,12 +102,15 @@ async function getInstalledApps() {
     );
     const storeMetaById = new Map(storeApps.map((app) => [app.appId, app]));
 
+    // Get set of managed container names for quick lookup
+    const managedContainerNames = new Set(knownApps.map((app) => app.containerName));
+
     // Get containers with compose labels for grouping
     const { stdout } = await execAsync(
       'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Label \\"com.docker.compose.project\\"}}\t{{.Label \\"com.docker.compose.service\\"}}"',
     );
 
-    if (!stdout.trim()) return [];
+    if (!stdout.trim()) return { installedApps: [], otherContainers: [] };
 
     const lines = stdout.trim().split("\n");
 
@@ -98,36 +127,46 @@ async function getInstalledApps() {
       };
     }).filter((c) => c.name);
 
+    // Helper service patterns to filter out
+    const helperPatterns = [
+      /-docker-\d+$/,      // Docker-in-Docker services (e.g., portainer-docker-1)
+      /-dind-\d+$/,        // DinD services
+      /-tor-\d+$/,         // Tor services (Umbrel)
+      /-proxy-\d+$/,       // Proxy services
+      /-redis-\d+$/,       // Redis helper services
+      /-db-\d+$/,          // Database helper services
+      /-postgres-\d+$/,    // Postgres helper services
+      /-mysql-\d+$/,       // MySQL helper services
+      /-mariadb-\d+$/,     // MariaDB helper services
+    ];
+
     // Group by compose project
     const groups = new Map<string, typeof containers>();
     for (const container of containers) {
+      // Skip helper containers
+      const lowerName = container.name.toLowerCase();
+      if (helperPatterns.some((pattern) => pattern.test(lowerName))) {
+        continue;
+      }
+
       const key = container.composeProject || container.name;
       const group = groups.get(key) || [];
       group.push(container);
       groups.set(key, group);
     }
 
-    const results = [];
+    const installedApps: InstalledAppResult[] = [];
+    const otherContainers: OtherContainerResult[] = [];
 
-    for (const [projectKey, groupContainers] of groups) {
+    for (const [, groupContainers] of groups) {
       const primaryContainer =
         groupContainers.find((c) => metaByContainer.has(c.name)) ||
         groupContainers[0];
 
       const containerNames = groupContainers.map((c) => c.name);
 
-      const meta = metaByContainer.get(primaryContainer.name);
-      const anyMeta =
-        meta ||
-        groupContainers
-          .map((c) => metaByContainer.get(c.name))
-          .find(Boolean);
-
-      const resolvedAppId =
-        anyMeta?.appId ||
-        getAppIdFromContainerName(primaryContainer.name);
-
-      const storeMeta = storeMetaById.get(resolvedAppId);
+      // Check if any container in the group is managed
+      const isManaged = groupContainers.some((c) => managedContainerNames.has(c.name));
 
       // Aggregate status
       const statuses = groupContainers.map((c) => {
@@ -143,40 +182,66 @@ async function getInstalledApps() {
 
       const hostPort = await resolveHostPort(primaryContainer.name);
 
-      const fallbackName = primaryContainer.name
-        .replace(/[-_]/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+      if (isManaged) {
+        const meta = metaByContainer.get(primaryContainer.name);
+        const anyMeta =
+          meta ||
+          groupContainers
+            .map((c) => metaByContainer.get(c.name))
+            .find(Boolean);
 
-      const dbContainers = (anyMeta?.installConfig as Record<string, unknown>)
-        ?.containers as string[] | undefined;
+        const resolvedAppId =
+          anyMeta?.appId ||
+          getAppIdFromContainerName(primaryContainer.name);
 
-      results.push({
-        id: primaryContainer.name,
-        appId: resolvedAppId || primaryContainer.name,
-        name:
-          anyMeta?.name ||
-          storeMeta?.title ||
-          storeMeta?.name ||
-          fallbackName,
-        icon:
-          anyMeta?.icon ||
-          storeMeta?.icon ||
-          "/default-application-icon.png",
-        status: appStatus,
-        webUIPort: hostPort ? Number(hostPort) : undefined,
-        containerName: primaryContainer.name,
-        containers:
-          containerNames.length > 1
-            ? containerNames
-            : dbContainers || containerNames,
-        installedAt: anyMeta?.createdAt?.getTime?.() || Date.now(),
-      });
+        const storeMeta = storeMetaById.get(resolvedAppId);
+
+        const fallbackName = primaryContainer.name
+          .replace(/[-_]/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        const dbContainers = (anyMeta?.installConfig as Record<string, unknown>)
+          ?.containers as string[] | undefined;
+
+        installedApps.push({
+          id: primaryContainer.name,
+          appId: resolvedAppId || primaryContainer.name,
+          name:
+            anyMeta?.name ||
+            storeMeta?.title ||
+            storeMeta?.name ||
+            fallbackName,
+          icon:
+            anyMeta?.icon ||
+            storeMeta?.icon ||
+            "/default-application-icon.png",
+          status: appStatus,
+          webUIPort: hostPort ? Number(hostPort) : undefined,
+          containerName: primaryContainer.name,
+          containers:
+            containerNames.length > 1
+              ? containerNames
+              : dbContainers || containerNames,
+          installedAt: anyMeta?.createdAt?.getTime?.() || Date.now(),
+        });
+      } else {
+        // Unmanaged container
+        otherContainers.push({
+          id: primaryContainer.name,
+          name: primaryContainer.name
+            .replace(/[-_]/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+          image: primaryContainer.image || "unknown",
+          status: appStatus,
+          webUIPort: hostPort ? Number(hostPort) : undefined,
+        });
+      }
     }
 
-    return results;
+    return { installedApps, otherContainers };
   } catch (error) {
     console.error("[SSE] Failed to collect installed apps:", error);
-    return [];
+    return { installedApps: [], otherContainers: [] };
   }
 }
 
@@ -223,7 +288,7 @@ export async function pollAndBroadcast() {
       systemStatus,
       storageInfo,
       networkStats,
-      installedApps,
+      appsResult,
       runningApps,
     ] = await Promise.all([
       getSystemStatus(),
@@ -237,7 +302,8 @@ export async function pollAndBroadcast() {
       systemStatus,
       storageInfo,
       networkStats,
-      installedApps,
+      installedApps: appsResult.installedApps,
+      otherContainers: appsResult.otherContainers,
       runningApps,
     };
     broadcast(latestPayload);

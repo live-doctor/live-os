@@ -68,7 +68,7 @@ export async function registerUser(
       data: { username, pin: hashedPin, role: "ADMIN" },
     });
 
-    // Bootstrap default app stores (CasaOS + Umbrel) in background
+    // Bootstrap default Umbrel app store in background
     ensureDefaultStoresInstalled();
 
     const session = await createSession(user.id);

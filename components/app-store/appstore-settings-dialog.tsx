@@ -163,7 +163,7 @@ export function AppStoreSettingsDialog({
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-white">Import Community Store</h3>
               <p className="text-xs text-white/60">
-                Add CasaOS-compatible community app stores by URL.
+                Add Umbrel-compatible community app stores by URL.
               </p>
             </div>
             <Button
