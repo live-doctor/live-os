@@ -1,4 +1,4 @@
-import { getSettings } from "@/app/actions/settings";
+import { getSettings } from "@/app/actions/auth/settings";
 import { HomeClient } from "@/components/home/home-client";
 
 const DEFAULT_WALLPAPER = "/wallpapers/14.jpg";

@@ -1,6 +1,6 @@
 "use client";
 
-import { getStorageInfo, type StorageInfo } from "@/app/actions/storage";
+import { getStorageInfo, type StorageInfo } from "@/app/actions/system/storage";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,

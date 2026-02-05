@@ -1,12 +1,11 @@
-import { exec } from "child_process";
 import { readFileSync } from "fs";
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
-import { promisify } from "util";
 import YAML from "yaml";
+import { execAsync } from "@/lib/exec";
 
-export const execAsync = promisify(exec);
+export { execAsync };
 
 export const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 export const DEFAULT_APP_ICON = "/default-application-icon.png";

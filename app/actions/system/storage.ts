@@ -1,11 +1,8 @@
 "use server";
 
-import { exec } from "child_process";
-import { promisify } from "util";
 import si from "systeminformation";
-import { withActionLogging } from "./logger";
-
-const execAsync = promisify(exec);
+import { execAsync } from "@/lib/exec";
+import { withActionLogging } from "../maintenance/logger";
 
 export type StorageInfo = {
   disks: si.Systeminformation.DiskLayoutData[];

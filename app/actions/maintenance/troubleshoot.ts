@@ -1,7 +1,6 @@
 "use server";
 
-import { exec } from "child_process";
-import { promisify } from "util";
+import { execAsync } from "@/lib/exec";
 import type {
   LogEntry,
   LogSource,
@@ -9,8 +8,6 @@ import type {
   DiagnosticResult,
   SystemService,
 } from "@/components/settings/troubleshoot/types";
-
-const execAsync = promisify(exec);
 
 /**
  * Get system logs from journalctl
@@ -328,6 +325,47 @@ export async function getSystemServices(): Promise<SystemService[]> {
 }
 
 /**
+ * Get status for a specific systemd service
+ */
+export async function getServiceStatus(serviceName: string): Promise<SystemService> {
+  const service: SystemService = {
+    name: serviceName,
+    displayName: serviceName,
+    status: "unknown",
+    canRestart: true,
+  };
+
+  if (!serviceName.trim()) return service;
+
+  try {
+    const { stdout } = await execAsync(
+      `systemctl is-active ${serviceName} 2>/dev/null || echo 'inactive'`,
+    );
+    const active = stdout.trim();
+    service.status =
+      active === "active"
+        ? "running"
+        : active === "failed"
+          ? "error"
+          : "stopped";
+  } catch {
+    service.status = "unknown";
+  }
+
+  try {
+    const { stdout } = await execAsync(
+      `systemctl show ${serviceName} -p Description --value 2>/dev/null || echo ""`,
+    );
+    const description = stdout.trim();
+    if (description) service.displayName = description;
+  } catch {
+    /* ignore */
+  }
+
+  return service;
+}
+
+/**
  * Restart a system service
  */
 export async function restartService(serviceName: string): Promise<{ success: boolean; message: string }> {
@@ -336,6 +374,34 @@ export async function restartService(serviceName: string): Promise<{ success: bo
     return { success: true, message: `${serviceName} restarted successfully` };
   } catch {
     return { success: false, message: `Failed to restart ${serviceName}` };
+  }
+}
+
+/**
+ * Start a system service
+ */
+export async function startService(
+  serviceName: string,
+): Promise<{ success: boolean; message: string }> {
+  try {
+    await execAsync(`sudo systemctl start ${serviceName}`);
+    return { success: true, message: `${serviceName} started successfully` };
+  } catch {
+    return { success: false, message: `Failed to start ${serviceName}` };
+  }
+}
+
+/**
+ * Stop a system service
+ */
+export async function stopService(
+  serviceName: string,
+): Promise<{ success: boolean; message: string }> {
+  try {
+    await execAsync(`sudo systemctl stop ${serviceName}`);
+    return { success: true, message: `${serviceName} stopped successfully` };
+  } catch {
+    return { success: false, message: `Failed to stop ${serviceName}` };
   }
 }
 

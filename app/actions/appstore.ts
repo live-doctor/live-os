@@ -4,14 +4,13 @@
 
 import type { App } from "@/components/app-store/types";
 import { prisma } from "@/lib/prisma";
-import { exec } from "child_process";
 import crypto from "crypto";
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
-import { promisify } from "util";
 import YAML from "yaml";
-import { logAction, withActionLogging } from "./logger";
+import { execAsync } from "@/lib/exec";
+import { logAction, withActionLogging } from "./maintenance/logger";
 import {
     CASAOS_OFFICIAL_ZIP,
     getCasaCommunityStores,
@@ -24,8 +23,6 @@ import {
     parseUmbrelStore,
 } from "./store/umbrel-store";
 import { listFiles, resolveAsset } from "./store/utils";
-
-const execAsync = promisify(exec);
 
 const STORE_ROOT = path.join(process.cwd(), "external-apps");
 const CASAOS_RECOMMEND_LIST_URL =

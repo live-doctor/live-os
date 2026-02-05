@@ -6,7 +6,7 @@ import {
     listSmbShares,
     removeSmbShare,
     type SmbShare,
-} from "@/app/actions/smb-share";
+} from "@/app/actions/filesystem/smb-share";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,

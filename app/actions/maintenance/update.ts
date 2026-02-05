@@ -1,12 +1,9 @@
 "use server";
 
-import { exec } from "child_process";
 import fs from "fs/promises";
 import path from "path";
-import { promisify } from "util";
+import { execAsync } from "@/lib/exec";
 import { logAction } from "./logger";
-
-const execAsync = promisify(exec);
 
 export type UpdateStatus = {
   currentVersion: string;

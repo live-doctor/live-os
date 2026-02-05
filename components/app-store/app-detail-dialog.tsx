@@ -116,6 +116,7 @@ export function AppDetailDialog({
         composePath: app.composePath,
         config,
         meta: { name: app.title || app.name, icon: app.icon },
+        source: app.storeSlug,
       });
 
       if (result.success) {
@@ -188,6 +189,7 @@ export function AppDetailDialog({
         dockerCompose: composeContent,
         appIcon: app.icon,
         appTitle: app.title,
+        source: app.storeSlug,
       });
 
       setCustomDeployOpen(true);

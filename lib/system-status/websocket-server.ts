@@ -1,15 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { pollAndBroadcast } from "@/app/api/system/stream/route";
 import prisma from "@/lib/prisma";
-import { exec } from "child_process";
 import type { Server } from "http";
 import os from "os";
 import type { Systeminformation } from "systeminformation";
 import si from "systeminformation";
-import { promisify } from "util";
 import { WebSocket, WebSocketServer } from "ws";
-
-const execAsync = promisify(exec);
+import { execAsync } from "@/lib/exec";
 const DEFAULT_APP_ICON = "/icons/default-app-icon.png";
 const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 
@@ -477,6 +474,8 @@ function stopBroadcasting(): void {
     clearInterval(appsInterval);
     appsInterval = null;
   }
+  // Reset deltas so the next connection doesn't see inflated network spikes
+  lastNetworkSample = null;
 }
 
 /**
@@ -516,6 +515,10 @@ export function initializeSystemStatusWebSocket(server: Server): void {
 
     ws.on("close", () => {
       console.log("[SystemStatus WS] Client disconnected");
+      // Stop polling when the last client disconnects to avoid orphaned intervals
+      if (wss && wss.clients.size === 0) {
+        stopBroadcasting();
+      }
     });
 
     ws.on("error", (error) => {

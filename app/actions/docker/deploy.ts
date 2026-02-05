@@ -11,7 +11,8 @@ import { spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 import { env } from "process";
-import { logAction } from "../logger";
+import YAML from "yaml";
+import { logAction } from "../maintenance/logger";
 import { getAppMeta, recordInstalledApp } from "./db";
 import { checkDependencies } from "./dependencies";
 import {
@@ -182,6 +183,9 @@ export async function deployApp(
 
     const allContainers = await detectAllComposeContainerNames(appDir);
 
+    // Extract web UI port and network mode from compose (best-effort)
+    const composeMeta = await extractComposeMeta(sanitizedPath);
+
     // Resolve source (store slug or "custom")
     const source = await resolveSource(appId, options.source);
 
@@ -195,6 +199,8 @@ export async function deployApp(
         ports: config.ports,
         volumes: config.volumes,
         environment: config.environment,
+        webUIPort: config.webUIPort ?? composeMeta.webUIPort,
+        networkMode: config.networkMode ?? composeMeta.networkMode,
       }),
       composePath: originalPath,
       deployMethod: "compose",
@@ -510,6 +516,46 @@ function streamComposePull(
       }
     });
   });
+}
+
+async function extractComposeMeta(
+  composePath: string,
+): Promise<{ webUIPort?: string; networkMode?: string }> {
+  try {
+    const raw = await fs.readFile(composePath, "utf-8");
+    const doc = YAML.parse(raw) as {
+      services?: Record<
+        string,
+        {
+          ports?: Array<string | { published?: string | number; target?: string | number }>;
+          network_mode?: string;
+        }
+      >;
+    };
+    const services = doc?.services;
+    if (!services) return {};
+    const firstService = services[Object.keys(services)[0]];
+    if (!firstService) return {};
+    let webUIPort: string | undefined;
+    const firstPort = firstService.ports?.[0];
+    if (typeof firstPort === "string") {
+      const [host] = firstPort.split(":");
+      webUIPort = host || undefined;
+    } else if (firstPort && typeof firstPort === "object") {
+      webUIPort =
+        (firstPort.published !== undefined && String(firstPort.published)) ||
+        (firstPort.target !== undefined && String(firstPort.target)) ||
+        undefined;
+    }
+    const networkMode =
+      firstService.network_mode !== undefined
+        ? String(firstService.network_mode)
+        : undefined;
+    return { webUIPort, networkMode };
+  } catch (error) {
+    console.warn("[Docker] extractComposeMeta failed:", (error as Error)?.message);
+    return {};
+  }
 }
 
 function isComposeNoise(stderr: string): boolean {

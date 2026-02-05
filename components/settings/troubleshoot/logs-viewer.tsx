@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSystemLogs } from "@/app/actions/troubleshoot";
+import { getSystemLogs } from "@/app/actions/maintenance/troubleshoot";
 import { Button } from "@/components/ui/button";
 import { card, text } from "@/components/ui/design-tokens";
 import { cn } from "@/lib/utils";

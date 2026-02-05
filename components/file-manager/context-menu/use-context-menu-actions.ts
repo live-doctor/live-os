@@ -8,7 +8,7 @@ import {
   trashItem,
   uncompressArchive,
 } from '@/app/actions/filesystem';
-import { addFavorite, removeFavorite } from '@/app/actions/favorites';
+import { addFavorite, removeFavorite } from '@/app/actions/filesystem/favorites';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { ClipboardState, ContextMenuAction } from './types';

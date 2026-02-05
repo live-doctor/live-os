@@ -9,7 +9,7 @@ import { triggerAppsUpdate } from "@/lib/system-status/websocket-server";
 import prisma from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
-import { logAction } from "../logger";
+import { logAction } from "../maintenance/logger";
 import { backupComposeFile, cleanupBackup, restoreComposeFile } from "./backup";
 import {
   getAppMeta,

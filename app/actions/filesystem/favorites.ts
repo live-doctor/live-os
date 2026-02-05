@@ -2,8 +2,9 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { readJsonFile, writeJsonFile } from '@/lib/json-store';
 import { getHomeRoot } from './filesystem';
-import { withActionLogging } from './logger';
+import { withActionLogging } from '../maintenance/logger';
 
 const FAVORITES_FILE = '.file-favorites.json';
 
@@ -17,18 +18,11 @@ async function getFavoritesPath(): Promise<string> {
 }
 
 async function readFavoritesFile(): Promise<FavoritesData> {
-  try {
-    const filePath = await getFavoritesPath();
-    const content = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(content) as FavoritesData;
-  } catch {
-    return { favorites: [] };
-  }
+  return readJsonFile(await getFavoritesPath(), { favorites: [] });
 }
 
 async function writeFavoritesFile(data: FavoritesData): Promise<void> {
-  const filePath = await getFavoritesPath();
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  await writeJsonFile(await getFavoritesPath(), data);
 }
 
 /**

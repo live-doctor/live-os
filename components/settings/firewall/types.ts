@@ -1,4 +1,4 @@
-import type { FirewallRule, FirewallStatus } from "@/app/actions/firewall";
+import type { FirewallRule, FirewallStatus } from "@/app/actions/network/firewall";
 
 export type { FirewallRule, FirewallStatus };
 

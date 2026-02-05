@@ -22,7 +22,7 @@ export function TroubleshootSection({ onOpenDialog }: TroubleshootSectionProps) 
           className={settingsActionButtonWideClass}
           onClick={onOpenDialog}
         >
-          View logs
+          Open panel
         </Button>
       }
     />

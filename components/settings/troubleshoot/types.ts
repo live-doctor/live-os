@@ -34,6 +34,7 @@ export interface SystemService {
   displayName: string;
   status: "running" | "stopped" | "error" | "unknown";
   canRestart: boolean;
+  description?: string;
 }
 
 export interface DebugAction {

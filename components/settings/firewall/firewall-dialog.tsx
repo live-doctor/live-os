@@ -7,7 +7,7 @@ import {
     enableFirewall,
     getFirewallStatus,
     resetFirewall,
-} from "@/app/actions/firewall";
+} from "@/app/actions/network/firewall";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,

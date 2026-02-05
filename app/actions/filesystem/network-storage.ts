@@ -1,18 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
-import { execFile } from "child_process";
 import crypto from "crypto";
 import dns from "dns/promises";
 import fs from "fs/promises";
 import net from "net";
 import path from "path";
-import { promisify } from "util";
+import { execFileAsync } from "@/lib/exec";
+import { writeJsonFile } from "@/lib/json-store";
 
 import { getHomeRoot } from "./filesystem";
-import { logAction } from "./logger";
-
-const execFileAsync = promisify(execFile);
+import { logAction } from "../maintenance/logger";
 const STORE_FILENAME = ".network-shares.json";
 const AVAHI_TIMEOUT_MS = 10000;
 
@@ -74,9 +72,7 @@ async function loadShares(): Promise<StoredShare[]> {
 }
 
 async function saveShares(shares: StoredShare[]) {
-  const storePath = await getStorePath();
-  const payload = JSON.stringify(shares, null, 2);
-  await fs.writeFile(storePath, payload, { mode: 0o600 });
+  await writeJsonFile(await getStorePath(), shares, 0o600);
 }
 
 function buildMountPath(

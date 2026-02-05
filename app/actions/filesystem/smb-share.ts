@@ -1,12 +1,10 @@
 'use server';
 
-import { exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
-import { promisify } from 'util';
+import { execAsync } from '@/lib/exec';
+import { readJsonFile, writeJsonFile } from '@/lib/json-store';
 import { getHomeRoot } from './filesystem';
-
-const execAsync = promisify(exec);
 
 const SHARES_FILE = '.smb-shares.json';
 const SAMBA_CONFIG_DIR = '/etc/samba';
@@ -33,18 +31,11 @@ async function getSharesPath(): Promise<string> {
 }
 
 async function readSharesFile(): Promise<SharesData> {
-  try {
-    const filePath = await getSharesPath();
-    const content = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(content) as SharesData;
-  } catch {
-    return { shares: [] };
-  }
+  return readJsonFile(await getSharesPath(), { shares: [] });
 }
 
 async function writeSharesFile(data: SharesData): Promise<void> {
-  const filePath = await getSharesPath();
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  await writeJsonFile(await getSharesPath(), data);
 }
 
 async function isServiceActive(service: string): Promise<boolean> {

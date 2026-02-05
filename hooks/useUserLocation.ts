@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getSettings, updateSettings } from "@/app/actions/settings";
+import { getSettings, updateSettings } from "@/app/actions/auth/settings";
 
 export interface UserLocation {
   latitude: number;

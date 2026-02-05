@@ -2,7 +2,7 @@
 
 import type { InstalledApp } from "@/components/app-store/types";
 import prisma from "@/lib/prisma";
-import { logAction } from "../logger";
+import { logAction } from "../maintenance/logger";
 import {
   CONTAINER_PREFIX,
   DEFAULT_APP_ICON,
@@ -39,10 +39,17 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
     const metaByContainer = new Map(
       knownApps.map((app) => [app.containerName, app]),
     );
-    const metaByAppId = new Map(
-      knownApps.map((app) => [app.appId, app]),
-    );
-    const appMetaById = new Map(storeApps.map((app) => [app.appId, app]));
+    const metaByAppId = new Map(knownApps.map((app) => [app.appId, app]));
+
+    const appMetaById = new Map<
+      string,
+      (typeof storeApps)[number][]
+    >();
+    for (const app of storeApps) {
+      const list = appMetaById.get(app.appId) ?? [];
+      list.push(app);
+      appMetaById.set(app.appId, list);
+    }
 
     // Group containers by compose project
     const groups = groupContainersByProject(containers);
@@ -75,7 +82,11 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
           .find(Boolean);
 
       const resolvedAppId = anyRecord?.appId || projectKey || rawId;
-      const storeMeta = appMetaById.get(resolvedAppId);
+      const storeMetaCandidates = appMetaById.get(resolvedAppId) ?? [];
+      const storeMeta = anyRecord?.source
+        ? storeMetaCandidates.find((m) => m.store?.slug === anyRecord.source) ||
+          storeMetaCandidates[0]
+        : storeMetaCandidates[0];
 
       // Aggregate status across all containers in the group
       const status = aggregateStatus(groupContainers);
@@ -173,7 +184,14 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
 
     await logAction("app:webui:resolve:start", { appId });
 
-    const recordedContainer = await getRecordedContainerName(appId);
+    const installRecord = await prisma.installedApp.findFirst({
+      where: { appId },
+      orderBy: { updatedAt: "desc" },
+      select: { source: true, installConfig: true, containerName: true },
+    });
+
+    const recordedContainer =
+      installRecord?.containerName ?? (await getRecordedContainerName(appId));
     const containerCandidates = [
       recordedContainer,
       getContainerName(appId),
@@ -193,11 +211,13 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
       | "path-only"
       | "unresolved" = "unresolved";
 
-    // 2) Pull app metadata for fallback port/path
+    // 2) Pull app metadata for fallback port/path, preferring the store it was installed from
     const appMeta = await prisma.app.findFirst({
-      where: { appId },
+      where: installRecord?.source
+        ? { appId, store: { slug: installRecord.source } }
+        : { appId },
       orderBy: { createdAt: "desc" },
-      select: { port: true, path: true },
+      select: { port: true, path: true, store: { select: { slug: true } } },
     });
 
     // 1) Prefer published host port from Docker (works for bridge mode)
@@ -216,7 +236,9 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
         : "";
 
     // 2b) Check installConfig.webUIPort for custom-deployed apps
-    const installConfig = await getInstallConfig(appId);
+    const installConfig =
+      (installRecord?.installConfig as Record<string, unknown> | null) ??
+      (await getInstallConfig(appId));
     const configWebUIPort = installConfig?.webUIPort as string | undefined;
 
     if (hostPort) {

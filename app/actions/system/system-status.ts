@@ -3,7 +3,7 @@
 
 import os from "os";
 import si from "systeminformation";
-import { getBluetoothStatus } from "./bluetooth";
+import { getBluetoothStatus } from "../network/bluetooth";
 
 let lastNetworkSample: { rx: number; tx: number; timestamp: number } | null =
   null;

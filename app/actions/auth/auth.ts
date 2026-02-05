@@ -11,9 +11,9 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Role } from "../generated/prisma/enums";
-import { ensureDefaultCasaStoreInstalled } from "./appstore";
-import { withActionLogging } from "./logger";
+import { Role } from "../../generated/prisma/enums";
+import { ensureDefaultCasaStoreInstalled } from "../appstore";
+import { withActionLogging } from "../maintenance/logger";
 
 export interface AuthUser {
   id: string;

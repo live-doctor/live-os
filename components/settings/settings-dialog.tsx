@@ -33,7 +33,7 @@ import {
 import { SettingsSidebar } from "./settings-sidebar";
 import { StorageDialog } from "./storage-dialog";
 import { SystemDetailsDialog } from "./system-details-dialog";
-import { LiveOsTailDialog } from "./troubleshoot/liveos-tail-dialog";
+import { TroubleshootDialog } from "./troubleshoot/troubleshoot-dialog";
 import { useSettingsDialogData } from "./use-settings-dialog-data";
 import { WifiDialog } from "./wifi-dialog";
 
@@ -145,7 +145,7 @@ export function SettingsDialog({
               />
 
               <TroubleshootSection
-                onOpenDialog={() => d.setLogsDialogOpen(true)}
+                onOpenDialog={() => d.setTroubleshootDialogOpen(true)}
               />
               <UpdateSection
                 currentVersion={VERSION}
@@ -191,10 +191,10 @@ export function SettingsDialog({
             onRefresh={d.refreshBluetooth}
           />
         )}
-        {d.logsDialogOpen && (
-          <LiveOsTailDialog
-            open={d.logsDialogOpen}
-            onOpenChange={d.setLogsDialogOpen}
+        {d.troubleshootDialogOpen && (
+          <TroubleshootDialog
+            open={d.troubleshootDialogOpen}
+            onOpenChange={d.setTroubleshootDialogOpen}
           />
         )}
         {d.firewallDialogOpen && (

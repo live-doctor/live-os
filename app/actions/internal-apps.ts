@@ -4,7 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { deployApp } from "./docker/deploy";
 import type { InstallConfig } from "@/components/app-store/types";
-import { logAction } from "./logger";
+import { logAction } from "./maintenance/logger";
 
 type InternalAppManifest = {
   id: string;

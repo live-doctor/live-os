@@ -2,7 +2,7 @@
 
 import { hasUsers, registerUser } from "@/app/actions/auth";
 import { installInternalApp } from "@/app/actions/internal-apps";
-import { updateSettings } from "@/app/actions/settings";
+import { updateSettings } from "@/app/actions/auth/settings";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OrbitLoader } from "@/components/auth/orbit-loader";
 import { PostSetup } from "@/components/auth/post-setup";

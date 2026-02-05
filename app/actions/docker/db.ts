@@ -122,5 +122,7 @@ export async function getInstalledAppRecords() {
  * Get all app metadata records from database
  */
 export async function getAllAppMeta() {
-  return prisma.app.findMany();
+  return prisma.app.findMany({
+    include: { store: { select: { slug: true } } },
+  });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { getSettings, updateSettings } from "@/app/actions/settings";
+import { getSettings, updateSettings } from "@/app/actions/auth/settings";
 import {
   AVAILABLE_WIDGETS,
   DEFAULT_WIDGET_IDS,

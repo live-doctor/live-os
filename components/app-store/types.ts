@@ -77,6 +77,8 @@ export interface InstallConfig {
   ports: PortConfig[];
   volumes: VolumeConfig[];
   environment: EnvConfig[];
+  webUIPort?: string;
+  networkMode?: string;
 }
 
 export interface InstalledApp {

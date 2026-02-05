@@ -2,12 +2,9 @@ import {
   getNetworkStats,
   getStorageInfo,
   getSystemStatus,
-} from "@/app/actions/system-status";
+} from "@/app/actions/system/system-status";
 import prisma from "@/lib/prisma";
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import { execAsync } from "@/lib/exec";
 const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 
 type MetricsPayload = {

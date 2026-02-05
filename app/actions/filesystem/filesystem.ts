@@ -1,12 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
-import { exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { execAsync } from '@/lib/exec';
 const PRIMARY_HOME_ROOT = process.env.LIVEOS_HOME || '/DATA';
 const FALLBACK_HOME_ROOT = path.join(process.cwd(), 'DATA');
 const DEFAULT_DIRECTORIES = ['AppData', 'Downloads', 'Documents', 'Photos', 'Devices'] as const;

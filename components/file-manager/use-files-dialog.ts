@@ -8,7 +8,7 @@ import {
   type DirectoryContent,
   type FileSystemItem,
 } from "@/app/actions/filesystem";
-import { getFavorites } from "@/app/actions/favorites";
+import { getFavorites } from "@/app/actions/filesystem/favorites";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DEFAULT_ROOT, isTextLike, toDirectoryItem } from "./file-utils";

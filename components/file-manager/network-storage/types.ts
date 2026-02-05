@@ -1,4 +1,4 @@
-import type { NetworkShare } from "@/app/actions/network-storage";
+import type { NetworkShare } from "@/app/actions/filesystem/network-storage";
 
 export type NetworkStorageDialogProps = {
   open: boolean;

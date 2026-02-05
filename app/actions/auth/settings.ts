@@ -4,7 +4,7 @@ import { promises as fs } from "fs";
 import path from "path";
 
 import { prisma } from "@/lib/prisma";
-import { withActionLogging } from "./logger";
+import { withActionLogging } from "../maintenance/logger";
 
 const WALLPAPER_DIR = path.join(process.cwd(), "public", "wallpapers");
 const WALLPAPER_ROUTE = "/wallpapers";

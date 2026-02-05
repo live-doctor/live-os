@@ -501,10 +501,36 @@ sudo journalctl -u liveos -f
 live-os/
 ├── app/                          # Next.js App Router
 │   ├── actions/                  # Server Actions (API layer)
-│   │   ├── system.ts            # System information
-│   │   ├── system-status.ts     # Real-time metrics
-│   │   ├── docker.ts            # Docker operations
-│   │   └── appstore.ts          # App store logic
+│   │   ├── system/              # System info, metrics, storage
+│   │   │   ├── index.ts
+│   │   │   ├── system.ts
+│   │   │   ├── system-status.ts
+│   │   │   └── storage.ts
+│   │   ├── filesystem/          # File manager, favorites, SMB, NFS
+│   │   │   ├── index.ts
+│   │   │   ├── filesystem.ts
+│   │   │   ├── favorites.ts
+│   │   │   ├── smb-share.ts
+│   │   │   └── network-storage.ts
+│   │   ├── network/             # WiFi, firewall, Bluetooth
+│   │   │   ├── index.ts
+│   │   │   ├── network.ts
+│   │   │   ├── firewall.ts
+│   │   │   └── bluetooth.ts
+│   │   ├── auth/                # Auth & user settings
+│   │   │   ├── index.ts
+│   │   │   ├── auth.ts
+│   │   │   └── settings.ts
+│   │   ├── maintenance/         # Logging, updates, troubleshoot
+│   │   │   ├── index.ts
+│   │   │   ├── logger.ts
+│   │   │   ├── update.ts
+│   │   │   └── troubleshoot.ts
+│   │   ├── docker/              # Docker operations (SOLID split)
+│   │   ├── docker.ts            # Docker barrel re-export
+│   │   ├── store/               # App store integrations
+│   │   ├── appstore.ts          # App store orchestrator
+│   │   └── internal-apps.ts     # Built-in apps
 │   ├── layout.tsx               # Root layout
 │   ├── page.tsx                 # Main dashboard
 │   └── globals.css              # Global styles
@@ -566,6 +592,11 @@ live-os/
 │   └── layout/                  # Layout components
 │
 ├── lib/                         # Utility functions
+│   ├── exec.ts                 # Centralized execAsync / execFileAsync
+│   ├── json-store.ts           # Generic JSON file read/write helpers
+│   ├── prisma.ts               # Prisma client singleton
+│   ├── utils.ts                # General utilities
+│   └── system-status/          # WebSocket server for real-time metrics
 ├── store/                       # App Store (Umbrel format)
 ├── public/                      # Static assets
 └── types/                       # TypeScript type definitions
@@ -573,14 +604,22 @@ live-os/
 
 ### Server Actions Pattern
 
-The app uses Next.js Server Actions (functions marked with `'use server'`) as the API layer:
+The app uses Next.js Server Actions (functions marked with `'use server'`) as the API layer, organized into domain folders with barrel `index.ts` exports:
 
-- **`app/actions/system.ts`**: System information (username, hostname, platform)
-- **`app/actions/system-status.ts`**: Real-time metrics (CPU, RAM, disk)
-- **`app/actions/docker.ts`**: Docker container management
-- **`app/actions/appstore.ts`**: App store operations
+- **`app/actions/system/`**: System info, real-time metrics, storage
+- **`app/actions/filesystem/`**: File manager, favorites, SMB shares, network storage
+- **`app/actions/network/`**: WiFi, firewall, Bluetooth
+- **`app/actions/auth/`**: Authentication, user settings
+- **`app/actions/maintenance/`**: Logger, updates, troubleshooting
+- **`app/actions/docker/`**: Docker container management (SOLID split)
+- **`app/actions/appstore.ts`**: App store orchestrator
 
-These actions are called directly from client components, eliminating the need for separate API routes.
+Import from barrel files (e.g. `@/app/actions/system`) or from specific files (e.g. `@/app/actions/system/storage`). These actions are called directly from client components, eliminating the need for separate API routes.
+
+### Common Helpers (`lib/`)
+
+- **`lib/exec.ts`**: Centralized `execAsync` and `execFileAsync` — import instead of defining `promisify(exec)` locally
+- **`lib/json-store.ts`**: Generic `readJsonFile(path, fallback)` and `writeJsonFile(path, data, mode?)` — use for JSON config files instead of manual `readFile`/`writeFile` + `JSON.parse`/`stringify`
 
 ### Component Structure
 
@@ -837,16 +876,6 @@ The file manager (`components/file-manager/`) provides comprehensive file browsi
 | **File Properties Dialog**  | 🟢 Low      | No detailed stats (owner, permissions UI)        |
 | **Advanced Search**         | 🟢 Low      | No regex, size/date filters                      |
 
-### Dead Code to Remove
-
-**⚠️ `app/actions/files.ts`** (160 lines) - Contains duplicate implementations never imported:
-
-- `listFiles()` → duplicated in `filesystem.ts` as `readDirectory()`
-- `createFolder()` → duplicated in `filesystem.ts` as `createDirectory()`
-- `deleteItem()`, `renameItem()`, `getItemInfo()` → all duplicated
-
-**Action:** Delete this file entirely.
-
 ### Architecture Issues
 
 | Issue                          | Location                           | Recommendation                                                                         |
@@ -955,9 +984,9 @@ components/file-manager/
 ├── network-storage-dialog.tsx  # SMB/NFS discovery
 └── smb-share-dialog.tsx        # SMB sharing
 
-app/actions/
-├── filesystem.ts               # Core operations (873 lines) ✅
-├── files.ts                    # ⚠️ DEAD CODE - DELETE
+app/actions/filesystem/
+├── index.ts                    # Barrel export
+├── filesystem.ts               # Core operations
 ├── network-storage.ts          # SMB/NFS mounting
 ├── smb-share.ts                # Samba shares
 └── favorites.ts                # Favorites management

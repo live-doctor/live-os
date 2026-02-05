@@ -1,9 +1,6 @@
 "use server";
 
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import { execAsync } from "@/lib/exec";
 
 export type FirewallStatus = {
   enabled: boolean;

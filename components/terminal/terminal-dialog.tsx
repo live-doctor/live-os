@@ -2,18 +2,18 @@
 
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { ChevronDown, Container, Server, X } from "lucide-react";
@@ -236,7 +236,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
           isMaximized
             ? "max-w-[98vw] max-h-[98vh]"
             : "max-w-[95vw] sm:max-w-[1200px] max-h-[90vh]"
-        } bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl shadow-black/50 p-0 gap-0 overflow-hidden ring-1 ring-white/5 transition-all`}
+        } bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl shadow-black/50 p-0 gap-0 scrollbar-hide overflow-hidden ring-1 ring-white/5 transition-all`}
         aria-describedby="terminal-description"
       >
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-gradient-to-r from-white/10 via-white/5 to-transparent backdrop-blur">

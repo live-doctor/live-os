@@ -1,10 +1,7 @@
 "use server";
 
-import { execFile } from "child_process";
-import { promisify } from "util";
-import { logAction } from "./logger";
-
-const execFileAsync = promisify(execFile);
+import { execFileAsync } from "@/lib/exec";
+import { logAction } from "../maintenance/logger";
 const EXEC_TIMEOUT_MS = 6000;
 
 export type BluetoothStatus = {

@@ -6,7 +6,7 @@ import {
   getServerInfo,
   listNetworkShares,
   removeNetworkShare,
-} from "@/app/actions/network-storage";
+} from "@/app/actions/filesystem/network-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   DiscoveredHost,

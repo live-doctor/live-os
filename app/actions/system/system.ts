@@ -1,10 +1,7 @@
 "use server";
 
-import { exec } from "child_process";
 import os from "os";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import { execAsync } from "@/lib/exec";
 
 export async function getSystemUsername() {
   try {

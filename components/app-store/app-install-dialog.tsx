@@ -103,6 +103,7 @@ export function AppInstallDialog({
         composePath: app.composePath,
         config,
         meta: { name: app.title || app.name, icon: app.icon },
+        source: app.storeSlug,
       });
 
       if (result.success) {
@@ -184,6 +185,7 @@ export function AppInstallDialog({
           dockerCompose: result.content,
           appIcon: app.icon,
           appTitle: app.title,
+          source: app.storeSlug,
         });
         setCustomizeDialogOpen(true);
       } else {

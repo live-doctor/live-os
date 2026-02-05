@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { getFirewallStatus } from "@/app/actions/firewall";
-import { getBluetoothStatus, setBluetoothPower } from "@/app/actions/bluetooth";
+import { getFirewallStatus } from "@/app/actions/network/firewall";
+import { getBluetoothStatus, setBluetoothPower } from "@/app/actions/network/bluetooth";
 import { type LanDevice, listLanDevices } from "@/app/actions/network";
-import { getWallpapers, updateSettings } from "@/app/actions/settings";
+import { getWallpapers, updateSettings } from "@/app/actions/auth/settings";
 import { getSystemInfo, getUptime } from "@/app/actions/system";
-import { type UpdateStatus, checkForUpdates } from "@/app/actions/update";
+import { type UpdateStatus, checkForUpdates } from "@/app/actions/maintenance/update";
 import { useRebootTracker } from "@/hooks/useRebootTracker";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { formatBytes, formatUptime } from "@/lib/utils";
@@ -58,7 +58,7 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
   const [systemDetailsOpen, setSystemDetailsOpen] = useState(false);
   const [storageDialogOpen, setStorageDialogOpen] = useState(false);
   const [networkDevicesOpen, setNetworkDevicesOpen] = useState(false);
-  const [logsDialogOpen, setLogsDialogOpen] = useState(false);
+  const [troubleshootDialogOpen, setTroubleshootDialogOpen] = useState(false);
   const [advancedDialogOpen, setAdvancedDialogOpen] = useState(false);
   const [bluetoothDialogOpen, setBluetoothDialogOpen] = useState(false);
 
@@ -287,8 +287,8 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     setStorageDialogOpen,
     networkDevicesOpen,
     setNetworkDevicesOpen,
-    logsDialogOpen,
-    setLogsDialogOpen,
+    troubleshootDialogOpen,
+    setTroubleshootDialogOpen,
     advancedDialogOpen,
     setAdvancedDialogOpen,
     // Handlers
