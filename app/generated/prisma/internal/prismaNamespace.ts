@@ -934,6 +934,7 @@ export const StoreScalarFieldEnum = {
   description: 'description',
   localPath: 'localPath',
   manifestHash: 'manifestHash',
+  format: 'format',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -974,8 +975,9 @@ export const InstalledAppScalarFieldEnum = {
   icon: 'icon',
   containerName: 'containerName',
   installConfig: 'installConfig',
-  source: 'source',
+  storeId: 'storeId',
   container: 'container',
+  containers: 'containers',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

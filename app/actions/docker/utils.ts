@@ -1,9 +1,9 @@
+import { execAsync } from "@/lib/exec";
 import { readFileSync } from "fs";
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
 import YAML from "yaml";
-import { execAsync } from "@/lib/exec";
 
 export { execAsync };
 
@@ -11,7 +11,7 @@ export const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 export const DEFAULT_APP_ICON = "/default-application-icon.png";
 export const STORES_ROOT = path.join(process.cwd(), "external-apps");
 export const INTERNAL_APPS_ROOT = path.join(process.cwd(), "internal-apps");
-export const CUSTOM_APPS_ROOT = path.join(process.cwd(), "custom-apps");
+export const INSTALLED_APPS_ROOT = path.join(process.cwd(), "installed-apps");
 export const FALLBACK_APP_NAME = "Application";
 
 /**
@@ -182,7 +182,8 @@ export async function findComposeForApp(
     return null;
   }
 
-  const rootsToSearch = [STORES_ROOT, INTERNAL_APPS_ROOT, CUSTOM_APPS_ROOT];
+  // Search installed-apps first (highest priority), then other locations
+  const rootsToSearch = [INSTALLED_APPS_ROOT, STORES_ROOT, INTERNAL_APPS_ROOT];
 
   try {
     for (const root of rootsToSearch) {
@@ -324,29 +325,75 @@ export async function detectAllComposeContainerNames(
 }
 
 /**
- * Sanitize compose file by removing invalid services (e.g., app_proxy without image).
+ * Umbrel-specific services that should be removed during deployment.
+ * These are internal Umbrel infrastructure services that don't have
+ * standalone images and are handled by Umbrel's orchestration layer.
+ */
+const UMBREL_INTERNAL_SERVICES = [
+  "app_proxy", // Umbrel's reverse proxy (no standalone image)
+  "tor",       // Umbrel's Tor integration (managed separately)
+];
+
+/**
+ * Sanitize compose file by removing invalid or platform-specific services.
  * Returns both the sanitized path (for docker to run) and the original path (for DB storage).
+ *
+ * Handles:
+ * - Umbrel's app_proxy service (internal proxy with no image)
+ * - Services without image or build instructions
+ * - Umbrel-specific infrastructure services
  *
  * The sanitized file is written as a dotfile in the same directory as the original
  * so that Docker Compose derives the correct project name from the parent folder.
  */
 export async function sanitizeComposeFile(
   composePath: string,
+  storeType?: "casaos" | "umbrel" | "custom",
 ): Promise<{ sanitizedPath: string; originalPath: string }> {
   try {
     const raw = await fs.readFile(composePath, "utf-8");
     const doc = YAML.parse(raw);
     let needsSanitization = false;
+    const removedServices: string[] = [];
 
-    if (doc?.services?.app_proxy) {
-      const proxy = doc.services.app_proxy;
-      if (!proxy.image && !proxy.build) {
-        delete doc.services.app_proxy;
-        needsSanitization = true;
-        console.log(
-          "[Docker] sanitizeCompose: removed app_proxy service with no image/build",
-        );
+    if (!doc?.services) {
+      return { sanitizedPath: composePath, originalPath: composePath };
+    }
+
+    // Check each service for validity
+    for (const [serviceName, service] of Object.entries(doc.services)) {
+      const svc = service as { image?: string; build?: unknown };
+      let shouldRemove = false;
+
+      // Remove services without image or build
+      if (!svc.image && !svc.build) {
+        shouldRemove = true;
       }
+
+      // For Umbrel apps, also remove known internal services
+      if (storeType === "umbrel" || UMBREL_INTERNAL_SERVICES.includes(serviceName)) {
+        if (UMBREL_INTERNAL_SERVICES.includes(serviceName)) {
+          shouldRemove = true;
+        }
+      }
+
+      if (shouldRemove) {
+        delete doc.services[serviceName];
+        removedServices.push(serviceName);
+        needsSanitization = true;
+      }
+    }
+
+    if (removedServices.length > 0) {
+      console.log(
+        `[Docker] sanitizeCompose: removed services: ${removedServices.join(", ")}`,
+      );
+    }
+
+    // If no services left after sanitization, that's an error
+    if (Object.keys(doc.services).length === 0) {
+      console.error("[Docker] sanitizeCompose: no valid services remaining after sanitization");
+      return { sanitizedPath: composePath, originalPath: composePath };
     }
 
     if (!needsSanitization) {
@@ -523,7 +570,9 @@ export async function preSeedDataFiles(
         if (entry.name.endsWith(".sh")) {
           await fs.chmod(dest, 0o755);
         }
-        console.log(`[Docker] preSeedDataFiles: Copied ${entry.name} → ${dest}`);
+        console.log(
+          `[Docker] preSeedDataFiles: Copied ${entry.name} → ${dest}`,
+        );
       }
     }
   } catch (error) {
@@ -533,4 +582,155 @@ export async function preSeedDataFiles(
     );
     // Non-fatal — some apps don't need pre-seeded files
   }
+}
+
+/** Files to copy when installing an app (compose + metadata) */
+const APP_INSTALL_FILES = [
+  "docker-compose.yml",
+  "docker-compose.yaml",
+  "appfile.json",
+  "umbrel-app.yml",
+  "icon.png",
+  "icon.svg",
+];
+
+/**
+ * Copy app files from store to installed-apps directory.
+ *
+ * When installing a store app, we copy the compose file and metadata to
+ * `installed-apps/{appId}/` so the app remains manageable even if the
+ * store is deleted or refreshed.
+ *
+ * Also copies supporting files (entrypoint.sh, scripts, etc.) that the
+ * compose file may reference.
+ *
+ * @param storeAppDir - Source directory in the store (e.g., external-apps/.../Syncthing/)
+ * @param appId - The app identifier
+ * @returns Path to the copied compose file in installed-apps
+ */
+export async function copyAppToInstalledApps(
+  storeAppDir: string,
+  appId: string,
+): Promise<{ appDir: string; composePath: string }> {
+  const installedAppDir = path.join(INSTALLED_APPS_ROOT, appId);
+  await fs.mkdir(installedAppDir, { recursive: true });
+
+  let composePath: string | null = null;
+
+  // Copy compose and metadata files
+  for (const fileName of APP_INSTALL_FILES) {
+    const src = path.join(storeAppDir, fileName);
+    const dest = path.join(installedAppDir, fileName);
+    try {
+      await fs.access(src);
+      await fs.copyFile(src, dest);
+      console.log(
+        `[Docker] copyAppToInstalledApps: Copied ${fileName} → ${dest}`,
+      );
+
+      if (
+        !composePath &&
+        (fileName === "docker-compose.yml" ||
+          fileName === "docker-compose.yaml")
+      ) {
+        composePath = dest;
+      }
+    } catch {
+      // File doesn't exist in store, skip
+    }
+  }
+
+  // Copy supporting files (scripts, configs, etc.) - same as preSeedDataFiles
+  // but to installed-apps instead of APP_DATA_DIR
+  try {
+    const entries = await fs.readdir(storeAppDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      const lowerName = entry.name.toLowerCase();
+      // Skip files we already copied and metadata files
+      if (
+        APP_INSTALL_FILES.some((f) => f.toLowerCase() === lowerName) ||
+        STORE_META_FILES.has(lowerName)
+      ) {
+        continue;
+      }
+
+      const src = path.join(storeAppDir, entry.name);
+      const dest = path.join(installedAppDir, entry.name);
+      try {
+        await fs.copyFile(src, dest);
+        // Preserve executable bit for scripts
+        if (entry.name.endsWith(".sh")) {
+          await fs.chmod(dest, 0o755);
+        }
+        console.log(
+          `[Docker] copyAppToInstalledApps: Copied supporting file ${entry.name}`,
+        );
+      } catch {
+        // Non-fatal
+      }
+    }
+  } catch {
+    // Non-fatal
+  }
+
+  if (!composePath) {
+    throw new Error(`No docker-compose.yml found in ${storeAppDir}`);
+  }
+
+  return { appDir: installedAppDir, composePath };
+}
+
+/**
+ * Remove installed app files from installed-apps directory.
+ */
+export async function removeInstalledAppFiles(appId: string): Promise<void> {
+  const installedAppDir = path.join(INSTALLED_APPS_ROOT, appId);
+  try {
+    await fs.rm(installedAppDir, { recursive: true, force: true });
+    console.log(`[Docker] removeInstalledAppFiles: Removed ${installedAppDir}`);
+  } catch (error) {
+    console.warn(
+      `[Docker] removeInstalledAppFiles: Failed to remove ${installedAppDir}:`,
+      (error as Error)?.message || error,
+    );
+  }
+}
+
+/**
+ * Check if an app is already installed (has files in installed-apps).
+ */
+export async function isAppInstalled(appId: string): Promise<boolean> {
+  const composePath = path.join(
+    INSTALLED_APPS_ROOT,
+    appId,
+    "docker-compose.yml",
+  );
+  try {
+    await fs.access(composePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the installed app directory if it exists.
+ */
+export async function getInstalledAppDir(
+  appId: string,
+): Promise<{ appDir: string; composePath: string } | null> {
+  const appDir = path.join(INSTALLED_APPS_ROOT, appId);
+  const composeNames = ["docker-compose.yml", "docker-compose.yaml"];
+
+  for (const composeName of composeNames) {
+    const composePath = path.join(appDir, composeName);
+    try {
+      await fs.access(composePath);
+      return { appDir, composePath };
+    } catch {
+      // Try next
+    }
+  }
+  return null;
 }

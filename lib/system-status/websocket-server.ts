@@ -48,7 +48,7 @@ export interface InstalledApp {
   webUIPort?: number;
   containerName: string;
   installedAt: number;
-  source?: string;
+  storeId?: string;
 }
 
 export interface SystemUpdateMessage {
@@ -419,7 +419,7 @@ async function collectInstalledApps(): Promise<InstalledApp[]> {
           containerName,
           installedAt: meta?.createdAt?.getTime?.() || Date.now(),
           webUIPort: hostPort ? parseInt(hostPort, 10) : undefined,
-          source: (meta as any)?.source || undefined,
+          storeId: (meta as any)?.storeId || undefined,
         };
       }),
     );

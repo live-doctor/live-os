@@ -108,11 +108,23 @@ export function useAppStore(open: boolean) {
 
   const getInstalledApp = useCallback(
     (app: App) =>
-      installedApps.find(
-        (installed) =>
-          installed.appId.toLowerCase() === app.id.toLowerCase() &&
-          (!installed.source || !app.storeSlug || installed.source === app.storeSlug),
-      ) || undefined,
+      installedApps.find((installed) => {
+        // Must match appId
+        if (installed.appId.toLowerCase() !== app.id.toLowerCase()) {
+          return false;
+        }
+        // If installed app has a storeId, it must match the app's storeId
+        if (installed.storeId && app.storeId) {
+          return installed.storeId === app.storeId;
+        }
+        // If installed app has a storeId but app card has no storeId, don't match
+        // (the app card is from a different store)
+        if (installed.storeId && !app.storeId) {
+          return false;
+        }
+        // Legacy: installed app has no storeId (custom app), match any app with same appId
+        return true;
+      }) || undefined,
     [installedApps],
   );
 

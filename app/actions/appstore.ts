@@ -21,6 +21,7 @@ import {
     getUmbrelCommunityStores,
     isLikelyUmbrelStore,
     parseUmbrelStore,
+    UMBREL_OFFICIAL_ZIP,
 } from "./store/umbrel-store";
 import { listFiles, resolveAsset } from "./store/utils";
 
@@ -101,6 +102,7 @@ export async function getAppStoreApps(): Promise<App[]> {
         repo: record.repo ?? undefined,
         composePath: record.composePath,
         container: (record as any)?.container ?? undefined,
+        storeId: record.store?.id ?? undefined,
         storeName: record.store?.name ?? undefined,
         storeSlug: record.store?.slug ?? undefined,
       }));
@@ -236,6 +238,7 @@ export async function importAppStore(
         description: meta?.description,
         localPath: targetDir,
         manifestHash: zipHash,
+        format: storeFormat,
       },
       create: {
         slug: storeSlug,
@@ -244,6 +247,7 @@ export async function importAppStore(
         description: meta?.description,
         localPath: targetDir,
         manifestHash: zipHash,
+        format: storeFormat,
       },
     });
 
@@ -368,6 +372,60 @@ export async function ensureDefaultCasaStoreInstalled(): Promise<{
     });
     return { success: false, error: error?.message || "Unknown error" };
   }
+}
+
+/**
+ * Best-effort bootstrap of the official Umbrel store.
+ */
+export async function ensureDefaultUmbrelStoreInstalled(): Promise<{
+  success: boolean;
+  skipped?: boolean;
+  error?: string;
+}> {
+  const slug = slugify(UMBREL_OFFICIAL_ZIP);
+  const targetDir = path.join(STORE_ROOT, slug);
+
+  try {
+    await fs.mkdir(STORE_ROOT, { recursive: true });
+    const dirExists = await fs
+      .stat(targetDir)
+      .then(() => true)
+      .catch(() => false);
+    const storeExists = await prisma.store.findFirst({ where: { slug } });
+
+    if (dirExists && storeExists) {
+      return { success: true, skipped: true };
+    }
+
+    await logAction("appstore:bootstrap:umbrel:start");
+    const result = await importAppStore(UMBREL_OFFICIAL_ZIP, {
+      name: "Umbrel App Store",
+      description: "Official Umbrel application catalog",
+    });
+
+    return result.success
+      ? { success: true, skipped: false }
+      : { success: false, error: result.error };
+  } catch (error: any) {
+    await logAction("appstore:bootstrap:umbrel:error", {
+      error: error?.message || "unknown",
+    });
+    return { success: false, error: error?.message || "Unknown error" };
+  }
+}
+
+/**
+ * Bootstrap both default stores (CasaOS and Umbrel).
+ */
+export async function ensureDefaultStoresInstalled(): Promise<void> {
+  await Promise.all([
+    ensureDefaultCasaStoreInstalled().catch((error) =>
+      console.error("[AppStore] Failed to bootstrap CasaOS store:", error),
+    ),
+    ensureDefaultUmbrelStoreInstalled().catch((error) =>
+      console.error("[AppStore] Failed to bootstrap Umbrel store:", error),
+    ),
+  ]);
 }
 
 export { getCasaCommunityStores, getUmbrelCommunityStores };
@@ -501,15 +559,24 @@ export async function getImportedStoreDetails(): Promise<
  */
 export async function refreshAllStores(): Promise<{
   success: boolean;
-  results: { slug: string; success: boolean; apps?: number; error?: string }[];
+  results: {
+    slug: string;
+    name: string;
+    success: boolean;
+    apps?: number;
+    error?: string;
+    skipped?: boolean;
+  }[];
 }> {
   return withActionLogging("appstore:refreshAll", async () => {
     await logAction("appstore:refreshAll:start");
     const results: {
       slug: string;
+      name: string;
       success: boolean;
       apps?: number;
       error?: string;
+      skipped?: boolean;
     }[] = [];
 
     try {
@@ -517,7 +584,12 @@ export async function refreshAllStores(): Promise<{
 
       for (const store of stores) {
         if (!store.url) {
-          results.push({ slug: store.slug, success: false, error: "No URL" });
+          results.push({
+            slug: store.slug,
+            name: store.name ?? store.slug,
+            success: false,
+            error: "No URL",
+          });
           continue;
         }
 
@@ -529,13 +601,16 @@ export async function refreshAllStores(): Promise<{
 
           results.push({
             slug: store.slug,
+            name: store.name ?? store.slug,
             success: result.success,
             apps: result.apps,
             error: result.error,
+            skipped: result.skipped,
           });
         } catch (error: any) {
           results.push({
             slug: store.slug,
+            name: store.name ?? store.slug,
             success: false,
             error: error?.message || "Unknown error",
           });
@@ -597,7 +672,7 @@ export async function getComposeForApp(appId: string): Promise<{
   content?: string;
   appTitle?: string;
   appIcon?: string;
-  source?: string;
+  storeId?: string;
   container?: {
     image: string;
     ports: { container: string; published: string }[];
@@ -664,8 +739,7 @@ export async function getComposeForApp(appId: string): Promise<{
       content,
       appTitle: installed.name || installed.appId,
       appIcon: installed.icon || undefined,
-      source: installed.source || undefined,
-       
+      storeId: installed.storeId || undefined,
       container: (container as any) || undefined,
     };
   } catch (error) {

@@ -22,7 +22,7 @@ export interface CustomDeployInitialData {
   appIcon?: string;
   appTitle?: string;
   /** Preserve store association on redeploy */
-  source?: string;
+  storeId?: string;
   /** Preserve container metadata on redeploy */
   containerMeta?: Record<string, unknown>;
 }
@@ -45,8 +45,6 @@ export function CustomDeployDialog({
   const [dockerCompose, setDockerCompose] = useState(
     initialData?.dockerCompose ?? "",
   );
-  const [hostPort, setHostPort] = useState("");
-  const [containerPort, setContainerPort] = useState("");
   const [networkMode, setNetworkMode] = useState("");
   const [uiPort, setUiPort] = useState("");
   const isEditMode = Boolean(initialData?.appName && initialData?.dockerCompose);
@@ -57,11 +55,9 @@ export function CustomDeployDialog({
     setDockerCompose(initialData?.dockerCompose ?? "");
   }, [open, initialData]);
 
-  // Derive port and network mode from compose text
+  // Auto-detect web UI port and network mode from compose
   useEffect(() => {
     if (!dockerCompose.trim()) {
-      setHostPort("");
-      setContainerPort("");
       setNetworkMode("");
       setUiPort("");
       return;
@@ -74,14 +70,9 @@ export function CustomDeployDialog({
       const service = services[firstServiceName];
       const firstPort = Array.isArray(service?.ports) ? service.ports[0] : null;
       if (typeof firstPort === "string") {
-        const [host, rest] = firstPort.split(":");
-        const container = rest?.split("/")[0] || "";
-        setHostPort(host || "");
-        setContainerPort(container);
+        const [host] = firstPort.split(":");
         setUiPort(host || "");
       } else if (firstPort && typeof firstPort === "object") {
-        setHostPort(String(firstPort.published ?? ""));
-        setContainerPort(String(firstPort.target ?? ""));
         setUiPort(String(firstPort.published ?? ""));
       }
       setNetworkMode(service?.network_mode ?? "");
@@ -89,25 +80,6 @@ export function CustomDeployDialog({
       /* ignore parse errors */
     }
   }, [dockerCompose]);
-
-  type ComposeService = { ports?: unknown; network_mode?: unknown; [key: string]: unknown };
-
-  const applyComposeMutation = (
-    mutate: (service: ComposeService) => void,
-  ) => {
-    try {
-      const doc = YAML.parse(dockerCompose || "{}") || {};
-      const services = doc.services ?? {};
-      const firstServiceName = Object.keys(services)[0];
-      if (!firstServiceName) return;
-      mutate(services[firstServiceName]);
-      doc.services = services;
-      setDockerCompose(YAML.stringify(doc));
-    } catch (error) {
-      console.error("Failed to update compose", error);
-      toast.error("Compose update failed; check YAML syntax.");
-    }
-  };
 
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -147,7 +119,7 @@ export function CustomDeployDialog({
       const result = await deployApp({
         appId: appName,
         composeContent: dockerCompose,
-        source: initialData?.source ?? "custom",
+        storeId: initialData?.storeId,
         containerMeta: initialData?.containerMeta,
         meta: initialData?.appTitle
           ? { name: initialData.appTitle, icon: initialData.appIcon }
@@ -156,7 +128,7 @@ export function CustomDeployDialog({
           ports: [],
           volumes: [],
           environment: [],
-          webUIPort: uiPort || hostPort || undefined,
+          webUIPort: uiPort || undefined,
           networkMode: networkMode || undefined,
         },
       });
@@ -236,82 +208,7 @@ export function CustomDeployDialog({
               onDockerComposeChange={setDockerCompose}
               onFileUpload={handleFileUpload}
             />
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-zinc-200">Published port</Label>
-                  <Input
-                    placeholder="e.g. 14333"
-                    value={hostPort}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setHostPort(value);
-                      setUiPort(value);
-                      if (!value || !containerPort) return;
-                      applyComposeMutation((service) => {
-                        const target = containerPort;
-                        service.ports = [`${value}:${target}`];
-                      });
-                    }}
-                    className="text-white placeholder:text-zinc-500"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid rgba(255, 255, 255, 0.15)",
-                    }}
-                    disabled={loading}
-                  />
-                  <p className="text-xs text-zinc-500">
-                    Updates the first port mapping in the compose (host:container).
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-zinc-200">Web UI port</Label>
-                  <Input
-                    placeholder="Port for Web UI link"
-                    value={uiPort}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setUiPort(value);
-                    }}
-                    className="text-white placeholder:text-zinc-500"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid rgba(255, 255, 255, 0.15)",
-                    }}
-                    disabled={loading}
-                  />
-                  <p className="text-xs text-zinc-500">
-                    Stored for Web UI resolution; does not change docker mapping.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-zinc-200">Network mode</Label>
-                  <select
-                    className="w-full rounded-md bg-[rgba(255,255,255,0.05)] border border-white/15 text-white text-sm px-3 py-2"
-                    value={networkMode}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNetworkMode(value);
-                      applyComposeMutation((service) => {
-                        if (value) service.network_mode = value;
-                        else delete service.network_mode;
-                      });
-                    }}
-                    disabled={loading}
-                  >
-                    <option value="">(default)</option>
-                    <option value="bridge">bridge</option>
-                    <option value="host">host</option>
-                    <option value="none">none</option>
-                  </select>
-                  <p className="text-xs text-zinc-500">
-                    Writes `network_mode` on the first service in the compose.
-                  </p>
-                </div>
-              </div>
-            </div>
-         </div>
+          </div>
        </ScrollArea>
 
         <CustomDeployFooter

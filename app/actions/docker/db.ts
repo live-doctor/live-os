@@ -35,7 +35,7 @@ export async function recordInstalledApp(
   containerName: string,
   override?: { name?: string; icon?: string },
   installConfig?: Record<string, unknown>,
-  source?: string,
+  storeId?: string,
   container?: Record<string, unknown>,
 ): Promise<void> {
   const meta = await getAppMeta(appId, override);
@@ -49,7 +49,7 @@ export async function recordInstalledApp(
       ...(installConfig !== undefined && {
         installConfig: installConfig as Prisma.InputJsonValue,
       }),
-      ...(source !== undefined && { source }),
+      ...(storeId !== undefined && { storeId }),
       ...(container !== undefined && {
         container: container as Prisma.InputJsonValue,
       }),
@@ -62,7 +62,7 @@ export async function recordInstalledApp(
       ...(installConfig !== undefined && {
         installConfig: installConfig as Prisma.InputJsonValue,
       }),
-      ...(source !== undefined && { source }),
+      ...(storeId !== undefined && { storeId }),
       ...(container !== undefined && {
         container: container as Prisma.InputJsonValue,
       }),
@@ -115,7 +115,9 @@ export async function removeInstalledAppRecord(containerName: string): Promise<v
  * Get all installed app records from database
  */
 export async function getInstalledAppRecords() {
-  return prisma.installedApp.findMany();
+  return prisma.installedApp.findMany({
+    include: { store: { select: { id: true, slug: true, format: true } } },
+  });
 }
 
 /**

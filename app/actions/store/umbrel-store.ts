@@ -4,14 +4,13 @@ import type {
   PortConfig,
   VolumeConfig,
 } from "@/components/app-store/types";
-import {
-  fileExists,
-  listFiles,
-  resolveAsset,
-} from "./utils";
 import fs from "fs/promises";
 import path from "path";
 import YAML from "yaml";
+import { fileExists, listFiles, resolveAsset } from "./utils";
+
+export const UMBREL_OFFICIAL_ZIP =
+  "https://github.com/getumbrel/umbrel-apps/archive/refs/heads/master.zip";
 
 export const UMBREL_GALLERY_BASE =
   "https://raw.githubusercontent.com/getumbrel/umbrel-apps-gallery/refs/heads/master";
@@ -33,7 +32,9 @@ export async function parseUmbrelStore(
       const manifest = YAML.parse(content) as UmbrelManifest;
 
       if (!manifest.id || !manifest.name) {
-        console.warn(`Skipping manifest at ${manifestPath}: missing id or name`);
+        console.warn(
+          `Skipping manifest at ${manifestPath}: missing id or name`,
+        );
         continue;
       }
 
@@ -89,7 +90,10 @@ export async function parseUmbrelStore(
         container: container ?? undefined,
       });
     } catch (error) {
-      console.warn(`Failed to parse Umbrel manifest at ${manifestPath}:`, error);
+      console.warn(
+        `Failed to parse Umbrel manifest at ${manifestPath}:`,
+        error,
+      );
     }
   }
 
@@ -102,16 +106,20 @@ export function isLikelyUmbrelStore(files: string[]): boolean {
   );
 }
 
-export function getUmbrelCommunityStores(): { id: string; name: string; description: string; sourceUrls: string[]; repoUrl?: string }[] {
+export function getUmbrelCommunityStores(): {
+  id: string;
+  name: string;
+  description: string;
+  sourceUrls: string[];
+  repoUrl?: string;
+}[] {
   return [
     {
-      id: "umbrel-community",
-      name: "Umbrel Community Store",
-      description: "Community-maintained apps for Umbrel",
-      sourceUrls: [
-        "https://github.com/getumbrel/umbrel-community-app-store/archive/refs/heads/main.zip",
-      ],
-      repoUrl: "https://github.com/getumbrel/umbrel-community-app-store",
+      id: "umbrel-official",
+      name: "Umbrel Official Store",
+      description: "Official apps maintained by the Umbrel team.",
+      sourceUrls: [UMBREL_OFFICIAL_ZIP],
+      repoUrl: "https://github.com/getumbrel/umbrel-apps",
     },
   ];
 }
@@ -200,12 +208,8 @@ function normalizePorts(
         });
       }
     } else if (typeof port === "object" && port !== null) {
-      const container = (
-        port.target ?? port.container ?? ""
-      ).toString();
-      const published = (
-        port.published ?? port.host ?? container
-      ).toString();
+      const container = (port.target ?? port.container ?? "").toString();
+      const published = (port.published ?? port.host ?? container).toString();
       const protocol = (port.protocol ?? "tcp").toString();
       if (container) {
         results.push({ container, published, protocol });

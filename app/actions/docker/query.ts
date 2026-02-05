@@ -83,8 +83,8 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
 
       const resolvedAppId = anyRecord?.appId || projectKey || rawId;
       const storeMetaCandidates = appMetaById.get(resolvedAppId) ?? [];
-      const storeMeta = anyRecord?.source
-        ? storeMetaCandidates.find((m) => m.store?.slug === anyRecord.source) ||
+      const storeMeta = anyRecord?.storeId
+        ? storeMetaCandidates.find((m) => m.storeId === anyRecord.storeId) ||
           storeMetaCandidates[0]
         : storeMetaCandidates[0];
 
@@ -187,7 +187,7 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
     const installRecord = await prisma.installedApp.findFirst({
       where: { appId },
       orderBy: { updatedAt: "desc" },
-      select: { source: true, installConfig: true, containerName: true },
+      select: { storeId: true, installConfig: true, containerName: true },
     });
 
     const recordedContainer =
@@ -213,11 +213,11 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
 
     // 2) Pull app metadata for fallback port/path, preferring the store it was installed from
     const appMeta = await prisma.app.findFirst({
-      where: installRecord?.source
-        ? { appId, store: { slug: installRecord.source } }
+      where: installRecord?.storeId
+        ? { appId, storeId: installRecord.storeId }
         : { appId },
       orderBy: { createdAt: "desc" },
-      select: { port: true, path: true, store: { select: { slug: true } } },
+      select: { port: true, path: true, storeId: true },
     });
 
     // 1) Prefer published host port from Docker (works for bridge mode)

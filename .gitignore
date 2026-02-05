@@ -52,6 +52,7 @@ prisma/live-os.db
 # custom docker deployments
 /custom-apps
 /external-apps
+/installed-apps
 
 
 /umbrel

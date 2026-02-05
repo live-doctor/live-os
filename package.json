@@ -1,6 +1,6 @@
 {
   "name": "live-os",
-  "version": "1.0.30",
+  "version": "1.2.31",
   "private": true,
   "type": "module",
   "scripts": {

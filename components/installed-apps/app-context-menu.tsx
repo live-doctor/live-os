@@ -136,7 +136,7 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
         dockerCompose: result.content,
         appIcon: result.appIcon,
         appTitle: result.appTitle,
-        source: result.source,
+        storeId: result.storeId,
         containerMeta: result.container as Record<string, unknown> | undefined,
       });
       setShowCustomDeploy(true);

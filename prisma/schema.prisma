@@ -47,16 +47,18 @@ model Settings {
 }
 
 model Store {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  url         String
-  name        String
-  description String?
-  localPath   String
-  manifestHash String?
-  apps        App[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  url           String
+  name          String
+  description   String?
+  localPath     String
+  manifestHash  String?
+  format        String         @default("casaos") // "casaos" | "umbrel"
+  apps          App[]
+  installedApps InstalledApp[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model App {
@@ -89,17 +91,18 @@ model App {
 }
 
 model InstalledApp {
-  id             String   @id @default(cuid())
-  appId          String
-  name           String
-  icon           String
-  containerName  String   @unique
-  installConfig  Json?
-  source         String?
-  container      Json?
-  containers     Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default(cuid())
+  appId         String
+  name          String
+  icon          String
+  containerName String   @unique
+  installConfig Json?
+  storeId       String?
+  store         Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  container     Json?
+  containers    Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@index([appId, source])
+  @@index([appId, storeId])
 }

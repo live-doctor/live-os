@@ -2,6 +2,7 @@
 import {
   getCasaCommunityStores,
   getImportedStoreDetails,
+  getUmbrelCommunityStores,
   importAppStore,
   removeImportedStore
 } from "@/app/actions/appstore";
@@ -44,15 +45,17 @@ export function CommunityStoreDialog({
       try {
         setLoading(true);
         setError(null);
-        const [data, imported] = await Promise.all([
+        const [casaStores, umbrelStores, imported] = await Promise.all([
           getCasaCommunityStores(),
+          getUmbrelCommunityStores(),
           getImportedStoreDetails(),
         ]);
-        setStores(data);
+        // Combine both store types
+        setStores([...casaStores, ...umbrelStores]);
         setImportedStores(normalizeImported(imported));
       } catch (err) {
         // Error handled by toast
-        setError("Unable to load CasaOS community stores right now.");
+        setError("Unable to load community stores right now.");
       } finally {
         setLoading(false);
       }

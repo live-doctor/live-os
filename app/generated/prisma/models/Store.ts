@@ -32,6 +32,7 @@ export type StoreMinAggregateOutputType = {
   description: string | null
   localPath: string | null
   manifestHash: string | null
+  format: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +45,7 @@ export type StoreMaxAggregateOutputType = {
   description: string | null
   localPath: string | null
   manifestHash: string | null
+  format: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,6 +58,7 @@ export type StoreCountAggregateOutputType = {
   description: number
   localPath: number
   manifestHash: number
+  format: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -70,6 +73,7 @@ export type StoreMinAggregateInputType = {
   description?: true
   localPath?: true
   manifestHash?: true
+  format?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +86,7 @@ export type StoreMaxAggregateInputType = {
   description?: true
   localPath?: true
   manifestHash?: true
+  format?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,6 +99,7 @@ export type StoreCountAggregateInputType = {
   description?: true
   localPath?: true
   manifestHash?: true
+  format?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -179,6 +185,7 @@ export type StoreGroupByOutputType = {
   description: string | null
   localPath: string
   manifestHash: string | null
+  format: string
   createdAt: Date
   updatedAt: Date
   _count: StoreCountAggregateOutputType | null
@@ -212,9 +219,11 @@ export type StoreWhereInput = {
   description?: Prisma.StringNullableFilter<"Store"> | string | null
   localPath?: Prisma.StringFilter<"Store"> | string
   manifestHash?: Prisma.StringNullableFilter<"Store"> | string | null
+  format?: Prisma.StringFilter<"Store"> | string
   createdAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   apps?: Prisma.AppListRelationFilter
+  installedApps?: Prisma.InstalledAppListRelationFilter
 }
 
 export type StoreOrderByWithRelationInput = {
@@ -225,9 +234,11 @@ export type StoreOrderByWithRelationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   localPath?: Prisma.SortOrder
   manifestHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  format?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   apps?: Prisma.AppOrderByRelationAggregateInput
+  installedApps?: Prisma.InstalledAppOrderByRelationAggregateInput
 }
 
 export type StoreWhereUniqueInput = Prisma.AtLeast<{
@@ -241,9 +252,11 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringNullableFilter<"Store"> | string | null
   localPath?: Prisma.StringFilter<"Store"> | string
   manifestHash?: Prisma.StringNullableFilter<"Store"> | string | null
+  format?: Prisma.StringFilter<"Store"> | string
   createdAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   apps?: Prisma.AppListRelationFilter
+  installedApps?: Prisma.InstalledAppListRelationFilter
 }, "id" | "slug">
 
 export type StoreOrderByWithAggregationInput = {
@@ -254,6 +267,7 @@ export type StoreOrderByWithAggregationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   localPath?: Prisma.SortOrder
   manifestHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  format?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StoreCountOrderByAggregateInput
@@ -272,6 +286,7 @@ export type StoreScalarWhereWithAggregatesInput = {
   description?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   localPath?: Prisma.StringWithAggregatesFilter<"Store"> | string
   manifestHash?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  format?: Prisma.StringWithAggregatesFilter<"Store"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Store"> | Date | string
 }
@@ -284,9 +299,11 @@ export type StoreCreateInput = {
   description?: string | null
   localPath: string
   manifestHash?: string | null
+  format?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   apps?: Prisma.AppCreateNestedManyWithoutStoreInput
+  installedApps?: Prisma.InstalledAppCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateInput = {
@@ -297,9 +314,11 @@ export type StoreUncheckedCreateInput = {
   description?: string | null
   localPath: string
   manifestHash?: string | null
+  format?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   apps?: Prisma.AppUncheckedCreateNestedManyWithoutStoreInput
+  installedApps?: Prisma.InstalledAppUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUpdateInput = {
@@ -310,9 +329,11 @@ export type StoreUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localPath?: Prisma.StringFieldUpdateOperationsInput | string
   manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   apps?: Prisma.AppUpdateManyWithoutStoreNestedInput
+  installedApps?: Prisma.InstalledAppUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateInput = {
@@ -323,9 +344,11 @@ export type StoreUncheckedUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localPath?: Prisma.StringFieldUpdateOperationsInput | string
   manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   apps?: Prisma.AppUncheckedUpdateManyWithoutStoreNestedInput
+  installedApps?: Prisma.InstalledAppUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateManyInput = {
@@ -336,6 +359,7 @@ export type StoreCreateManyInput = {
   description?: string | null
   localPath: string
   manifestHash?: string | null
+  format?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -348,6 +372,7 @@ export type StoreUpdateManyMutationInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localPath?: Prisma.StringFieldUpdateOperationsInput | string
   manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -360,6 +385,7 @@ export type StoreUncheckedUpdateManyInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localPath?: Prisma.StringFieldUpdateOperationsInput | string
   manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -372,6 +398,7 @@ export type StoreCountOrderByAggregateInput = {
   description?: Prisma.SortOrder
   localPath?: Prisma.SortOrder
   manifestHash?: Prisma.SortOrder
+  format?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -384,6 +411,7 @@ export type StoreMaxOrderByAggregateInput = {
   description?: Prisma.SortOrder
   localPath?: Prisma.SortOrder
   manifestHash?: Prisma.SortOrder
+  format?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -396,6 +424,7 @@ export type StoreMinOrderByAggregateInput = {
   description?: Prisma.SortOrder
   localPath?: Prisma.SortOrder
   manifestHash?: Prisma.SortOrder
+  format?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -403,6 +432,11 @@ export type StoreMinOrderByAggregateInput = {
 export type StoreScalarRelationFilter = {
   is?: Prisma.StoreWhereInput
   isNot?: Prisma.StoreWhereInput
+}
+
+export type StoreNullableScalarRelationFilter = {
+  is?: Prisma.StoreWhereInput | null
+  isNot?: Prisma.StoreWhereInput | null
 }
 
 export type StoreCreateNestedOneWithoutAppsInput = {
@@ -419,6 +453,22 @@ export type StoreUpdateOneRequiredWithoutAppsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutAppsInput, Prisma.StoreUpdateWithoutAppsInput>, Prisma.StoreUncheckedUpdateWithoutAppsInput>
 }
 
+export type StoreCreateNestedOneWithoutInstalledAppsInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutInstalledAppsInput, Prisma.StoreUncheckedCreateWithoutInstalledAppsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutInstalledAppsInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneWithoutInstalledAppsNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutInstalledAppsInput, Prisma.StoreUncheckedCreateWithoutInstalledAppsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutInstalledAppsInput
+  upsert?: Prisma.StoreUpsertWithoutInstalledAppsInput
+  disconnect?: Prisma.StoreWhereInput | boolean
+  delete?: Prisma.StoreWhereInput | boolean
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutInstalledAppsInput, Prisma.StoreUpdateWithoutInstalledAppsInput>, Prisma.StoreUncheckedUpdateWithoutInstalledAppsInput>
+}
+
 export type StoreCreateWithoutAppsInput = {
   id?: string
   slug: string
@@ -427,8 +477,10 @@ export type StoreCreateWithoutAppsInput = {
   description?: string | null
   localPath: string
   manifestHash?: string | null
+  format?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  installedApps?: Prisma.InstalledAppCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAppsInput = {
@@ -439,8 +491,10 @@ export type StoreUncheckedCreateWithoutAppsInput = {
   description?: string | null
   localPath: string
   manifestHash?: string | null
+  format?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  installedApps?: Prisma.InstalledAppUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAppsInput = {
@@ -467,8 +521,10 @@ export type StoreUpdateWithoutAppsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localPath?: Prisma.StringFieldUpdateOperationsInput | string
   manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  installedApps?: Prisma.InstalledAppUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAppsInput = {
@@ -479,8 +535,82 @@ export type StoreUncheckedUpdateWithoutAppsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localPath?: Prisma.StringFieldUpdateOperationsInput | string
   manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  installedApps?: Prisma.InstalledAppUncheckedUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutInstalledAppsInput = {
+  id?: string
+  slug: string
+  url: string
+  name: string
+  description?: string | null
+  localPath: string
+  manifestHash?: string | null
+  format?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  apps?: Prisma.AppCreateNestedManyWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutInstalledAppsInput = {
+  id?: string
+  slug: string
+  url: string
+  name: string
+  description?: string | null
+  localPath: string
+  manifestHash?: string | null
+  format?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  apps?: Prisma.AppUncheckedCreateNestedManyWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutInstalledAppsInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutInstalledAppsInput, Prisma.StoreUncheckedCreateWithoutInstalledAppsInput>
+}
+
+export type StoreUpsertWithoutInstalledAppsInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutInstalledAppsInput, Prisma.StoreUncheckedUpdateWithoutInstalledAppsInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutInstalledAppsInput, Prisma.StoreUncheckedCreateWithoutInstalledAppsInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutInstalledAppsInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutInstalledAppsInput, Prisma.StoreUncheckedUpdateWithoutInstalledAppsInput>
+}
+
+export type StoreUpdateWithoutInstalledAppsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  url?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localPath?: Prisma.StringFieldUpdateOperationsInput | string
+  manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  apps?: Prisma.AppUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutInstalledAppsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  url?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localPath?: Prisma.StringFieldUpdateOperationsInput | string
+  manifestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  format?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  apps?: Prisma.AppUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 
@@ -490,10 +620,12 @@ export type StoreUncheckedUpdateWithoutAppsInput = {
 
 export type StoreCountOutputType = {
   apps: number
+  installedApps: number
 }
 
 export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   apps?: boolean | StoreCountOutputTypeCountAppsArgs
+  installedApps?: boolean | StoreCountOutputTypeCountInstalledAppsArgs
 }
 
 /**
@@ -513,6 +645,13 @@ export type StoreCountOutputTypeCountAppsArgs<ExtArgs extends runtime.Types.Exte
   where?: Prisma.AppWhereInput
 }
 
+/**
+ * StoreCountOutputType without action
+ */
+export type StoreCountOutputTypeCountInstalledAppsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InstalledAppWhereInput
+}
+
 
 export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -522,9 +661,11 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   description?: boolean
   localPath?: boolean
   manifestHash?: boolean
+  format?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   apps?: boolean | Prisma.Store$appsArgs<ExtArgs>
+  installedApps?: boolean | Prisma.Store$installedAppsArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["store"]>
 
@@ -536,6 +677,7 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   description?: boolean
   localPath?: boolean
   manifestHash?: boolean
+  format?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["store"]>
@@ -548,6 +690,7 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   description?: boolean
   localPath?: boolean
   manifestHash?: boolean
+  format?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["store"]>
@@ -560,13 +703,15 @@ export type StoreSelectScalar = {
   description?: boolean
   localPath?: boolean
   manifestHash?: boolean
+  format?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "url" | "name" | "description" | "localPath" | "manifestHash" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "url" | "name" | "description" | "localPath" | "manifestHash" | "format" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   apps?: boolean | Prisma.Store$appsArgs<ExtArgs>
+  installedApps?: boolean | Prisma.Store$installedAppsArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type StoreIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -576,6 +721,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name: "Store"
   objects: {
     apps: Prisma.$AppPayload<ExtArgs>[]
+    installedApps: Prisma.$InstalledAppPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -585,6 +731,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     description: string | null
     localPath: string
     manifestHash: string | null
+    format: string
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["store"]>
@@ -982,6 +1129,7 @@ readonly fields: StoreFieldRefs;
 export interface Prisma__StoreClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   apps<T extends Prisma.Store$appsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$appsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AppPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  installedApps<T extends Prisma.Store$installedAppsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$installedAppsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InstalledAppPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1018,6 +1166,7 @@ export interface StoreFieldRefs {
   readonly description: Prisma.FieldRef<"Store", 'String'>
   readonly localPath: Prisma.FieldRef<"Store", 'String'>
   readonly manifestHash: Prisma.FieldRef<"Store", 'String'>
+  readonly format: Prisma.FieldRef<"Store", 'String'>
   readonly createdAt: Prisma.FieldRef<"Store", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Store", 'DateTime'>
 }
@@ -1427,6 +1576,30 @@ export type Store$appsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
   take?: number
   skip?: number
   distinct?: Prisma.AppScalarFieldEnum | Prisma.AppScalarFieldEnum[]
+}
+
+/**
+ * Store.installedApps
+ */
+export type Store$installedAppsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InstalledApp
+   */
+  select?: Prisma.InstalledAppSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InstalledApp
+   */
+  omit?: Prisma.InstalledAppOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
+  where?: Prisma.InstalledAppWhereInput
+  orderBy?: Prisma.InstalledAppOrderByWithRelationInput | Prisma.InstalledAppOrderByWithRelationInput[]
+  cursor?: Prisma.InstalledAppWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InstalledAppScalarFieldEnum | Prisma.InstalledAppScalarFieldEnum[]
 }
 
 /**

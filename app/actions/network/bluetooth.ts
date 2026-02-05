@@ -122,6 +122,7 @@ export async function getBluetoothStatus(): Promise<BluetoothStatus> {
 export async function setBluetoothPower(
   enabled: boolean,
 ): Promise<{ success: boolean; status: BluetoothStatus; error?: string }> {
+  const actionName = (suffix: string) => `bluetooth:${suffix}`;
   const adapter = await detectAdapter();
   const unavailableStatus: BluetoothStatus = {
     available: false,
@@ -137,7 +138,7 @@ export async function setBluetoothPower(
     return { success: false, status: unavailableStatus, error: unavailableStatus.error ?? undefined };
   }
 
-  await logAction("bluetooth:power:set", { target: enabled, adapter });
+  await logAction(actionName("power:set"), { target: enabled, adapter });
 
   let commandError: string | undefined;
 
@@ -152,6 +153,11 @@ export async function setBluetoothPower(
     }
   } catch (error) {
     commandError = (error as Error)?.message || "Failed to set Bluetooth power";
+    await logAction(
+      actionName("power:error"),
+      { target: enabled, adapter, error: commandError },
+      "error",
+    );
 
     try {
       if (enabled) {
@@ -166,6 +172,18 @@ export async function setBluetoothPower(
 
   const status = await getBluetoothStatus();
   const success = status.powered === enabled;
+
+  await logAction(
+    actionName("power:result"),
+    {
+      target: enabled,
+      adapter,
+      success,
+      blocked: status.blocked,
+      available: status.available,
+    },
+    success ? "info" : "warn",
+  );
 
   return {
     success,

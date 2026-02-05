@@ -53,10 +53,21 @@ export function AppStoreSettingsDialog({
   const [stores, setStores] = useState<StoreDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [updateResults, setUpdateResults] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
+  const [updateDetails, setUpdateDetails] = useState<
+    {
+      slug: string;
+      name: string;
+      success: boolean;
+      apps?: number;
+      error?: string;
+      skipped?: boolean;
+    }[]
+  >([]);
   const [removingStore, setRemovingStore] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,16 +89,25 @@ export function AppStoreSettingsDialog({
   };
 
   const handleUpdateAll = async () => {
+    if (!stores.length) return;
+    // Ask for confirmation first; don't run until the user confirms.
+    setConfirming(true);
+    setUpdateResults(null);
+    setUpdateDetails([]);
+  };
+
+  const runUpdateAll = async () => {
     setUpdating(true);
     setUpdateResults(null);
     try {
       const result = await refreshAllStores();
+      setUpdateDetails(result.results);
       const successCount = result.results.filter((r) => r.success).length;
       const totalApps = result.results.reduce((sum, r) => sum + (r.apps || 0), 0);
 
       setUpdateResults({
         success: result.success,
-        message: `Updated ${successCount}/${result.results.length} stores (${totalApps} apps)`,
+        message: `Checked ${result.results.length} stores · Updated ${successCount} · ${totalApps} apps total`,
       });
 
       await loadStores();
@@ -100,6 +120,7 @@ export function AppStoreSettingsDialog({
       });
     } finally {
       setUpdating(false);
+      setConfirming(false);
     }
   };
 
@@ -183,37 +204,74 @@ export function AppStoreSettingsDialog({
 
           {/* Update Section */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-white">
-                  Update App Store
-                </h3>
-                <p className="text-xs text-white/60">
-                  Refresh all stores to get the latest apps
-                </p>
-              </div>
-              <Button
-                onClick={handleUpdateAll}
-                disabled={updating || stores.length === 0}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                size="sm"
-              >
-                {updating ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                {updating ? "Updating..." : "Update All"}
-              </Button>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-white">
+                Update App Store
+              </h3>
+              <p className="text-xs text-white/60">
+                Refresh all stores to get the latest apps
+              </p>
             </div>
+            <Button
+              onClick={handleUpdateAll}
+              disabled={updating || stores.length === 0}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              size="sm"
+            >
+              {updating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {updating ? "Updating..." : "Update All"}
+            </Button>
+          </div>
 
-            {/* Update Results */}
-            {updateResults && (
+          {confirming && !updating && (
+            <div className="rounded-lg border border-yellow-400/30 bg-yellow-500/10 text-yellow-100 p-3 space-y-2">
+              <div className="text-sm font-medium">Confirm refresh?</div>
+              <p className="text-xs text-yellow-50/90">
+                We will download and re-parse {stores.length} store(s):
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {stores.map((s) => (
+                  <span
+                    key={s.slug}
+                    className="rounded-full bg-white/10 px-2 py-1 text-white/80 border border-white/10"
+                  >
+                    {s.name}
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={runUpdateAll}
+                >
+                  Run updates
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-white border-white/20 bg-white/5 hover:bg-white/10"
+                  onClick={() => setConfirming(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Update Results */}
+          {updateResults && (
+            <div className="space-y-2">
               <div
                 className={`flex items-center gap-2 text-sm rounded-lg px-3 py-2 ${
                   updateResults.success
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-red-500/10 text-red-400"
+                    ? "bg-green-500/10 text-green-300"
+                    : "bg-red-500/10 text-red-300"
                 }`}
               >
                 {updateResults.success ? (
@@ -223,7 +281,45 @@ export function AppStoreSettingsDialog({
                 )}
                 {updateResults.message}
               </div>
-            )}
+
+              {updateDetails.length > 0 && (
+                <div className="rounded-lg border border-white/10 bg-white/5 divide-y divide-white/5">
+                  {updateDetails.map((detail) => (
+                    <div
+                      key={detail.slug}
+                      className="flex items-center justify-between px-3 py-2 text-sm text-white/80"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{detail.name}</div>
+                        <div className="text-xs text-white/50 truncate">
+                          {detail.slug}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {detail.success ? (
+                          detail.skipped ? (
+                            <span className="text-white/60">No change</span>
+                          ) : (
+                            <span className="text-green-400">Updated</span>
+                          )
+                        ) : (
+                          <span className="text-red-400">Failed</span>
+                        )}
+                        {typeof detail.apps === "number" && (
+                          <span className="text-white/50">{detail.apps} apps</span>
+                        )}
+                        {detail.error && !detail.success && (
+                          <span className="text-red-300 truncate max-w-[160px]" title={detail.error}>
+                            {detail.error}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
             {/* Stats */}
             <div className="flex items-center gap-4 text-sm">

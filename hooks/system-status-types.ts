@@ -40,7 +40,7 @@ export interface InstalledApp {
   containerName: string;
   containers?: string[];
   installedAt: number;
-  source?: string;
+  storeId?: string;
 }
 
 export interface InstallProgress {

@@ -57,6 +57,7 @@ export interface App {
   dependencies?: string[]; // Required app dependencies
 
   // Store metadata
+  storeId?: string; // Store database ID (foreign key)
   storeName?: string; // Human-friendly store name
   storeSlug?: string; // Store slug identifier
 
@@ -91,5 +92,5 @@ export interface InstalledApp {
   containerName: string; // Docker container name (primary)
   containers?: string[]; // All container names in compose project
   installedAt: number; // Timestamp
-  source?: string; // Store slug or "custom"
+  storeId?: string; // Store ID (foreign key to Store table)
 }

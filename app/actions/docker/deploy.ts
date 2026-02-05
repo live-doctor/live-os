@@ -5,18 +5,24 @@ import {
   type InstallProgressPayload,
 } from "@/app/api/system/stream/route";
 import type { InstallConfig } from "@/components/app-store/types";
-import { triggerAppsUpdate } from "@/lib/system-status/websocket-server";
 import prisma from "@/lib/prisma";
+import { triggerAppsUpdate } from "@/lib/system-status/websocket-server";
 import { spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
-import { env } from "process";
 import YAML from "yaml";
 import { logAction } from "../maintenance/logger";
 import { getAppMeta, recordInstalledApp } from "./db";
 import { checkDependencies } from "./dependencies";
 import {
-  CUSTOM_APPS_ROOT,
+  buildCasaOSEnvVars,
+  buildDefaultEnvVars,
+  buildUmbrelEnvVars,
+  detectStoreType,
+  type StoreType,
+} from "./env";
+import {
+  copyAppToInstalledApps,
   DEFAULT_APP_ICON,
   detectAllComposeContainerNames,
   detectComposeContainerName,
@@ -24,8 +30,9 @@ import {
   findComposeForApp,
   getContainerName,
   getContainerNameFromCompose,
-  getSystemDefaults,
+  getInstalledAppDir,
   guessComposeContainerName,
+  INSTALLED_APPS_ROOT,
   preSeedDataFiles,
   sanitizeComposeFile,
   validateAppId,
@@ -42,8 +49,8 @@ export interface DeployOptions {
   config?: InstallConfig;
   /** Display metadata for UI and DB */
   meta?: { name?: string; icon?: string };
-  /** Store slug or "custom" — preserved on redeploy */
-  source?: string;
+  /** Store ID (foreign key) — preserved on redeploy */
+  storeId?: string;
   /** Original container metadata from store — preserved on redeploy */
   containerMeta?: Record<string, unknown>;
 }
@@ -111,11 +118,16 @@ export async function deployApp(
       emitProgress(1, "Compose file not found", "error");
       return {
         success: false,
-        error: "Compose file not found. Provide compose content or ensure the app is in a store.",
+        error:
+          "Compose file not found. Provide compose content or ensure the app is in a store.",
       };
     }
 
     const { appDir, composePath: resolvedComposePath } = resolved;
+
+    // Detect store type for proper environment variable handling
+    const storeType = await detectStoreType(options.storeId, resolvedComposePath);
+    console.log(`[Docker] deployApp: Detected store type "${storeType}" for "${appId}"`);
 
     // If this is an update/redeploy, tear down old containers first
     if (options.composeContent) {
@@ -123,16 +135,18 @@ export async function deployApp(
     }
 
     // Sanitize compose (temp file for docker, original path for DB)
+    // Pass store type for store-specific sanitization (e.g., Umbrel app_proxy)
     const { sanitizedPath, originalPath } =
-      await sanitizeComposeFile(resolvedComposePath);
+      await sanitizeComposeFile(resolvedComposePath, storeType);
 
     console.log(
       `[Docker] deployApp: Using compose at ${sanitizedPath} (original: ${originalPath})`,
     );
     emitProgress(0.15, "Configuring deployment");
 
-    // Build environment variables first — we need APP_DATA_DIR for pre-seeding
-    const envVars = buildEnvVars(appId, config);
+    // Build environment variables based on store type
+    // Different stores (CasaOS, Umbrel, custom) expect different env vars
+    const envVars = await buildEnvVars(appId, storeType, config);
 
     // Resolve container name
     const composeContainerName =
@@ -156,7 +170,8 @@ export async function deployApp(
       appDir,
       sanitizedPath,
       envVars,
-      (progress, message) => emitProgress(progress, message ?? "Pulling images"),
+      (progress, message) =>
+        emitProgress(progress, message ?? "Pulling images"),
     );
 
     // Start services
@@ -186,8 +201,8 @@ export async function deployApp(
     // Extract web UI port and network mode from compose (best-effort)
     const composeMeta = await extractComposeMeta(sanitizedPath);
 
-    // Resolve source (store slug or "custom")
-    const source = await resolveSource(appId, options.source);
+    // Resolve store ID (foreign key to Store table)
+    const storeId = await resolveStoreId(appId, options.storeId);
 
     // Resolve container metadata from store if not provided
     const resolvedContainerMeta =
@@ -213,7 +228,7 @@ export async function deployApp(
       detectedContainer,
       metaOverride,
       persistedConfig,
-      source,
+      storeId,
       resolvedContainerMeta,
     );
 
@@ -257,7 +272,7 @@ export async function convertDockerRunToCompose(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const composerize = (await import("composerize") as any).default;
+    const composerize = ((await import("composerize")) as any).default;
     const yaml = composerize(command.trim());
     return { success: true, yaml };
   } catch (error: unknown) {
@@ -278,6 +293,9 @@ export async function convertDockerRunToCompose(
 
 /**
  * Resolve where the compose file is, based on DeployOptions.
+ *
+ * For store apps, we copy the compose file to installed-apps/{appId}/ so the
+ * app remains manageable even if the store is deleted or refreshed.
  */
 async function resolveCompose(
   options: DeployOptions,
@@ -286,8 +304,8 @@ async function resolveCompose(
 
   // Case 1: Raw YAML provided — write to custom-apps/{appId}/
   if (composeContent) {
-    await fs.mkdir(CUSTOM_APPS_ROOT, { recursive: true });
-    const appDir = path.join(CUSTOM_APPS_ROOT, appId);
+    await fs.mkdir(INSTALLED_APPS_ROOT, { recursive: true });
+    const appDir = path.join(INSTALLED_APPS_ROOT, appId);
     await fs.mkdir(appDir, { recursive: true });
     const filePath = path.join(appDir, "docker-compose.yml");
     await fs.writeFile(filePath, composeContent, "utf-8");
@@ -295,7 +313,18 @@ async function resolveCompose(
     return { appDir, composePath: filePath };
   }
 
-  // Case 2: Explicit compose path provided (store install)
+  // Case 2: Check if app is already installed (has files in installed-apps)
+  // This handles re-deploys and edits of already-installed apps
+  const installedApp = await getInstalledAppDir(appId);
+  if (installedApp) {
+    console.log(
+      `[Docker] resolveCompose: Using existing installed app at ${installedApp.composePath}`,
+    );
+    return installedApp;
+  }
+
+  // Case 3: Explicit compose path provided (store install)
+  // Copy to installed-apps for persistence
   if (composePath) {
     let fullPath = composePath;
     if (!path.isAbsolute(composePath)) {
@@ -303,16 +332,22 @@ async function resolveCompose(
     }
     try {
       await fs.access(fullPath);
-      return { appDir: path.dirname(fullPath), composePath: fullPath };
+      const storeAppDir = path.dirname(fullPath);
+      // Copy store app to installed-apps
+      const copied = await copyAppToInstalledApps(storeAppDir, appId);
+      console.log(
+        `[Docker] resolveCompose: Copied store app to ${copied.composePath}`,
+      );
+      return copied;
     } catch {
       console.warn(
         `[Docker] resolveCompose: Provided composePath not found: ${fullPath}`,
       );
-      // Fall through to filesystem search
+      // Fall through to DB/filesystem search
     }
   }
 
-  // Case 3: Look up from App table in DB
+  // Case 4: Look up from App table in DB
   const appRecord = await prisma.app.findFirst({
     where: { appId },
     orderBy: { createdAt: "desc" },
@@ -325,7 +360,13 @@ async function resolveCompose(
       : path.join(process.cwd(), appRecord.composePath);
     try {
       await fs.access(dbPath);
-      return { appDir: path.dirname(dbPath), composePath: dbPath };
+      const storeAppDir = path.dirname(dbPath);
+      // Copy store app to installed-apps
+      const copied = await copyAppToInstalledApps(storeAppDir, appId);
+      console.log(
+        `[Docker] resolveCompose: Copied store app (from DB) to ${copied.composePath}`,
+      );
+      return copied;
     } catch {
       console.warn(
         `[Docker] resolveCompose: DB composePath not found: ${dbPath}`,
@@ -333,17 +374,30 @@ async function resolveCompose(
     }
   }
 
-  // Case 4: Filesystem search as last fallback
-  return findComposeForApp(appId);
+  // Case 5: Filesystem search as last fallback
+  const found = await findComposeForApp(appId);
+  if (found) {
+    // If found in external-apps or internal-apps, copy to installed-apps
+    if (
+      found.appDir.includes("external-apps") ||
+      found.appDir.includes("internal-apps")
+    ) {
+      const copied = await copyAppToInstalledApps(found.appDir, appId);
+      console.log(
+        `[Docker] resolveCompose: Copied found app to ${copied.composePath}`,
+      );
+      return copied;
+    }
+    return found;
+  }
+
+  return null;
 }
 
 /**
  * Tear down existing containers before redeploying.
  */
-async function tearDownExisting(
-  appDir: string,
-  appId: string,
-): Promise<void> {
+async function tearDownExisting(appDir: string, appId: string): Promise<void> {
   try {
     await execAsync(`cd "${appDir}" && docker compose down`);
     console.log(
@@ -360,68 +414,62 @@ async function tearDownExisting(
 }
 
 /**
- * Build environment variables with CasaOS system defaults and user overrides.
+ * Build environment variables based on store type.
+ *
+ * Different app stores (CasaOS, Umbrel, custom) expect different
+ * environment variables. This function dispatches to the appropriate
+ * builder based on the detected store type.
  */
-function buildEnvVars(
+async function buildEnvVars(
   appId: string,
+  storeType: StoreType,
   config?: InstallConfig,
-): NodeJS.ProcessEnv {
-  const systemDefaults = getSystemDefaults();
-  const envVars: NodeJS.ProcessEnv = { ...env };
+): Promise<NodeJS.ProcessEnv> {
+  switch (storeType) {
+    case "umbrel":
+      console.log(`[Docker] buildEnvVars: Using Umbrel env builder for "${appId}"`);
+      return buildUmbrelEnvVars(appId, config);
 
-  // CasaOS / Umbrel reserved variables
-  envVars.PUID = envVars.PUID || systemDefaults.PUID;
-  envVars.PGID = envVars.PGID || systemDefaults.PGID;
-  envVars.TZ = envVars.TZ || systemDefaults.TZ;
-  envVars.AppID = envVars.AppID || appId;
-  envVars.APP_ID = envVars.APP_ID || appId;
-  envVars.APP_DATA_DIR =
-    envVars.APP_DATA_DIR || path.join("/DATA/AppData", appId);
-  envVars.UMBREL_ROOT = envVars.UMBREL_ROOT || "/DATA";
+    case "casaos":
+      console.log(`[Docker] buildEnvVars: Using CasaOS env builder for "${appId}"`);
+      // Extract preferred web UI port from config or container metadata
+      const preferredPort = config?.webUIPort
+        ? parseInt(config.webUIPort, 10)
+        : undefined;
+      return buildCasaOSEnvVars(appId, config, preferredPort);
 
-  if (config) {
-    // Port overrides
-    for (const port of config.ports) {
-      envVars[`PORT_${port.container}`] = port.published;
-    }
-    // Volume overrides
-    for (const volume of config.volumes) {
-      const key = `VOLUME_${volume.container.replace(/\//g, "_").toUpperCase()}`;
-      envVars[key] = volume.source;
-    }
-    // Environment variable overrides
-    for (const envVar of config.environment) {
-      envVars[envVar.key] = envVar.value;
-    }
+    case "custom":
+    default:
+      console.log(`[Docker] buildEnvVars: Using default env builder for "${appId}"`);
+      return buildDefaultEnvVars(appId, config);
   }
-
-  return envVars;
 }
 
 /**
- * Resolve the source (store slug) for an app.
+ * Resolve the store ID for an app.
  * If explicitly provided, use that. Otherwise look up from App table or existing InstalledApp.
+ * Returns undefined for custom apps (no store association).
  */
-async function resolveSource(
+async function resolveStoreId(
   appId: string,
-  explicitSource?: string,
+  explicitStoreId?: string,
 ): Promise<string | undefined> {
-  if (explicitSource) return explicitSource;
+  if (explicitStoreId) return explicitStoreId;
 
-  // Check if there's an existing InstalledApp record with a source
+  // Check if there's an existing InstalledApp record with a storeId
   const existing = await prisma.installedApp.findFirst({
     where: { appId },
-    select: { source: true },
+    select: { storeId: true },
   });
-  if (existing?.source) return existing.source;
+  if (existing?.storeId) return existing.storeId;
 
   // Look up from App table
   const appRecord = await prisma.app.findFirst({
     where: { appId },
-    include: { store: true },
+    select: { storeId: true },
     orderBy: { createdAt: "desc" },
   });
-  return appRecord?.store?.slug ?? "custom";
+  return appRecord?.storeId ?? undefined;
 }
 
 /**
@@ -527,7 +575,9 @@ async function extractComposeMeta(
       services?: Record<
         string,
         {
-          ports?: Array<string | { published?: string | number; target?: string | number }>;
+          ports?: Array<
+            string | { published?: string | number; target?: string | number }
+          >;
           network_mode?: string;
         }
       >;
@@ -553,7 +603,10 @@ async function extractComposeMeta(
         : undefined;
     return { webUIPort, networkMode };
   } catch (error) {
-    console.warn("[Docker] extractComposeMeta failed:", (error as Error)?.message);
+    console.warn(
+      "[Docker] extractComposeMeta failed:",
+      (error as Error)?.message,
+    );
     return {};
   }
 }

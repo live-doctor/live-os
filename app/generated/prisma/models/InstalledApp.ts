@@ -30,7 +30,7 @@ export type InstalledAppMinAggregateOutputType = {
   name: string | null
   icon: string | null
   containerName: string | null
-  source: string | null
+  storeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -41,7 +41,7 @@ export type InstalledAppMaxAggregateOutputType = {
   name: string | null
   icon: string | null
   containerName: string | null
-  source: string | null
+  storeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,8 +53,9 @@ export type InstalledAppCountAggregateOutputType = {
   icon: number
   containerName: number
   installConfig: number
-  source: number
+  storeId: number
   container: number
+  containers: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -67,7 +68,7 @@ export type InstalledAppMinAggregateInputType = {
   name?: true
   icon?: true
   containerName?: true
-  source?: true
+  storeId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -78,7 +79,7 @@ export type InstalledAppMaxAggregateInputType = {
   name?: true
   icon?: true
   containerName?: true
-  source?: true
+  storeId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -90,8 +91,9 @@ export type InstalledAppCountAggregateInputType = {
   icon?: true
   containerName?: true
   installConfig?: true
-  source?: true
+  storeId?: true
   container?: true
+  containers?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -176,8 +178,9 @@ export type InstalledAppGroupByOutputType = {
   icon: string
   containerName: string
   installConfig: runtime.JsonValue | null
-  source: string | null
+  storeId: string | null
   container: runtime.JsonValue | null
+  containers: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
   _count: InstalledAppCountAggregateOutputType | null
@@ -210,10 +213,12 @@ export type InstalledAppWhereInput = {
   icon?: Prisma.StringFilter<"InstalledApp"> | string
   containerName?: Prisma.StringFilter<"InstalledApp"> | string
   installConfig?: Prisma.JsonNullableFilter<"InstalledApp">
-  source?: Prisma.StringNullableFilter<"InstalledApp"> | string | null
+  storeId?: Prisma.StringNullableFilter<"InstalledApp"> | string | null
   container?: Prisma.JsonNullableFilter<"InstalledApp">
+  containers?: Prisma.JsonNullableFilter<"InstalledApp">
   createdAt?: Prisma.DateTimeFilter<"InstalledApp"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"InstalledApp"> | Date | string
+  store?: Prisma.XOR<Prisma.StoreNullableScalarRelationFilter, Prisma.StoreWhereInput> | null
 }
 
 export type InstalledAppOrderByWithRelationInput = {
@@ -223,10 +228,12 @@ export type InstalledAppOrderByWithRelationInput = {
   icon?: Prisma.SortOrder
   containerName?: Prisma.SortOrder
   installConfig?: Prisma.SortOrderInput | Prisma.SortOrder
-  source?: Prisma.SortOrderInput | Prisma.SortOrder
+  storeId?: Prisma.SortOrderInput | Prisma.SortOrder
   container?: Prisma.SortOrderInput | Prisma.SortOrder
+  containers?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  store?: Prisma.StoreOrderByWithRelationInput
 }
 
 export type InstalledAppWhereUniqueInput = Prisma.AtLeast<{
@@ -239,10 +246,12 @@ export type InstalledAppWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"InstalledApp"> | string
   icon?: Prisma.StringFilter<"InstalledApp"> | string
   installConfig?: Prisma.JsonNullableFilter<"InstalledApp">
-  source?: Prisma.StringNullableFilter<"InstalledApp"> | string | null
+  storeId?: Prisma.StringNullableFilter<"InstalledApp"> | string | null
   container?: Prisma.JsonNullableFilter<"InstalledApp">
+  containers?: Prisma.JsonNullableFilter<"InstalledApp">
   createdAt?: Prisma.DateTimeFilter<"InstalledApp"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"InstalledApp"> | Date | string
+  store?: Prisma.XOR<Prisma.StoreNullableScalarRelationFilter, Prisma.StoreWhereInput> | null
 }, "id" | "containerName">
 
 export type InstalledAppOrderByWithAggregationInput = {
@@ -252,8 +261,9 @@ export type InstalledAppOrderByWithAggregationInput = {
   icon?: Prisma.SortOrder
   containerName?: Prisma.SortOrder
   installConfig?: Prisma.SortOrderInput | Prisma.SortOrder
-  source?: Prisma.SortOrderInput | Prisma.SortOrder
+  storeId?: Prisma.SortOrderInput | Prisma.SortOrder
   container?: Prisma.SortOrderInput | Prisma.SortOrder
+  containers?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.InstalledAppCountOrderByAggregateInput
@@ -271,8 +281,9 @@ export type InstalledAppScalarWhereWithAggregatesInput = {
   icon?: Prisma.StringWithAggregatesFilter<"InstalledApp"> | string
   containerName?: Prisma.StringWithAggregatesFilter<"InstalledApp"> | string
   installConfig?: Prisma.JsonNullableWithAggregatesFilter<"InstalledApp">
-  source?: Prisma.StringNullableWithAggregatesFilter<"InstalledApp"> | string | null
+  storeId?: Prisma.StringNullableWithAggregatesFilter<"InstalledApp"> | string | null
   container?: Prisma.JsonNullableWithAggregatesFilter<"InstalledApp">
+  containers?: Prisma.JsonNullableWithAggregatesFilter<"InstalledApp">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"InstalledApp"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"InstalledApp"> | Date | string
 }
@@ -284,10 +295,11 @@ export type InstalledAppCreateInput = {
   icon: string
   containerName: string
   installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  source?: string | null
   container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  store?: Prisma.StoreCreateNestedOneWithoutInstalledAppsInput
 }
 
 export type InstalledAppUncheckedCreateInput = {
@@ -297,8 +309,9 @@ export type InstalledAppUncheckedCreateInput = {
   icon: string
   containerName: string
   installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  source?: string | null
+  storeId?: string | null
   container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -310,10 +323,11 @@ export type InstalledAppUpdateInput = {
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   containerName?: Prisma.StringFieldUpdateOperationsInput | string
   installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  store?: Prisma.StoreUpdateOneWithoutInstalledAppsNestedInput
 }
 
 export type InstalledAppUncheckedUpdateInput = {
@@ -323,8 +337,9 @@ export type InstalledAppUncheckedUpdateInput = {
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   containerName?: Prisma.StringFieldUpdateOperationsInput | string
   installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -336,8 +351,9 @@ export type InstalledAppCreateManyInput = {
   icon: string
   containerName: string
   installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  source?: string | null
+  storeId?: string | null
   container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -349,8 +365,8 @@ export type InstalledAppUpdateManyMutationInput = {
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   containerName?: Prisma.StringFieldUpdateOperationsInput | string
   installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -362,10 +378,21 @@ export type InstalledAppUncheckedUpdateManyInput = {
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   containerName?: Prisma.StringFieldUpdateOperationsInput | string
   installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type InstalledAppListRelationFilter = {
+  every?: Prisma.InstalledAppWhereInput
+  some?: Prisma.InstalledAppWhereInput
+  none?: Prisma.InstalledAppWhereInput
+}
+
+export type InstalledAppOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type InstalledAppCountOrderByAggregateInput = {
@@ -375,8 +402,9 @@ export type InstalledAppCountOrderByAggregateInput = {
   icon?: Prisma.SortOrder
   containerName?: Prisma.SortOrder
   installConfig?: Prisma.SortOrder
-  source?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   container?: Prisma.SortOrder
+  containers?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -387,7 +415,7 @@ export type InstalledAppMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   icon?: Prisma.SortOrder
   containerName?: Prisma.SortOrder
-  source?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -398,9 +426,171 @@ export type InstalledAppMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   icon?: Prisma.SortOrder
   containerName?: Prisma.SortOrder
-  source?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type InstalledAppCreateNestedManyWithoutStoreInput = {
+  create?: Prisma.XOR<Prisma.InstalledAppCreateWithoutStoreInput, Prisma.InstalledAppUncheckedCreateWithoutStoreInput> | Prisma.InstalledAppCreateWithoutStoreInput[] | Prisma.InstalledAppUncheckedCreateWithoutStoreInput[]
+  connectOrCreate?: Prisma.InstalledAppCreateOrConnectWithoutStoreInput | Prisma.InstalledAppCreateOrConnectWithoutStoreInput[]
+  createMany?: Prisma.InstalledAppCreateManyStoreInputEnvelope
+  connect?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+}
+
+export type InstalledAppUncheckedCreateNestedManyWithoutStoreInput = {
+  create?: Prisma.XOR<Prisma.InstalledAppCreateWithoutStoreInput, Prisma.InstalledAppUncheckedCreateWithoutStoreInput> | Prisma.InstalledAppCreateWithoutStoreInput[] | Prisma.InstalledAppUncheckedCreateWithoutStoreInput[]
+  connectOrCreate?: Prisma.InstalledAppCreateOrConnectWithoutStoreInput | Prisma.InstalledAppCreateOrConnectWithoutStoreInput[]
+  createMany?: Prisma.InstalledAppCreateManyStoreInputEnvelope
+  connect?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+}
+
+export type InstalledAppUpdateManyWithoutStoreNestedInput = {
+  create?: Prisma.XOR<Prisma.InstalledAppCreateWithoutStoreInput, Prisma.InstalledAppUncheckedCreateWithoutStoreInput> | Prisma.InstalledAppCreateWithoutStoreInput[] | Prisma.InstalledAppUncheckedCreateWithoutStoreInput[]
+  connectOrCreate?: Prisma.InstalledAppCreateOrConnectWithoutStoreInput | Prisma.InstalledAppCreateOrConnectWithoutStoreInput[]
+  upsert?: Prisma.InstalledAppUpsertWithWhereUniqueWithoutStoreInput | Prisma.InstalledAppUpsertWithWhereUniqueWithoutStoreInput[]
+  createMany?: Prisma.InstalledAppCreateManyStoreInputEnvelope
+  set?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  disconnect?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  delete?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  connect?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  update?: Prisma.InstalledAppUpdateWithWhereUniqueWithoutStoreInput | Prisma.InstalledAppUpdateWithWhereUniqueWithoutStoreInput[]
+  updateMany?: Prisma.InstalledAppUpdateManyWithWhereWithoutStoreInput | Prisma.InstalledAppUpdateManyWithWhereWithoutStoreInput[]
+  deleteMany?: Prisma.InstalledAppScalarWhereInput | Prisma.InstalledAppScalarWhereInput[]
+}
+
+export type InstalledAppUncheckedUpdateManyWithoutStoreNestedInput = {
+  create?: Prisma.XOR<Prisma.InstalledAppCreateWithoutStoreInput, Prisma.InstalledAppUncheckedCreateWithoutStoreInput> | Prisma.InstalledAppCreateWithoutStoreInput[] | Prisma.InstalledAppUncheckedCreateWithoutStoreInput[]
+  connectOrCreate?: Prisma.InstalledAppCreateOrConnectWithoutStoreInput | Prisma.InstalledAppCreateOrConnectWithoutStoreInput[]
+  upsert?: Prisma.InstalledAppUpsertWithWhereUniqueWithoutStoreInput | Prisma.InstalledAppUpsertWithWhereUniqueWithoutStoreInput[]
+  createMany?: Prisma.InstalledAppCreateManyStoreInputEnvelope
+  set?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  disconnect?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  delete?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  connect?: Prisma.InstalledAppWhereUniqueInput | Prisma.InstalledAppWhereUniqueInput[]
+  update?: Prisma.InstalledAppUpdateWithWhereUniqueWithoutStoreInput | Prisma.InstalledAppUpdateWithWhereUniqueWithoutStoreInput[]
+  updateMany?: Prisma.InstalledAppUpdateManyWithWhereWithoutStoreInput | Prisma.InstalledAppUpdateManyWithWhereWithoutStoreInput[]
+  deleteMany?: Prisma.InstalledAppScalarWhereInput | Prisma.InstalledAppScalarWhereInput[]
+}
+
+export type InstalledAppCreateWithoutStoreInput = {
+  id?: string
+  appId: string
+  name: string
+  icon: string
+  containerName: string
+  installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type InstalledAppUncheckedCreateWithoutStoreInput = {
+  id?: string
+  appId: string
+  name: string
+  icon: string
+  containerName: string
+  installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type InstalledAppCreateOrConnectWithoutStoreInput = {
+  where: Prisma.InstalledAppWhereUniqueInput
+  create: Prisma.XOR<Prisma.InstalledAppCreateWithoutStoreInput, Prisma.InstalledAppUncheckedCreateWithoutStoreInput>
+}
+
+export type InstalledAppCreateManyStoreInputEnvelope = {
+  data: Prisma.InstalledAppCreateManyStoreInput | Prisma.InstalledAppCreateManyStoreInput[]
+}
+
+export type InstalledAppUpsertWithWhereUniqueWithoutStoreInput = {
+  where: Prisma.InstalledAppWhereUniqueInput
+  update: Prisma.XOR<Prisma.InstalledAppUpdateWithoutStoreInput, Prisma.InstalledAppUncheckedUpdateWithoutStoreInput>
+  create: Prisma.XOR<Prisma.InstalledAppCreateWithoutStoreInput, Prisma.InstalledAppUncheckedCreateWithoutStoreInput>
+}
+
+export type InstalledAppUpdateWithWhereUniqueWithoutStoreInput = {
+  where: Prisma.InstalledAppWhereUniqueInput
+  data: Prisma.XOR<Prisma.InstalledAppUpdateWithoutStoreInput, Prisma.InstalledAppUncheckedUpdateWithoutStoreInput>
+}
+
+export type InstalledAppUpdateManyWithWhereWithoutStoreInput = {
+  where: Prisma.InstalledAppScalarWhereInput
+  data: Prisma.XOR<Prisma.InstalledAppUpdateManyMutationInput, Prisma.InstalledAppUncheckedUpdateManyWithoutStoreInput>
+}
+
+export type InstalledAppScalarWhereInput = {
+  AND?: Prisma.InstalledAppScalarWhereInput | Prisma.InstalledAppScalarWhereInput[]
+  OR?: Prisma.InstalledAppScalarWhereInput[]
+  NOT?: Prisma.InstalledAppScalarWhereInput | Prisma.InstalledAppScalarWhereInput[]
+  id?: Prisma.StringFilter<"InstalledApp"> | string
+  appId?: Prisma.StringFilter<"InstalledApp"> | string
+  name?: Prisma.StringFilter<"InstalledApp"> | string
+  icon?: Prisma.StringFilter<"InstalledApp"> | string
+  containerName?: Prisma.StringFilter<"InstalledApp"> | string
+  installConfig?: Prisma.JsonNullableFilter<"InstalledApp">
+  storeId?: Prisma.StringNullableFilter<"InstalledApp"> | string | null
+  container?: Prisma.JsonNullableFilter<"InstalledApp">
+  containers?: Prisma.JsonNullableFilter<"InstalledApp">
+  createdAt?: Prisma.DateTimeFilter<"InstalledApp"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"InstalledApp"> | Date | string
+}
+
+export type InstalledAppCreateManyStoreInput = {
+  id?: string
+  appId: string
+  name: string
+  icon: string
+  containerName: string
+  installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type InstalledAppUpdateWithoutStoreInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  appId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  icon?: Prisma.StringFieldUpdateOperationsInput | string
+  containerName?: Prisma.StringFieldUpdateOperationsInput | string
+  installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type InstalledAppUncheckedUpdateWithoutStoreInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  appId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  icon?: Prisma.StringFieldUpdateOperationsInput | string
+  containerName?: Prisma.StringFieldUpdateOperationsInput | string
+  installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type InstalledAppUncheckedUpdateManyWithoutStoreInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  appId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  icon?: Prisma.StringFieldUpdateOperationsInput | string
+  containerName?: Prisma.StringFieldUpdateOperationsInput | string
+  installConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  container?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  containers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -412,10 +602,12 @@ export type InstalledAppSelect<ExtArgs extends runtime.Types.Extensions.Internal
   icon?: boolean
   containerName?: boolean
   installConfig?: boolean
-  source?: boolean
+  storeId?: boolean
   container?: boolean
+  containers?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  store?: boolean | Prisma.InstalledApp$storeArgs<ExtArgs>
 }, ExtArgs["result"]["installedApp"]>
 
 export type InstalledAppSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -425,10 +617,12 @@ export type InstalledAppSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   icon?: boolean
   containerName?: boolean
   installConfig?: boolean
-  source?: boolean
+  storeId?: boolean
   container?: boolean
+  containers?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  store?: boolean | Prisma.InstalledApp$storeArgs<ExtArgs>
 }, ExtArgs["result"]["installedApp"]>
 
 export type InstalledAppSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -438,10 +632,12 @@ export type InstalledAppSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   icon?: boolean
   containerName?: boolean
   installConfig?: boolean
-  source?: boolean
+  storeId?: boolean
   container?: boolean
+  containers?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  store?: boolean | Prisma.InstalledApp$storeArgs<ExtArgs>
 }, ExtArgs["result"]["installedApp"]>
 
 export type InstalledAppSelectScalar = {
@@ -451,17 +647,29 @@ export type InstalledAppSelectScalar = {
   icon?: boolean
   containerName?: boolean
   installConfig?: boolean
-  source?: boolean
+  storeId?: boolean
   container?: boolean
+  containers?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type InstalledAppOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "appId" | "name" | "icon" | "containerName" | "installConfig" | "source" | "container" | "createdAt" | "updatedAt", ExtArgs["result"]["installedApp"]>
+export type InstalledAppOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "appId" | "name" | "icon" | "containerName" | "installConfig" | "storeId" | "container" | "containers" | "createdAt" | "updatedAt", ExtArgs["result"]["installedApp"]>
+export type InstalledAppInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  store?: boolean | Prisma.InstalledApp$storeArgs<ExtArgs>
+}
+export type InstalledAppIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  store?: boolean | Prisma.InstalledApp$storeArgs<ExtArgs>
+}
+export type InstalledAppIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  store?: boolean | Prisma.InstalledApp$storeArgs<ExtArgs>
+}
 
 export type $InstalledAppPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "InstalledApp"
-  objects: {}
+  objects: {
+    store: Prisma.$StorePayload<ExtArgs> | null
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     appId: string
@@ -469,8 +677,9 @@ export type $InstalledAppPayload<ExtArgs extends runtime.Types.Extensions.Intern
     icon: string
     containerName: string
     installConfig: runtime.JsonValue | null
-    source: string | null
+    storeId: string | null
     container: runtime.JsonValue | null
+    containers: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["installedApp"]>
@@ -867,6 +1076,7 @@ readonly fields: InstalledAppFieldRefs;
  */
 export interface Prisma__InstalledAppClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  store<T extends Prisma.InstalledApp$storeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InstalledApp$storeArgs<ExtArgs>>): Prisma.Prisma__StoreClient<runtime.Types.Result.GetResult<Prisma.$StorePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -902,8 +1112,9 @@ export interface InstalledAppFieldRefs {
   readonly icon: Prisma.FieldRef<"InstalledApp", 'String'>
   readonly containerName: Prisma.FieldRef<"InstalledApp", 'String'>
   readonly installConfig: Prisma.FieldRef<"InstalledApp", 'Json'>
-  readonly source: Prisma.FieldRef<"InstalledApp", 'String'>
+  readonly storeId: Prisma.FieldRef<"InstalledApp", 'String'>
   readonly container: Prisma.FieldRef<"InstalledApp", 'Json'>
+  readonly containers: Prisma.FieldRef<"InstalledApp", 'Json'>
   readonly createdAt: Prisma.FieldRef<"InstalledApp", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"InstalledApp", 'DateTime'>
 }
@@ -923,6 +1134,10 @@ export type InstalledAppFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
+  /**
    * Filter, which InstalledApp to fetch.
    */
   where: Prisma.InstalledAppWhereUniqueInput
@@ -941,6 +1156,10 @@ export type InstalledAppFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Exte
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
+  /**
    * Filter, which InstalledApp to fetch.
    */
   where: Prisma.InstalledAppWhereUniqueInput
@@ -958,6 +1177,10 @@ export type InstalledAppFindFirstArgs<ExtArgs extends runtime.Types.Extensions.I
    * Omit specific fields from the InstalledApp
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
   /**
    * Filter, which InstalledApp to fetch.
    */
@@ -1007,6 +1230,10 @@ export type InstalledAppFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Exten
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
+  /**
    * Filter, which InstalledApp to fetch.
    */
   where?: Prisma.InstalledAppWhereInput
@@ -1055,6 +1282,10 @@ export type InstalledAppFindManyArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
+  /**
    * Filter, which InstalledApps to fetch.
    */
   where?: Prisma.InstalledAppWhereInput
@@ -1098,6 +1329,10 @@ export type InstalledAppCreateArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
+  /**
    * The data needed to create a InstalledApp.
    */
   data: Prisma.XOR<Prisma.InstalledAppCreateInput, Prisma.InstalledAppUncheckedCreateInput>
@@ -1129,6 +1364,10 @@ export type InstalledAppCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ex
    * The data used to create many InstalledApps.
    */
   data: Prisma.InstalledAppCreateManyInput | Prisma.InstalledAppCreateManyInput[]
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1143,6 +1382,10 @@ export type InstalledAppUpdateArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Omit specific fields from the InstalledApp
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
   /**
    * The data needed to update a InstalledApp.
    */
@@ -1195,6 +1438,10 @@ export type InstalledAppUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Ex
    * Limit how many InstalledApps to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1209,6 +1456,10 @@ export type InstalledAppUpsertArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Omit specific fields from the InstalledApp
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
   /**
    * The filter to search for the InstalledApp to update in case it exists.
    */
@@ -1236,6 +1487,10 @@ export type InstalledAppDeleteArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
+  /**
    * Filter which InstalledApp to delete.
    */
   where: Prisma.InstalledAppWhereUniqueInput
@@ -1256,6 +1511,25 @@ export type InstalledAppDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.
 }
 
 /**
+ * InstalledApp.store
+ */
+export type InstalledApp$storeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Store
+   */
+  select?: Prisma.StoreSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Store
+   */
+  omit?: Prisma.StoreOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StoreInclude<ExtArgs> | null
+  where?: Prisma.StoreWhereInput
+}
+
+/**
  * InstalledApp without action
  */
 export type InstalledAppDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1267,4 +1541,8 @@ export type InstalledAppDefaultArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the InstalledApp
    */
   omit?: Prisma.InstalledAppOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InstalledAppInclude<ExtArgs> | null
 }

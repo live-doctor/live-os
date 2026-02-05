@@ -22,6 +22,8 @@ import {
   execAsync,
   findComposeForApp,
   getContainerName,
+  getInstalledAppDir,
+  removeInstalledAppFiles,
   sanitizeComposeFile,
   validateAppId,
 } from "./utils";
@@ -29,12 +31,21 @@ import {
 const TRASH_ROOT = "/DATA/AppTrash";
 
 /**
- * Resolve compose file for an app, checking DB first then filesystem.
+ * Resolve compose file for an app, checking installed-apps first, then DB, then filesystem.
  */
 async function resolveComposeForLifecycle(
   appId: string,
 ): Promise<{ appDir: string; composePath: string } | null> {
-  // Check DB first (InstalledApp.installConfig.composePath)
+  // Check installed-apps first (new persistent location)
+  const installedApp = await getInstalledAppDir(appId);
+  if (installedApp) {
+    console.log(
+      `[Docker] resolveComposeForLifecycle: Found in installed-apps: ${installedApp.composePath}`,
+    );
+    return installedApp;
+  }
+
+  // Check DB (InstalledApp.installConfig.composePath) for legacy installs
   const installed = await prisma.installedApp.findFirst({
     where: { appId },
     orderBy: { updatedAt: "desc" },
@@ -385,6 +396,9 @@ export async function uninstallApp(appId: string): Promise<boolean> {
         );
       }
     }
+
+    // Clean up installed-apps directory
+    await removeInstalledAppFiles(appId);
 
     for (const name of containerCandidates) {
       await removeInstalledAppRecord(name);
