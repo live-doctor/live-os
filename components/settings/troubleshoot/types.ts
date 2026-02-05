@@ -12,7 +12,7 @@ export interface LogEntry {
   message: string;
 }
 
-export type LogSource = "system" | "docker" | "liveos" | "all";
+export type LogSource = "system" | "docker" | "homeio" | "all";
 
 export interface DiagnosticCheck {
   id: string;

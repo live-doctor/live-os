@@ -137,7 +137,7 @@ export function FileEditorModal({
                 Editor
               </span>
               <div>
-                <p className={`${text.muted} text-xs`}>LiveOS File Manager</p>
+                <p className={`${text.muted} text-xs`}>Homeio File Manager</p>
                 <div className="flex flex-col gap-1">
                   <ModalTitle
                     className={`${text.headingLarge} text-white drop-shadow`}

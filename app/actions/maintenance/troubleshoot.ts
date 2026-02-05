@@ -1,20 +1,20 @@
 "use server";
 
-import { execAsync } from "@/lib/exec";
 import type {
-  LogEntry,
-  LogSource,
   DiagnosticCheck,
   DiagnosticResult,
+  LogEntry,
+  LogSource,
   SystemService,
 } from "@/components/settings/troubleshoot/types";
+import { execAsync } from "@/lib/exec";
 
 /**
  * Get system logs from journalctl
  */
 export async function getSystemLogs(
   source: LogSource = "all",
-  lines: number = 100
+  lines: number = 100,
 ): Promise<LogEntry[]> {
   try {
     let command = `journalctl --no-pager -n ${lines} -o json`;
@@ -22,8 +22,8 @@ export async function getSystemLogs(
     // Filter by source
     if (source === "docker") {
       command = `journalctl --no-pager -n ${lines} -o json -u docker`;
-    } else if (source === "liveos") {
-      command = `journalctl --no-pager -n ${lines} -o json -u liveos`;
+    } else if (source === "homeio") {
+      command = `journalctl --no-pager -n ${lines} -o json -u homeio`;
     } else if (source === "system") {
       command = `journalctl --no-pager -n ${lines} -o json -p 0..4`; // Only errors and warnings
     }
@@ -39,7 +39,9 @@ export async function getSystemLogs(
         entries.push({
           id: entry.__CURSOR || `${Date.now()}-${Math.random()}`,
           timestamp: entry.__REALTIME_TIMESTAMP
-            ? new Date(parseInt(entry.__REALTIME_TIMESTAMP) / 1000).toISOString()
+            ? new Date(
+                parseInt(entry.__REALTIME_TIMESTAMP) / 1000,
+              ).toISOString()
             : new Date().toISOString(),
           level: mapPriority(entry.PRIORITY),
           source: entry.SYSLOG_IDENTIFIER || entry._SYSTEMD_UNIT || "system",
@@ -59,21 +61,23 @@ export async function getSystemLogs(
 }
 
 /**
- * Tail recent liveOS service logs (journalctl -u liveos)
+ * Tail recent HOMEIO service logs (journalctl -u homeio)
  */
-export async function getLiveOsTail(lines: number = 200): Promise<string[]> {
+export async function getHOMEIOTail(lines: number = 200): Promise<string[]> {
   try {
     const { stdout } = await execAsync(
-      `journalctl -u liveos -n ${lines} --no-pager -o cat`,
+      `journalctl -u homeio -n ${lines} --no-pager -o cat`,
     );
     return stdout.trim().split("\n");
   } catch (error) {
-    console.error("Failed to tail liveOS logs:", error);
-    return ["Unable to read liveOS logs. Ensure journalctl is available."];
+    console.error("Failed to tail HOMEIO logs:", error);
+    return ["Unable to read HOMEIO logs. Ensure journalctl is available."];
   }
 }
 
-function mapPriority(priority: string | number): "info" | "warn" | "error" | "debug" {
+function mapPriority(
+  priority: string | number,
+): "info" | "warn" | "error" | "debug" {
   const p = typeof priority === "string" ? parseInt(priority) : priority;
   if (p <= 3) return "error";
   if (p === 4) return "warn";
@@ -88,7 +92,7 @@ function getMockLogs(): LogEntry[] {
       id: "1",
       timestamp: new Date(now - 1000).toISOString(),
       level: "info",
-      source: "liveos",
+      source: "homeio",
       message: "System started successfully",
     },
     {
@@ -116,7 +120,7 @@ function getMockLogs(): LogEntry[] {
       id: "5",
       timestamp: new Date(now - 60000).toISOString(),
       level: "info",
-      source: "liveos",
+      source: "homeio",
       message: "App store cache refreshed",
     },
   ];
@@ -196,7 +200,9 @@ async function checkMemoryUsage(): Promise<DiagnosticCheck> {
   };
 
   try {
-    const { stdout } = await execAsync("free | grep Mem | awk '{print int($3/$2 * 100)}'");
+    const { stdout } = await execAsync(
+      "free | grep Mem | awk '{print int($3/$2 * 100)}'",
+    );
     const usagePercent = parseInt(stdout.trim());
 
     if (usagePercent >= 95) {
@@ -286,13 +292,15 @@ async function checkSystemServices(): Promise<DiagnosticCheck> {
   };
 
   try {
-    const { stdout } = await execAsync("systemctl is-active liveos 2>/dev/null || echo 'inactive'");
+    const { stdout } = await execAsync(
+      "systemctl is-active homeio 2>/dev/null || echo 'inactive'",
+    );
     if (stdout.trim() === "active") {
       check.status = "passed";
-      check.message = "LiveOS service is running";
+      check.message = "Homeio service is running";
     } else {
       check.status = "warning";
-      check.message = "LiveOS service not found (development mode)";
+      check.message = "Homeio service not found (development mode)";
     }
   } catch {
     check.status = "passed";
@@ -307,14 +315,31 @@ async function checkSystemServices(): Promise<DiagnosticCheck> {
  */
 export async function getSystemServices(): Promise<SystemService[]> {
   const services: SystemService[] = [
-    { name: "liveos", displayName: "LiveOS", status: "unknown", canRestart: true },
-    { name: "docker", displayName: "Docker", status: "unknown", canRestart: true },
-    { name: "nginx", displayName: "Nginx", status: "unknown", canRestart: true },
+    {
+      name: "homeio",
+      displayName: "Homeio",
+      status: "unknown",
+      canRestart: true,
+    },
+    {
+      name: "docker",
+      displayName: "Docker",
+      status: "unknown",
+      canRestart: true,
+    },
+    {
+      name: "nginx",
+      displayName: "Nginx",
+      status: "unknown",
+      canRestart: true,
+    },
   ];
 
   for (const service of services) {
     try {
-      const { stdout } = await execAsync(`systemctl is-active ${service.name} 2>/dev/null`);
+      const { stdout } = await execAsync(
+        `systemctl is-active ${service.name} 2>/dev/null`,
+      );
       service.status = stdout.trim() === "active" ? "running" : "stopped";
     } catch {
       service.status = "stopped";
@@ -327,7 +352,9 @@ export async function getSystemServices(): Promise<SystemService[]> {
 /**
  * Get status for a specific systemd service
  */
-export async function getServiceStatus(serviceName: string): Promise<SystemService> {
+export async function getServiceStatus(
+  serviceName: string,
+): Promise<SystemService> {
   const service: SystemService = {
     name: serviceName,
     displayName: serviceName,
@@ -368,7 +395,9 @@ export async function getServiceStatus(serviceName: string): Promise<SystemServi
 /**
  * Restart a system service
  */
-export async function restartService(serviceName: string): Promise<{ success: boolean; message: string }> {
+export async function restartService(
+  serviceName: string,
+): Promise<{ success: boolean; message: string }> {
   try {
     await execAsync(`sudo systemctl restart ${serviceName}`);
     return { success: true, message: `${serviceName} restarted successfully` };
@@ -408,7 +437,10 @@ export async function stopService(
 /**
  * Clear system caches
  */
-export async function clearCaches(): Promise<{ success: boolean; message: string }> {
+export async function clearCaches(): Promise<{
+  success: boolean;
+  message: string;
+}> {
   try {
     // Clear package manager cache
     await execAsync("sudo apt-get clean 2>/dev/null || true");

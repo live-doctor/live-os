@@ -2,8 +2,8 @@
  * Widget System Constants
  */
 
-import type { AvailableWidget, WidgetSectionData } from "./types";
 import { colors } from "@/components/ui/design-tokens";
+import type { AvailableWidget, WidgetSectionData } from "./types";
 
 // Maximum number of widgets that can be selected
 export const MAX_WIDGETS = 3;
@@ -17,96 +17,98 @@ export const REFRESH_INTERVALS = {
 
 // Default selected widget IDs
 export const DEFAULT_WIDGET_IDS = [
-  "liveos:system-stats",
-  "liveos:storage",
-  "liveos:memory",
+  "homeio:system-stats",
+  "homeio:storage",
+  "homeio:memory",
 ];
 
-// LiveOS app icon (fallback to default app icon)
-export const LIVEOS_ICON = "/default-application-icon.png";
+// Homeio app icon (fallback to default app icon)
+export const HOMEIO_ICON = "/default-application-icon.png";
 
 // All available widgets
 export const AVAILABLE_WIDGETS: AvailableWidget[] = [
-  // LiveOS System Widgets
+  // Homeio System Widgets
   {
-    id: "liveos:storage",
+    id: "homeio:storage",
     type: "text-with-progress",
-    appId: "liveos",
-    appName: "LiveOS",
-    appIcon: LIVEOS_ICON,
+    appId: "homeio",
+    appName: "Homeio",
+    appIcon: HOMEIO_ICON,
     name: "Storage",
     description: "Disk usage with progress bar",
   },
   {
-    id: "liveos:memory",
+    id: "homeio:memory",
     type: "text-with-progress",
-    appId: "liveos",
-    appName: "LiveOS",
-    appIcon: LIVEOS_ICON,
+    appId: "homeio",
+    appName: "Homeio",
+    appIcon: HOMEIO_ICON,
     name: "Memory",
     description: "RAM usage with progress bar",
   },
   {
-    id: "liveos:system-stats",
+    id: "homeio:system-stats",
     type: "three-stats",
-    appId: "liveos",
-    appName: "LiveOS",
-    appIcon: LIVEOS_ICON,
+    appId: "homeio",
+    appName: "Homeio",
+    appIcon: HOMEIO_ICON,
     name: "System Overview",
     description: "CPU, Memory, and Storage at a glance",
   },
   {
-    id: "liveos:cpu-memory",
+    id: "homeio:cpu-memory",
     type: "two-stats-gauge",
-    appId: "liveos",
-    appName: "LiveOS",
-    appIcon: LIVEOS_ICON,
+    appId: "homeio",
+    appName: "Homeio",
+    appIcon: HOMEIO_ICON,
     name: "CPU & Memory",
     description: "Circular gauges for CPU and Memory",
   },
   {
-    id: "liveos:four-stats",
+    id: "homeio:four-stats",
     type: "four-stats",
-    appId: "liveos",
-    appName: "LiveOS",
-    appIcon: LIVEOS_ICON,
+    appId: "homeio",
+    appName: "Homeio",
+    appIcon: HOMEIO_ICON,
     name: "System Grid",
     description: "CPU, Memory, Storage, and Network",
   },
   // Files Widgets
   {
-    id: "liveos:files-recents",
+    id: "homeio:files-recents",
     type: "files-list",
-    appId: "liveos",
+    appId: "homeio",
     appName: "Files",
-    appIcon: "https://img.icons8.com/?size=100&id=12775&format=png&color=000000",
+    appIcon:
+      "https://img.icons8.com/?size=100&id=12775&format=png&color=000000",
     name: "Recent Files",
     description: "Recently accessed files",
   },
   {
-    id: "liveos:files-favorites",
+    id: "homeio:files-favorites",
     type: "files-grid",
-    appId: "liveos",
+    appId: "homeio",
     appName: "Files",
-    appIcon: "https://img.icons8.com/?size=100&id=12775&format=png&color=000000",
+    appIcon:
+      "https://img.icons8.com/?size=100&id=12775&format=png&color=000000",
     name: "Favorites",
     description: "Favorite folders grid",
   },
   {
-    id: "liveos:weather",
+    id: "homeio:weather",
     type: "weather",
-    appId: "liveos",
-    appName: "LiveOS",
-    appIcon: LIVEOS_ICON,
+    appId: "homeio",
+    appName: "Homeio",
+    appIcon: HOMEIO_ICON,
     name: "Weather",
     description: "Local forecast with live animations",
   },
   {
-    id: "liveos:thermals",
+    id: "homeio:thermals",
     type: "thermals",
-    appId: "liveos",
-    appName: "LiveOS",
-    appIcon: LIVEOS_ICON,
+    appId: "homeio",
+    appName: "Homeio",
+    appIcon: HOMEIO_ICON,
     name: "Thermals",
     description: "CPU temps and sensor overview",
   },

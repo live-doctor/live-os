@@ -1,10 +1,10 @@
-# LiveOS App Store Guide
+# Homeio App Store Guide
 
 Quick reference for browsing and importing CasaOS community app stores.
 
 ## Overview
 
-LiveOS no longer bundles the Umbrel app store locally. Use the built-in “Import CasaOS Store” button in the App Store dialog to browse the curated list at https://awesome.casaos.io and copy a store source URL to import.
+Homeio no longer bundles the Umbrel app store locally. Use the built-in “Import CasaOS Store” button in the App Store dialog to browse the curated list at https://awesome.casaos.io and copy a store source URL to import.
 
 ## Quick Start
 
@@ -41,7 +41,7 @@ Your fork is currently **24 commits behind** upstream with updates available for
 ### Architecture
 
 ```
-LiveOS
+Homeio
 ├── app/actions/appstore.ts       # Fetches CasaOS community list; no bundled apps
 └── components/app-store/         # UI components + CasaOS import dialog
 ```
@@ -190,7 +190,7 @@ async function getAppIcon(folderName: string, appId: string): Promise<string> {
 
 ## Custom Docker Deployments
 
-LiveOS now supports deploying your own Docker containers directly from the App Store interface, without needing to create Umbrel app manifests.
+Homeio now supports deploying your own Docker containers directly from the App Store interface, without needing to create Umbrel app manifests.
 
 ### Features
 
@@ -297,7 +297,7 @@ App names must follow these rules:
 
 **Important:** Ensure ports don't conflict with:
 
-- LiveOS itself (default: 3000)
+- Homeio itself (default: 3000)
 - Other installed apps
 - System services
 
@@ -418,7 +418,7 @@ To contribute apps to the official Umbrel repository:
 1. Fork: https://github.com/getumbrel/umbrel-apps
 2. Follow: [Umbrel's contribution guide](https://github.com/getumbrel/umbrel-apps/blob/master/README.md)
 3. Submit PR to Umbrel
-4. Once merged, run `npm run update-apps` to get it in LiveOS
+4. Once merged, run `npm run update-apps` to get it in Homeio
 
 ## Resources
 

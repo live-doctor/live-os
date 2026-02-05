@@ -3,17 +3,11 @@ export { logAction, withActionLogging } from "./logger";
 
 // Troubleshooting
 export {
-  getSystemLogs,
-  getLiveOsTail,
-  runDiagnostics,
-  getSystemServices,
-  getServiceStatus,
-  restartService,
-  startService,
-  stopService,
   clearCaches,
-  exportDiagnosticReport,
+  exportDiagnosticReport, getHOMEIOTail, getServiceStatus, getSystemLogs, getSystemServices, restartService, runDiagnostics, startService,
+  stopService
 } from "./troubleshoot";
 
 // Updates
-export { type UpdateStatus, checkForUpdates } from "./update";
+export { checkForUpdates, type UpdateStatus } from "./update";
+

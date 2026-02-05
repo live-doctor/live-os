@@ -61,7 +61,7 @@ npm start      # Runs: tsx server.ts
 ## File Structure
 
 ```
-live-os/
+homeio/
 ├── server.ts                          # Main entry point (TypeScript)
 ├── lib/
 │   └── terminal/
@@ -126,8 +126,8 @@ tsx server.ts
 ### Systemd Service
 ```ini
 [Service]
-WorkingDirectory=/opt/live-os
-ExecStart=/opt/live-os/node_modules/.bin/tsx server.ts
+WorkingDirectory=/opt/homeio
+ExecStart=/opt/homeio/node_modules/.bin/tsx server.ts
 ```
 
 The systemd service runs `tsx` directly, which executes TypeScript.

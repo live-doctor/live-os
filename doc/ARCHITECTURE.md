@@ -1,4 +1,4 @@
-# LiveOS - Project Structure
+# Homeio - Project Structure
 
 ## Overview
 A self-hosted operating system UI built with Next.js 16, featuring a modern glassmorphic design with dock-style navigation.
@@ -6,7 +6,7 @@ A self-hosted operating system UI built with Next.js 16, featuring a modern glas
 ## 📁 Folder Architecture
 
 ```
-live-os/
+homeio/
 ├── actions/              # Server actions (Next.js server-side functions)
 │   └── system.ts        # System information (username, hostname, etc.)
 │

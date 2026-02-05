@@ -2,17 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  dialog as dialogTokens,
-  text,
-  card,
-  badge,
+    badge,
+    card,
+    dialog as dialogTokens,
+    text,
 } from "@/components/ui/design-tokens";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -46,7 +46,7 @@ export function KeyboardShortcutsDialog({
       <DialogContent
         className={cn(
           dialogTokens.content,
-          "max-w-[760px] overflow-hidden border border-white/10 bg-white/5 p-0 backdrop-blur-xl"
+          "max-w-[760px] overflow-hidden border border-white/10 bg-white/5 p-0 backdrop-blur-xl",
         )}
       >
         <DialogHeader className="flex flex-row items-center justify-between border-b border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent px-6 py-4">
@@ -95,7 +95,7 @@ export function KeyboardShortcutsDialog({
                     }}
                     className={cn(
                       card.base,
-                      "group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left transition-all hover:-translate-y-[1px] hover:border-white/25 hover:bg-white/10"
+                      "group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left transition-all hover:-translate-y-[1px] hover:border-white/25 hover:bg-white/10",
                     )}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -122,7 +122,7 @@ export function KeyboardShortcutsDialog({
         <div className="flex items-center justify-between border-t border-white/10 bg-white/5 px-6 py-3">
           <div className="flex items-center gap-2 text-xs text-white/60">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            LiveOS quick keys are active
+            Homeio quick keys are active
           </div>
           <Button
             variant="ghost"

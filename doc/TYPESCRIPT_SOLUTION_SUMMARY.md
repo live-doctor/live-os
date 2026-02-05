@@ -44,7 +44,7 @@ npm start       # Runs: tsx server.ts
 
 ### Systemd Service
 ```ini
-ExecStart=/opt/live-os/node_modules/.bin/tsx server.ts
+ExecStart=/opt/homeio/node_modules/.bin/tsx server.ts
 ```
 
 ---
@@ -72,7 +72,7 @@ ExecStart=/opt/live-os/node_modules/.bin/tsx server.ts
 All files are TypeScript:
 
 ```
-live-os/
+homeio/
 ├── server.ts                      ✅ TypeScript
 ├── lib/
 │   └── terminal/
@@ -120,7 +120,7 @@ The installation script now:
 4. ✅ Runs `npm install --ignore-scripts` (includes tsx)
 5. ✅ Builds Next.js app
 6. ✅ Creates systemd service with `tsx server.ts`
-7. ✅ Starts LiveOS
+7. ✅ Starts Homeio
 
 No extra steps needed - everything works out of the box!
 

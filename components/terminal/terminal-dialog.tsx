@@ -40,7 +40,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
   const targets = useMemo(() => {
     const hostTarget = {
       id: "host",
-      label: "LiveOS Host",
+      label: "Homeio Host",
       badge: "OS",
       icon: <Server className="h-4 w-4 text-emerald-300" />,
     };
@@ -282,7 +282,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
                   className="flex items-center gap-2 text-white/90"
                 >
                   <Server className="h-4 w-4 text-emerald-300" />
-                  <span>LiveOS Host Shell</span>
+                  <span>Homeio Host Shell</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/10" />
                 {targets.filter((t) => t.id !== "host").length === 0 && (

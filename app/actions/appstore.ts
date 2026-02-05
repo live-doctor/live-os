@@ -3,31 +3,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { App } from "@/components/app-store/types";
+import { execAsync } from "@/lib/exec";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
 import YAML from "yaml";
-import { execAsync } from "@/lib/exec";
 import { logAction, withActionLogging } from "./maintenance/logger";
 import {
-    CASAOS_OFFICIAL_ZIP,
-    getCasaCommunityStores,
-    isLikelyCasaStore,
-    parseCasaOSStore,
+  CASAOS_OFFICIAL_ZIP,
+  getCasaCommunityStores,
+  isLikelyCasaStore,
+  parseCasaOSStore,
 } from "./store/casa-store";
 import {
-    getUmbrelCommunityStores,
-    isLikelyUmbrelStore,
-    parseUmbrelStore,
-    UMBREL_OFFICIAL_ZIP,
+  getUmbrelCommunityStores,
+  isLikelyUmbrelStore,
+  parseUmbrelStore,
+  UMBREL_OFFICIAL_ZIP,
 } from "./store/umbrel-store";
 import { listFiles, resolveAsset } from "./store/utils";
 
 const STORE_ROOT = path.join(process.cwd(), "external-apps");
 const CASAOS_RECOMMEND_LIST_URL =
-  "https://raw.githubusercontent.com/live-doctor/live-os/refs/heads/main/recommend-list.json";
+  "https://raw.githubusercontent.com/live-doctor/homeio/refs/heads/main/recommend-list.json";
 
 type StoreFormat = "casaos" | "umbrel";
 
@@ -167,7 +167,10 @@ export async function importAppStore(
   const storeSlug = slugify(url);
   const targetDir = path.join(STORE_ROOT, storeSlug);
   const urlNameFallback =
-    url.split("/").pop()?.replace(/\.zip$/i, "") || storeSlug;
+    url
+      .split("/")
+      .pop()
+      ?.replace(/\.zip$/i, "") || storeSlug;
   let resolvedStoreName = meta?.name ?? urlNameFallback ?? storeSlug;
 
   try {
@@ -434,7 +437,7 @@ async function extractZipBuffer(
   buffer: Buffer,
   targetDir: string,
 ): Promise<void> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "liveos-store-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "homeio-store-"));
   const zipPath = path.join(tmpDir, "store.zip");
   await fs.writeFile(zipPath, buffer);
 
@@ -717,15 +720,17 @@ export async function getComposeForApp(appId: string): Promise<{
         select: { composePath: true },
       });
       if (appRecord?.composePath) {
-        const fallbackResult = await getAppComposeContent(appRecord.composePath);
+        const fallbackResult = await getAppComposeContent(
+          appRecord.composePath,
+        );
         if (fallbackResult.success && fallbackResult.content) {
           content = fallbackResult.content;
         }
       }
     }
 
-     
-    const container = (installed.container as Record<string, unknown>) ?? undefined;
+    const container =
+      (installed.container as Record<string, unknown>) ?? undefined;
 
     if (!content && !container) {
       return {

@@ -1,28 +1,35 @@
 import {
-  addNetworkShare,
-  connectNetworkShare,
-  disconnectNetworkShare,
-  discoverSmbHosts,
-  getServerInfo,
-  listNetworkShares,
-  removeNetworkShare,
+    addNetworkShare,
+    connectNetworkShare,
+    disconnectNetworkShare,
+    discoverSmbHosts,
+    getServerInfo,
+    listNetworkShares,
+    removeNetworkShare,
 } from "@/app/actions/filesystem/network-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
-  DiscoveredHost,
-  NetworkShare,
-  ServerInfo,
-  ShareForm,
-  ViewState,
+    DiscoveredHost,
+    NetworkShare,
+    ServerInfo,
+    ShareForm,
+    ViewState,
 } from "./types";
 
-const emptyForm: ShareForm = { host: "", share: "", username: "", password: "" };
+const emptyForm: ShareForm = {
+  host: "",
+  share: "",
+  username: "",
+  password: "",
+};
 
 export function useNetworkStorage(open: boolean) {
   // Data state
   const [shares, setShares] = useState<NetworkShare[]>([]);
   const [discovered, setDiscovered] = useState<DiscoveredHost[]>([]);
-  const [selectedServer, setSelectedServer] = useState<DiscoveredHost | null>(null);
+  const [selectedServer, setSelectedServer] = useState<DiscoveredHost | null>(
+    null,
+  );
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
   const [discoverStatus, setDiscoverStatus] = useState("");
 
@@ -37,7 +44,10 @@ export function useNetworkStorage(open: boolean) {
 
   // Form state
   const [form, setForm] = useState<ShareForm>(emptyForm);
-  const [serverCredentials, setServerCredentials] = useState({ username: "", password: "" });
+  const [serverCredentials, setServerCredentials] = useState({
+    username: "",
+    password: "",
+  });
 
   // Error/feedback
   const [formError, setFormError] = useState<string | null>(null);
@@ -50,7 +60,8 @@ export function useNetworkStorage(open: boolean) {
   const sortedShares = useMemo(
     () =>
       [...shares].sort(
-        (a, b) => a.host.localeCompare(b.host) || a.share.localeCompare(b.share),
+        (a, b) =>
+          a.host.localeCompare(b.host) || a.share.localeCompare(b.share),
       ),
     [shares],
   );
@@ -94,7 +105,8 @@ export function useNetworkStorage(open: boolean) {
       setShares(result.shares);
     } catch (err) {
       setGlobalError(
-        "Failed to load network shares: " + ((err as Error)?.message || "Unknown error"),
+        "Failed to load network shares: " +
+          ((err as Error)?.message || "Unknown error"),
       );
     } finally {
       setLoading(false);
@@ -112,7 +124,7 @@ export function useNetworkStorage(open: boolean) {
         setServerInfoLoaded(true);
         setServerInfo({
           host: host.host,
-          isLiveOS: false,
+          isHOMEIO: false,
           shares: [],
           requiresAuth: true,
           error: "Authentication required",
@@ -123,12 +135,17 @@ export function useNetworkStorage(open: boolean) {
       setLoadingServerInfo(true);
       setServerInfo(null);
       try {
-        const info = await getServerInfo(host.host, host.ip, credentials, allowGuest);
+        const info = await getServerInfo(
+          host.host,
+          host.ip,
+          credentials,
+          allowGuest,
+        );
         setServerInfo(info);
       } catch (err) {
         setServerInfo({
           host: host.host,
-          isLiveOS: false,
+          isHOMEIO: false,
           shares: [],
           requiresAuth: false,
           error: (err as Error)?.message || "Failed to get server info",
@@ -152,19 +169,17 @@ export function useNetworkStorage(open: boolean) {
     }
   }, [open, loadShares, discover]);
 
-  const handleSelectServer = useCallback(
-    (host: DiscoveredHost) => {
-      setSelectedServer(host);
-      setView("server-shares");
-      setServerCredentials({ username: "", password: "" });
-      setServerInfo(null);
-      setServerInfoLoaded(false);
-    },
-    [],
-  );
+  const handleSelectServer = useCallback((host: DiscoveredHost) => {
+    setSelectedServer(host);
+    setView("server-shares");
+    setServerCredentials({ username: "", password: "" });
+    setServerInfo(null);
+    setServerInfoLoaded(false);
+  }, []);
 
   const handleRetryWithCredentials = useCallback(() => {
-    if (selectedServer) loadServerInfo(selectedServer, serverCredentials, false);
+    if (selectedServer)
+      loadServerInfo(selectedServer, serverCredentials, false);
   }, [selectedServer, serverCredentials, loadServerInfo]);
 
   const handleBrowseAsGuest = useCallback(() => {
@@ -185,7 +200,8 @@ export function useNetworkStorage(open: boolean) {
           password: serverCredentials.password || undefined,
         });
         if (result.share) upsertShare(result.share);
-        if (!result.success) setFormError(result.error || "Failed to add share");
+        if (!result.success)
+          setFormError(result.error || "Failed to add share");
       } catch (err) {
         setFormError((err as Error)?.message || "Failed to add share");
       } finally {

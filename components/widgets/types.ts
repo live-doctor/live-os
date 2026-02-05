@@ -21,7 +21,7 @@ export type WidgetType =
 export interface WidgetConfig {
   id: string;
   type: WidgetType;
-  appId: string; // e.g., "liveos", "plex", "nextcloud"
+  appId: string; // e.g., "homeio", "plex", "nextcloud"
   appName: string;
   appIcon: string;
   refreshInterval?: number; // in ms

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# LiveOS updater script
+# Homeio updater script
 # Licensed under Apache 2.0
 
 set -e
 
-INSTALL_DIR="/opt/live-os"
-SERVICE_NAME="liveos"
-GITHUB_REPO="live-doctor/live-os"
+INSTALL_DIR="/opt/homeio"
+SERVICE_NAME="homeio"
+GITHUB_REPO="live-doctor/homeio"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -167,10 +167,10 @@ ensure_cifs_utils() {
 ensure_firewall() {
     print_status "Ensuring UFW firewall is installed and configured..."
 
-    local liveos_port=80
+    local HOMEIO_port=80
     if [ -f "$INSTALL_DIR/.env" ]; then
-        liveos_port=$(grep -E '^PORT=' "$INSTALL_DIR/.env" | tail -1 | cut -d'=' -f2)
-        liveos_port=${liveos_port:-80}
+        HOMEIO_port=$(grep -E '^PORT=' "$INSTALL_DIR/.env" | tail -1 | cut -d'=' -f2)
+        HOMEIO_port=${HOMEIO_port:-80}
     fi
 
     if ! command -v ufw >/dev/null 2>&1; then
@@ -188,7 +188,7 @@ ensure_firewall() {
     fi
 
     # Allow required services
-    ufw allow "${liveos_port}/tcp" comment "LiveOS HTTP" 2>/dev/null || true
+    ufw allow "${HOMEIO_port}/tcp" comment "Homeio HTTP" 2>/dev/null || true
     ufw allow 443/tcp comment "HTTPS (if enabled)" 2>/dev/null || true
     ufw allow ssh comment "SSH" 2>/dev/null || true
     ufw allow 445/tcp comment "SMB 445" 2>/dev/null || true
@@ -223,7 +223,7 @@ ensure_fail2ban() {
     fi
 
     if [ -d /etc/fail2ban/jail.d ]; then
-        cat > /etc/fail2ban/jail.d/liveos-ssh.conf <<'EOF'
+        cat > /etc/fail2ban/jail.d/homeio-ssh.conf <<'EOF'
 [sshd]
 enabled = true
 port    = ssh
@@ -315,7 +315,7 @@ fi
 
 # Check if installation directory exists
 if [ ! -d "$INSTALL_DIR" ]; then
-    print_error "LiveOS installation not found at $INSTALL_DIR"
+    print_error "Homeio installation not found at $INSTALL_DIR"
     exit 1
 fi
 
@@ -351,13 +351,13 @@ update_from_artifact() {
     ensure_fail2ban
 
     if [ "$LOCAL_VERSION" = "$latest_version" ]; then
-        print_status "LiveOS is already up to date!"
+        print_status "Homeio is already up to date!"
         exit 0
     fi
 
-    print_status "Updating LiveOS from $LOCAL_VERSION to $latest_version..."
+    print_status "Updating Homeio from $LOCAL_VERSION to $latest_version..."
 
-    local tarball="liveos-${latest_tag}-linux-${arch}.tar.gz"
+    local tarball="homeio-${latest_tag}-linux-${arch}.tar.gz"
     local base_url="https://github.com/${GITHUB_REPO}/releases/download/${latest_tag}"
     local dest="/tmp/${tarball}"
 
@@ -381,7 +381,7 @@ update_from_artifact() {
     print_status "Checksum OK"
 
     # Backup .env and database
-    local backup_dir="/tmp/liveos-backup-$$"
+    local backup_dir="/tmp/homeio-backup-$$"
     mkdir -p "$backup_dir"
 
     if [ -f "$INSTALL_DIR/.env" ]; then
@@ -389,9 +389,9 @@ update_from_artifact() {
         cp "$INSTALL_DIR/.env" "$backup_dir/.env"
     fi
 
-    if [ -f "$INSTALL_DIR/prisma/live-os.db" ]; then
+    if [ -f "$INSTALL_DIR/prisma/homeio.db" ]; then
         print_info "Backing up database..."
-        cp "$INSTALL_DIR/prisma/live-os.db" "$backup_dir/live-os.db"
+        cp "$INSTALL_DIR/prisma/homeio.db" "$backup_dir/homeio.db"
     fi
 
     # Preserve external-apps if present
@@ -401,7 +401,7 @@ update_from_artifact() {
     fi
 
     # Stop service
-    print_status "Stopping LiveOS service..."
+    print_status "Stopping Homeio service..."
     systemctl stop "$SERVICE_NAME" 2>/dev/null || true
 
     # Remove old installation and extract new
@@ -419,8 +419,8 @@ update_from_artifact() {
         print_status "Restored .env configuration"
     fi
 
-    if [ -f "$backup_dir/live-os.db" ]; then
-        cp "$backup_dir/live-os.db" "$INSTALL_DIR/prisma/live-os.db"
+    if [ -f "$backup_dir/homeio.db" ]; then
+        cp "$backup_dir/homeio.db" "$INSTALL_DIR/prisma/homeio.db"
         print_status "Restored database"
     fi
 
@@ -441,14 +441,14 @@ update_from_artifact() {
     fi
 
     # Restart service
-    print_status "Restarting LiveOS service..."
+    print_status "Restarting Homeio service..."
     systemctl start "$SERVICE_NAME"
 
     # Wait for service to start
     sleep 3
 
     if systemctl is-active --quiet "$SERVICE_NAME"; then
-        print_status "Update complete! LiveOS is now at version $latest_version"
+        print_status "Update complete! Homeio is now at version $latest_version"
         print_status "Service is running successfully"
         echo ""
         print_info "View logs with: sudo journalctl -u $SERVICE_NAME -f"
@@ -473,11 +473,11 @@ update_from_source() {
     print_info "Latest available version: $REMOTE_VERSION"
 
     if [ "$LOCAL_VERSION" == "$REMOTE_VERSION" ]; then
-        print_status "LiveOS is already up to date!"
+        print_status "Homeio is already up to date!"
         exit 0
     fi
 
-    print_status "Updating LiveOS from version $LOCAL_VERSION to $REMOTE_VERSION..."
+    print_status "Updating Homeio from version $LOCAL_VERSION to $REMOTE_VERSION..."
 
     # Backup .env file once before all operations
     if [ -f "$INSTALL_DIR/.env" ]; then
@@ -551,7 +551,7 @@ update_from_source() {
     fi
 
     # Restart service
-    print_status "Restarting LiveOS service..."
+    print_status "Restarting Homeio service..."
     systemctl restart "$SERVICE_NAME"
 
     # Wait for service to start
@@ -559,7 +559,7 @@ update_from_source() {
 
     # Check service status
     if systemctl is-active --quiet "$SERVICE_NAME"; then
-        print_status "Update complete! LiveOS is now at version $REMOTE_VERSION"
+        print_status "Update complete! Homeio is now at version $REMOTE_VERSION"
         print_status "Service is running successfully"
         echo ""
         print_info "View logs with: sudo journalctl -u $SERVICE_NAME -f"

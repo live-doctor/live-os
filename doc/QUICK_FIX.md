@@ -12,26 +12,26 @@ Run these commands on your Ubuntu server:
 
 ```bash
 # Stop the service
-sudo systemctl stop liveos
+sudo systemctl stop homeio
 
 # Install build tools (required for compiling native modules)
 sudo apt-get update
 sudo apt-get install -y build-essential python3
 
 # Go to installation directory
-cd /opt/live-os
+cd /opt/homeio
 
 # Rebuild node-pty
 sudo npm rebuild node-pty
 
 # Restart the service
-sudo systemctl restart liveos
+sudo systemctl restart homeio
 
 # Check status
-sudo systemctl status liveos
+sudo systemctl status homeio
 
 # View logs
-sudo journalctl -u liveos -n 50
+sudo journalctl -u homeio -n 50
 ```
 
 ---
@@ -41,20 +41,20 @@ sudo journalctl -u liveos -n 50
 After `npm rebuild node-pty`, you should see:
 
 ```
-> node-pty@1.1.0 install /opt/live-os/node_modules/node-pty
+> node-pty@1.1.0 install /opt/homeio/node_modules/node-pty
 > node scripts/post-install.js
 
 [Success] Build complete
 ```
 
-After `systemctl status liveos`, you should see:
+After `systemctl status homeio`, you should see:
 
 ```
-● liveos.service - LiveOS - Self-hosted Operating System
+● homeio.service - Homeio - Self-hosted Operating System
      Active: active (running)
 ```
 
-In the logs (`journalctl -u liveos`), you should see:
+In the logs (`journalctl -u homeio`), you should see:
 
 ```
 ✓ Terminal WebSocket server initialized
@@ -96,21 +96,21 @@ If you want a clean install with all fixes:
 
 ```bash
 # Backup .env if you have custom settings
-sudo cp /opt/live-os/.env /tmp/liveos-env-backup
+sudo cp /opt/homeio/.env /tmp/homeio-env-backup
 
 # Remove old installation
-sudo systemctl stop liveos
-sudo systemctl disable liveos
-sudo rm -rf /opt/live-os
-sudo rm /etc/systemd/system/liveos.service
+sudo systemctl stop homeio
+sudo systemctl disable homeio
+sudo rm -rf /opt/homeio
+sudo rm /etc/systemd/system/homeio.service
 
 # Fresh install with updated script
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/develop/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/develop/install.sh -o install.sh
 sudo bash install.sh
 
 # Restore .env if you had custom settings
-sudo cp /tmp/liveos-env-backup /opt/live-os/.env
-sudo systemctl restart liveos
+sudo cp /tmp/homeio-env-backup /opt/homeio/.env
+sudo systemctl restart homeio
 ```
 
 ---
@@ -119,19 +119,19 @@ sudo systemctl restart liveos
 
 ```bash
 # Check service status
-sudo systemctl status liveos
+sudo systemctl status homeio
 
 # Check if port is listening
 sudo ss -tulpn | grep 3000
 
 # Check logs for errors
-sudo journalctl -u liveos -n 100 --no-pager
+sudo journalctl -u homeio -n 100 --no-pager
 
 # Test web access
 curl http://localhost:3000
 ```
 
-You should see HTML response from LiveOS dashboard!
+You should see HTML response from Homeio dashboard!
 
 ---
 
@@ -141,14 +141,14 @@ You should see HTML response from LiveOS dashboard!
 
 ```bash
 sudo apt-get install -y build-essential python3
-cd /opt/live-os && sudo npm rebuild node-pty
-sudo systemctl restart liveos
+cd /opt/homeio && sudo npm rebuild node-pty
+sudo systemctl restart homeio
 ```
 
 **Check it worked:**
 
 ```bash
-sudo journalctl -u liveos -n 20
+sudo journalctl -u homeio -n 20
 ```
 
 Should show: `✓ Terminal WebSocket server initialized` or `⚠ Terminal feature not available` (both are OK!)

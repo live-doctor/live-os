@@ -1,15 +1,15 @@
-# LiveOS
+# Homeio
 
-A self-hosted operating system dashboard for managing your home server infrastructure. Built with Next.js, LiveOS combines the best ideas from [UmbrelOS](https://github.com/getumbrel/umbrel) and [CasaOS](https://github.com/IceWhaleTech/CasaOS) while filling in the gaps they leave behind.
+A self-hosted operating system dashboard for managing your home server infrastructure. Built with Next.js, Homeio combines the best ideas from [UmbrelOS](https://github.com/getumbrel/umbrel) and [CasaOS](https://github.com/IceWhaleTech/CasaOS) while filling in the gaps they leave behind.
 
-![License](https://img.shields.io/github/license/live-doctor/live-os)
-![GitHub release](https://img.shields.io/github/v/release/live-doctor/live-os)
+![License](https://img.shields.io/github/license/live-doctor/homeio)
+![GitHub release](https://img.shields.io/github/v/release/live-doctor/homeio)
 
-## Why LiveOS?
+## Why Homeio?
 
-UmbrelOS and CasaOS are great starting points, but each has limitations. LiveOS was built to address the features they're missing:
+UmbrelOS and CasaOS are great starting points, but each has limitations. Homeio was built to address the features they're missing:
 
-| Feature                               | UmbrelOS    | CasaOS      | LiveOS          |
+| Feature                               | UmbrelOS    | CasaOS      | Homeio          |
 | ------------------------------------- | ----------- | ----------- | --------------- |
 | Firewall management (UFW)             | -           | -           | Yes             |
 | Web terminal (host + containers)      | -           | Host only   | Both            |
@@ -28,9 +28,9 @@ UmbrelOS and CasaOS are great starting points, but each has limitations. LiveOS 
 
 ## App Store
 
-LiveOS uses the **CasaOS app store** as its default source. You can also add **CasaOS community stores** for more apps.
+Homeio uses the **CasaOS app store** as its default source. You can also add **CasaOS community stores** for more apps.
 
-Support for **UmbrelOS app store** format is planned for a future release, making LiveOS the first dashboard to unify both ecosystems.
+Support for **UmbrelOS app store** format is planned for a future release, making Homeio the first dashboard to unify both ecosystems.
 
 ### Adding community stores
 
@@ -38,10 +38,10 @@ From the App Store dialog, you can import additional CasaOS-compatible stores by
 
 ## Installation
 
-Install LiveOS with a single command:
+Install Homeio with a single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/main/scripts/install.sh | sudo bash
 ```
 
 This downloads a **pre-built release** for your architecture (amd64 or arm64) - no compilation needed on your device.
@@ -51,7 +51,7 @@ This downloads a **pre-built release** for your architecture (amd64 or arm64) - 
 If you prefer to build on the device (or no release is available yet):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --from-source
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/main/scripts/install.sh | sudo bash -s -- --from-source
 ```
 
 This clones the repo, installs dependencies, compiles native modules, and builds the project locally. Requires git, Node.js 20, and build tools (gcc, make, python3).
@@ -60,35 +60,35 @@ This clones the repo, installs dependencies, compiles native modules, and builds
 
 ```bash
 # Dry run - preview what would happen
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --dry-run
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/main/scripts/install.sh | sudo bash -s -- --dry-run
 
 # Install a specific version
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --version v1.0.7
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/main/scripts/install.sh | sudo bash -s -- --version v1.0.7
 
 # Skip dependency installation
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --no-dep
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/main/scripts/install.sh | sudo bash -s -- --no-dep
 
 # Build from source using a specific branch
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo bash -s -- --from-source --branch develop
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/main/scripts/install.sh | sudo bash -s -- --from-source --branch develop
 ```
 
 ### Custom port & domain
 
-By default, LiveOS runs on port 80. To customize:
+By default, Homeio runs on port 80. To customize:
 
 ```bash
-export LIVEOS_HTTP_PORT=8080
-export LIVEOS_DOMAIN=home.local
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/main/scripts/install.sh | sudo -E bash
+export HOMEIO_HTTP_PORT=8080
+export HOMEIO_DOMAIN=home.local
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/main/scripts/install.sh | sudo -E bash
 ```
 
 Or enter them when prompted during installation.
 
-During installation you can set a hostname (e.g. "home") and LiveOS will install **Avahi** (mDNS), set the system hostname, and make it reachable as `home.local` across your entire network without editing hosts files.
+During installation you can set a hostname (e.g. "home") and Homeio will install **Avahi** (mDNS), set the system hostname, and make it reachable as `home.local` across your entire network without editing hosts files.
 
 ## Quick Start
 
-After installation, access LiveOS at:
+After installation, access Homeio at:
 
 - `http://localhost` (or your custom port)
 - `http://your-server-ip`
@@ -97,7 +97,7 @@ After installation, access LiveOS at:
 ## Updating
 
 ```bash
-cd /opt/live-os && sudo bash scripts/update.sh
+cd /opt/homeio && sudo bash scripts/update.sh
 ```
 
 This checks the latest GitHub release, downloads the new build, backs up your `.env`, database, and external apps, then restores everything after extraction.
@@ -105,13 +105,13 @@ This checks the latest GitHub release, downloads the new build, backs up your `.
 To update from source instead:
 
 ```bash
-cd /opt/live-os && sudo bash scripts/update.sh --from-source
+cd /opt/homeio && sudo bash scripts/update.sh --from-source
 ```
 
 ## Uninstalling
 
 ```bash
-cd /opt/live-os && sudo bash scripts/uninstall.sh
+cd /opt/homeio && sudo bash scripts/uninstall.sh
 ```
 
 This stops the service, removes the systemd unit, and deletes the installation directory. Optionally cleans up Docker resources and data.
@@ -119,13 +119,13 @@ This stops the service, removes the systemd unit, and deletes the installation d
 ## Managing the Service
 
 ```bash
-sudo systemctl start liveos
-sudo systemctl stop liveos
-sudo systemctl restart liveos
-sudo systemctl status liveos
+sudo systemctl start homeio
+sudo systemctl stop homeio
+sudo systemctl restart homeio
+sudo systemctl status homeio
 
 # View logs
-sudo journalctl -u liveos -f
+sudo journalctl -u homeio -f
 ```
 
 ## Features
@@ -181,8 +181,8 @@ Detailed hardware info tabs: CPU, memory, battery, graphics, network interfaces,
 ## Development
 
 ```bash
-git clone https://github.com/live-doctor/live-os.git
-cd live-os
+git clone https://github.com/live-doctor/homeio.git
+cd homeio
 npm install
 npm run dev
 ```

@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { SystemService } from "./types";
 import {
-  getSystemServices,
-  getServiceStatus,
-  restartService,
-  startService,
-  stopService,
+    getServiceStatus,
+    getSystemServices,
+    restartService,
+    startService,
+    stopService,
 } from "@/app/actions/maintenance/troubleshoot";
 import { Button } from "@/components/ui/button";
 import { card, cn, text } from "@/components/ui/design-tokens";
 import { Input } from "@/components/ui/input";
-import { Loader2, RefreshCw, RotateCw, Play, Square } from "lucide-react";
+import { Loader2, Play, RefreshCw, RotateCw, Square } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import type { SystemService } from "./types";
 
 const serviceBadge = {
   running: "bg-emerald-500/15 text-emerald-200 border border-emerald-500/30",
@@ -114,7 +114,9 @@ export function ServicesCard({ open }: Props) {
       className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
     >
       <div className="space-y-1 min-w-0">
-        <p className="text-white text-sm font-semibold truncate">{service.displayName}</p>
+        <p className="text-white text-sm font-semibold truncate">
+          {service.displayName}
+        </p>
         <p className="text-white/60 text-xs truncate">{service.name}</p>
       </div>
       <div className="flex items-center gap-2">
@@ -166,9 +168,11 @@ export function ServicesCard({ open }: Props) {
     <section className={cn(card.base, card.padding.md, "space-y-3")}>
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div className="space-y-1">
-          <p className={cn(text.labelUppercase, "tracking-[0.18em]")}>Services</p>
+          <p className={cn(text.labelUppercase, "tracking-[0.18em]")}>
+            Services
+          </p>
           <h3 className={text.heading}>Critical daemons</h3>
-          <p className={text.muted}>LiveOS, Docker, and on-demand lookup</p>
+          <p className={text.muted}>Homeio, Docker, and on-demand lookup</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -189,7 +193,9 @@ export function ServicesCard({ open }: Props) {
       </header>
 
       <div className="space-y-2">
-        <label className="text-xs text-white/60">Lookup a service (press Enter)</label>
+        <label className="text-xs text-white/60">
+          Lookup a service (press Enter)
+        </label>
         <div className="flex items-center gap-2">
           <Input
             placeholder="e.g. cloudflared.service or docker"

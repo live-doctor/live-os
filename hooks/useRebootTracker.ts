@@ -27,7 +27,7 @@ type Subscriber = {
   callback: (state: RebootSharedState) => void;
 };
 
-const STORAGE_KEY = "liveos:pending-reboot";
+const STORAGE_KEY = "homeio:pending-reboot";
 const POLL_INTERVAL_MS = 2000;
 const STALE_AFTER_MS = 5 * 60 * 1000;
 

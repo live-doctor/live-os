@@ -1,8 +1,8 @@
 "use server";
 
+import { execAsync } from "@/lib/exec";
 import fs from "fs/promises";
 import path from "path";
-import { execAsync } from "@/lib/exec";
 import { logAction } from "./logger";
 
 export type UpdateStatus = {
@@ -75,9 +75,7 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
   const getMainPackageVersion = async () => {
     try {
       await execAsync("git fetch --quiet origin");
-      const { stdout } = await execAsync(
-        "git show origin/main:package.json",
-      );
+      const { stdout } = await execAsync("git show origin/main:package.json");
       const remotePkg = JSON.parse(stdout);
       return remotePkg.version as string | undefined;
     } catch (error) {
@@ -122,8 +120,8 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
       message: hasUpdate
         ? `Update available: ${remoteVersion} (installed ${currentVersion})`
         : aheadOfRemote
-        ? `You are ahead of the latest release (${currentVersion} > ${remoteVersion}).`
-        : `You are on the latest LiveOS (${currentVersion}).`,
+          ? `You are ahead of the latest release (${currentVersion} > ${remoteVersion}).`
+          : `You are on the latest Homeio (${currentVersion}).`,
     };
   } catch (error) {
     await logAction("update:check:error", {

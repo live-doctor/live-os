@@ -30,7 +30,7 @@ export function getSystemDefaults(): {
  * Get the device hostname.
  */
 export function getDeviceHostname(): string {
-  return process.env.DEVICE_HOSTNAME || os.hostname() || "liveos";
+  return process.env.DEVICE_HOSTNAME || os.hostname() || "homeio";
 }
 
 /**

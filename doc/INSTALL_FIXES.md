@@ -97,11 +97,11 @@ Error: Failed to load native module: pty.node
 sudo apt-get install -y build-essential python3
 
 # Rebuild node-pty
-cd /opt/live-os
+cd /opt/homeio
 sudo npm rebuild node-pty
 
 # Restart service
-sudo systemctl restart liveos
+sudo systemctl restart homeio
 ```
 
 #### Build Tools Installed:
@@ -216,7 +216,7 @@ bash install.sh --dry-run
 
 ```bash
 # On your Ubuntu server
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/develop/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/develop/install.sh -o install.sh
 sudo bash install.sh
 ```
 
@@ -232,7 +232,7 @@ sudo bash install.sh
 8. ✅ Creates .env file
 9. ✅ Runs `npm run build` (works with next.config.js)
 10. ✅ Creates systemd service
-11. ✅ Starts LiveOS
+11. ✅ Starts Homeio
 
 ---
 
@@ -246,18 +246,18 @@ docker compose version
 systemctl status docker
 ```
 
-### 2. Check if LiveOS is Running
+### 2. Check if Homeio is Running
 
 ```bash
-systemctl status liveos
-journalctl -u liveos -n 50
+systemctl status homeio
+journalctl -u homeio -n 50
 ```
 
 ### 3. Check Build Files
 
 ```bash
-ls -la /opt/live-os/.next
-cat /opt/live-os/next.config.js
+ls -la /opt/homeio/.next
+cat /opt/homeio/next.config.js
 ```
 
 ### 4. Test Docker
@@ -326,7 +326,7 @@ If you already installed before these fixes:
 
 ```bash
 # On your server
-cd /opt/live-os
+cd /opt/homeio
 sudo bash update.sh
 ```
 
@@ -379,14 +379,14 @@ sudo sh get-docker.sh
 **Solution:**
 
 ```bash
-cd /opt/live-os
+cd /opt/homeio
 
 # Install TypeScript explicitly
 sudo npm install typescript --save-dev
 
 # Rebuild
 sudo npm run build
-sudo systemctl restart liveos
+sudo systemctl restart homeio
 ```
 
 ### Issue: next.config.ts still exists
@@ -394,7 +394,7 @@ sudo systemctl restart liveos
 **Solution:**
 
 ```bash
-cd /opt/live-os
+cd /opt/homeio
 
 # Remove old TypeScript config
 sudo rm next.config.ts
@@ -404,7 +404,7 @@ sudo git pull origin develop
 
 # Rebuild
 sudo npm run build
-sudo systemctl restart liveos
+sudo systemctl restart homeio
 ```
 
 ---
@@ -423,18 +423,18 @@ $ docker compose version
 Docker Compose version v2.23.0
 ```
 
-### LiveOS Running:
+### Homeio Running:
 
 ```bash
-$ systemctl status liveos
-● liveos.service - LiveOS - Self-hosted Operating System
+$ systemctl status homeio
+● homeio.service - Homeio - Self-hosted Operating System
      Active: active (running)
 ```
 
 ### Build Successful:
 
 ```bash
-$ ls /opt/live-os/.next/
+$ ls /opt/homeio/.next/
 cache  server  static  BUILD_ID  package.json
 ```
 
@@ -449,7 +449,7 @@ $ curl http://localhost:3000
 
 ## 🎉 Ready to Use!
 
-Your LiveOS installation now includes:
+Your Homeio installation now includes:
 
 - ✅ Complete Docker setup
 - ✅ TypeScript build support
@@ -473,4 +473,4 @@ Your LiveOS installation now includes:
 3. Monitor system resources
 4. Configure settings
 
-Enjoy your LiveOS! 🚀
+Enjoy your Homeio! 🚀

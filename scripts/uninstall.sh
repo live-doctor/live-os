@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LiveOS uninstallation script
+# Homeio uninstallation script
 # Licensed under the Apache License, Version 2.0
 
 set -e
@@ -92,19 +92,19 @@ cleanup_data_dir() {
 }
 
 # Installation directory
-INSTALL_DIR="/opt/live-os"
-SERVICE_NAME="liveos"
+INSTALL_DIR="/opt/homeio"
+SERVICE_NAME="homeio"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 # Check if script is run as root
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
     print_error "Please run as root"
     exit 1
 fi
 
 # Confirmation prompt
-print_warning "This will completely remove LiveOS from your system:"
-print_warning "  - Stop the LiveOS service"
+print_warning "This will completely remove Homeio from your system:"
+print_warning "  - Stop the Homeio service"
 print_warning "  - Remove systemd service file"
 print_warning "  - Delete installation directory: $INSTALL_DIR"
 echo ""
@@ -117,22 +117,22 @@ if [ "$confirmation" != "yes" ]; then
 fi
 
 echo ""
-print_status "Starting LiveOS uninstallation..."
+print_status "Starting Homeio uninstallation..."
 
 # Stop the service
 if systemctl is-active --quiet $SERVICE_NAME; then
-    print_status "Stopping LiveOS service..."
+    print_status "Stopping Homeio service..."
     systemctl stop $SERVICE_NAME
 else
-    print_status "LiveOS service is not running"
+    print_status "Homeio service is not running"
 fi
 
 # Disable the service
 if systemctl is-enabled --quiet $SERVICE_NAME 2>/dev/null; then
-    print_status "Disabling LiveOS service..."
+    print_status "Disabling Homeio service..."
     systemctl disable $SERVICE_NAME
 else
-    print_status "LiveOS service is not enabled"
+    print_status "Homeio service is not enabled"
 fi
 
 # Remove service file
@@ -161,8 +161,8 @@ fi
 
 print_status "\n"
 print_status "╭─────────────────────────────────────────╮"
-print_status "│    LiveOS Uninstalled Successfully! ✓   │"
+print_status "│    Homeio Uninstalled Successfully! ✓   │"
 print_status "╰─────────────────────────────────────────╯"
 print_status "\n"
-print_status "All LiveOS files and services have been removed."
+print_status "All Homeio files and services have been removed."
 print_status "Your system has been cleaned up."

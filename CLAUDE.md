@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LiveOS is a self-hosted operating system dashboard for managing infrastructure, built with Next.js 16. It provides real-time system monitoring (CPU, RAM, storage), Docker container management, and an app store inspired by UmbrelOS and CasaOS.
+Homeio is a self-hosted operating system dashboard for managing infrastructure, built with Next.js 16. It provides real-time system monitoring (CPU, RAM, storage), Docker container management, and an app store inspired by UmbrelOS and CasaOS.
 
 **Design Philosophy**: Clean, consistent, user-friendly interface following KISS (Keep It Simple, Stupid) principles with inspiration from UmbrelOS and CasaOS.
 
@@ -478,19 +478,19 @@ npm run lint:fix        # Run ESLint with auto-fix
 
 ## Production Deployment
 
-The project is designed to be installed via a shell script to `/opt/live-os` and run as a systemd service. The installation process:
+The project is designed to be installed via a shell script to `/opt/homeio` and run as a systemd service. The installation process:
 
 - Clones the repository
 - Runs `npm install` and `npm run build`
 - Creates a systemd service that runs `npm start`
-- Configurable via `LIVEOS_HTTP_PORT` environment variable (default: 3000)
+- Configurable via `HOMEIO_HTTP_PORT` environment variable (default: 3000)
 
 Service management:
 
 ```bash
-sudo systemctl [start|stop|restart] liveos
-sudo systemctl status liveos
-sudo journalctl -u liveos -f
+sudo systemctl [start|stop|restart] homeio
+sudo systemctl status homeio
+sudo journalctl -u homeio -f
 ```
 
 ## Project Architecture
@@ -498,7 +498,7 @@ sudo journalctl -u liveos -f
 ### Folder Organization
 
 ```
-live-os/
+homeio/
 ├── app/                          # Next.js App Router
 │   ├── actions/                  # Server Actions (API layer)
 │   │   ├── system/              # System info, metrics, storage
@@ -743,7 +743,7 @@ Muted: text-xs text-white/60 -tracking-[0.01em]
 
 **Primary Target**: Debian LTS (Long Term Support) - All system commands and operations are designed for Debian-based systems.
 
-LiveOS is optimized for deployment on **Debian LTS** servers, ensuring:
+Homeio is optimized for deployment on **Debian LTS** servers, ensuring:
 
 - Long-term stability and security updates
 - Wide Docker compatibility

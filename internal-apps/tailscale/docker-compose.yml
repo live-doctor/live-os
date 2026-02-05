@@ -6,7 +6,7 @@ services:
     container_name: ${CONTAINER_NAME:-tailscale}
     hostname: tailscale-nginx
     labels:
-      - "liveos.appId=tailscale"
+      - "homeio.appId=tailscale"
     environment:
       # - TS_AUTHKEY=tskey-client-notAReal-OAuthClientSecret1Atawk
       - TS_EXTRA_ARGS=--advertise-tags=tag:container
@@ -26,4 +26,4 @@ services:
       - tailscale-nginx
     network_mode: service:tailscale-nginx
     labels:
-      - "liveos.helper=true"
+      - "homeio.helper=true"

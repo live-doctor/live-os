@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# LiveOS - Umbrel Apps Update Script
+# Homeio - Umbrel Apps Update Script
 #
 # This script syncs your local umbrel-apps-ref with the upstream Umbrel
 # repository, showing you what changed and letting you approve updates.
@@ -44,7 +44,7 @@ fi
 print_header() {
   echo -e "${CYAN}${BOLD}"
   echo "╔════════════════════════════════════════════════════════════════╗"
-  echo "║              LiveOS - Umbrel Apps Update Script                ║"
+  echo "║              Homeio - Umbrel Apps Update Script                ║"
   echo "╚════════════════════════════════════════════════════════════════╝"
   echo -e "${NC}"
 }
@@ -344,7 +344,7 @@ show_summary() {
   echo -e "  ${BOLD}Latest Commit:${NC} $LATEST_COMMIT"
   echo -e "  ${BOLD}Upstream:${NC} $UPSTREAM_REPO"
   echo ""
-  print_info "Your LiveOS app store is now up to date!"
+  print_info "Your Homeio app store is now up to date!"
   print_info "Restart your dev server to see the changes: npm run dev"
 }
 

@@ -47,7 +47,10 @@ export async function getFirewallStatus(): Promise<FirewallStatusResult> {
 
     // Get ufw status verbose
     const { stdout } = await execAsync("sudo ufw status verbose");
-    const lines = stdout.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
 
     // Parse status
     const statusLine = lines.find((l) => l.startsWith("Status:"));
@@ -59,10 +62,14 @@ export async function getFirewallStatus(): Promise<FirewallStatusResult> {
 
     const defaultLine = lines.find((l) => l.startsWith("Default:"));
     if (defaultLine) {
-      const match = defaultLine.match(/Default:\s*(\w+)\s*\(incoming\),\s*(\w+)\s*\(outgoing\)/i);
+      const match = defaultLine.match(
+        /Default:\s*(\w+)\s*\(incoming\),\s*(\w+)\s*\(outgoing\)/i,
+      );
       if (match) {
-        defaultIncoming = match[1].toLowerCase() as FirewallStatus["defaultIncoming"];
-        defaultOutgoing = match[2].toLowerCase() as FirewallStatus["defaultOutgoing"];
+        defaultIncoming =
+          match[1].toLowerCase() as FirewallStatus["defaultIncoming"];
+        defaultOutgoing =
+          match[2].toLowerCase() as FirewallStatus["defaultOutgoing"];
       }
     }
 
@@ -98,7 +105,10 @@ export async function getFirewallStatus(): Promise<FirewallStatusResult> {
     const err = error as Error;
 
     // Check for permission error
-    if (err.message?.includes("permission denied") || err.message?.includes("sudo")) {
+    if (
+      err.message?.includes("permission denied") ||
+      err.message?.includes("sudo")
+    ) {
       return {
         status: {
           enabled: false,
@@ -106,7 +116,8 @@ export async function getFirewallStatus(): Promise<FirewallStatusResult> {
           defaultOutgoing: "unknown",
         },
         rules: [],
-        error: "Permission denied. LiveOS needs sudo access to manage the firewall.",
+        error:
+          "Permission denied. Homeio needs sudo access to manage the firewall.",
       };
     }
 
@@ -136,11 +147,15 @@ function parseRuleLine(line: string, index: number): FirewallRule | null {
   const [to, actionDir, from] = parts;
 
   // Parse action and direction
-  const actionMatch = actionDir.match(/^(ALLOW|DENY|REJECT|LIMIT)(?:\s+(IN|OUT))?$/i);
+  const actionMatch = actionDir.match(
+    /^(ALLOW|DENY|REJECT|LIMIT)(?:\s+(IN|OUT))?$/i,
+  );
   if (!actionMatch) return null;
 
   const action = actionMatch[1].toUpperCase() as FirewallRule["action"];
-  const direction = actionMatch[2]?.toUpperCase() as FirewallRule["direction"] | undefined;
+  const direction = actionMatch[2]?.toUpperCase() as
+    | FirewallRule["direction"]
+    | undefined;
 
   // Parse port and protocol from "to" field
   let port: string | undefined;
@@ -168,7 +183,10 @@ function parseRuleLine(line: string, index: number): FirewallRule | null {
 /**
  * Enable the firewall.
  */
-export async function enableFirewall(): Promise<{ success: boolean; error?: string }> {
+export async function enableFirewall(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
     await execAsync("sudo ufw --force enable");
     return { success: true };
@@ -184,7 +202,10 @@ export async function enableFirewall(): Promise<{ success: boolean; error?: stri
 /**
  * Disable the firewall.
  */
-export async function disableFirewall(): Promise<{ success: boolean; error?: string }> {
+export async function disableFirewall(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
     await execAsync("sudo ufw disable");
     return { success: true };
@@ -208,11 +229,21 @@ export async function addFirewallRule(params: {
   to?: string;
   direction?: "in" | "out";
 }): Promise<{ success: boolean; error?: string }> {
-  const { port, protocol = "any", action = "allow", from, direction = "in" } = params;
+  const {
+    port,
+    protocol = "any",
+    action = "allow",
+    from,
+    direction = "in",
+  } = params;
 
   // Validate port
   if (!port || !/^(\d+)(:\d+)?$/.test(port)) {
-    return { success: false, error: "Invalid port format. Use a number or range (e.g., 80 or 8000:8080)" };
+    return {
+      success: false,
+      error:
+        "Invalid port format. Use a number or range (e.g., 80 or 8000:8080)",
+    };
   }
 
   const portNum = parseInt(port.split(":")[0], 10);
@@ -252,7 +283,9 @@ export async function addFirewallRule(params: {
 /**
  * Delete a firewall rule by number.
  */
-export async function deleteFirewallRule(ruleNumber: number): Promise<{ success: boolean; error?: string }> {
+export async function deleteFirewallRule(
+  ruleNumber: number,
+): Promise<{ success: boolean; error?: string }> {
   if (ruleNumber < 1) {
     return { success: false, error: "Invalid rule number" };
   }
@@ -274,7 +307,7 @@ export async function deleteFirewallRule(ruleNumber: number): Promise<{ success:
  */
 export async function setDefaultPolicy(
   direction: "incoming" | "outgoing",
-  policy: "allow" | "deny" | "reject"
+  policy: "allow" | "deny" | "reject",
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await execAsync(`sudo ufw default ${policy} ${direction}`);
@@ -291,7 +324,10 @@ export async function setDefaultPolicy(
 /**
  * Reset the firewall to default state.
  */
-export async function resetFirewall(): Promise<{ success: boolean; error?: string }> {
+export async function resetFirewall(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
     await execAsync("sudo ufw --force reset");
     return { success: true };

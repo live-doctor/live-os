@@ -1,6 +1,6 @@
-# LiveOS Scripts
+# Homeio Scripts
 
-This directory contains utility scripts for managing LiveOS.
+This directory contains utility scripts for managing Homeio.
 
 ## App Store Management
 
@@ -35,7 +35,7 @@ npm run update-apps:auto
 
 ```
 ╔════════════════════════════════════════════════════════════════╗
-║              LiveOS - Umbrel Apps Update Script                ║
+║              Homeio - Umbrel Apps Update Script                ║
 ╚════════════════════════════════════════════════════════════════╝
 
 ▶ Checking Prerequisites
@@ -184,7 +184,7 @@ To add custom apps that aren't in Umbrel's repository:
    name: My Custom App
    version: "1.0.0"
    category: productivity
-   tagline: A custom app for LiveOS
+   tagline: A custom app for Homeio
    description: |
      Full description of your app...
    developer: Your Name

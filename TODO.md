@@ -1,4 +1,4 @@
-# LiveOS Development Roadmap
+# Homeio Development Roadmap
 
 This document tracks features needed to reach feature parity with UmbrelOS and CasaOS.
 
@@ -79,7 +79,7 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
   - **Estimated effort:** 3 days
 
 - [ ] **System Backup**
-  - [ ] Backup LiveOS configuration
+  - [ ] Backup Homeio configuration
   - [ ] Backup installed apps list
   - [ ] Backup user settings
   - [ ] Export backup to external location
@@ -306,7 +306,7 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
   - **Estimated effort:** 1-2 days
 
 ### 8. System Updates
-- [ ] **LiveOS Update Check**
+- [ ] **Homeio Update Check**
   - [ ] Check GitHub for new releases
   - [ ] Show release notes
   - [ ] Update notification
@@ -315,7 +315,7 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
   - **Estimated effort:** 1 day
 
 - [ ] **One-Click Updates**
-  - [ ] Update LiveOS from UI
+  - [ ] Update Homeio from UI
   - [ ] Backup before update
   - [ ] Rollback on failure
   - [ ] Update progress display
@@ -650,4 +650,4 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
 ---
 
 **Last Updated**: January 19, 2026
-**Maintained By**: LiveOS Development Team
+**Maintained By**: Homeio Development Team

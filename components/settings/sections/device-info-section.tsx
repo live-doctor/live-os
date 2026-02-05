@@ -24,7 +24,7 @@ export function DeviceInfoSection({
         <div>
           <h3 className="text-lg font-semibold text-white -tracking-[0.01em]">
             {systemInfo?.username || "User"}&apos;s{" "}
-            <span className="text-white/60">LiveOS</span>
+            <span className="text-white/60">Homeio</span>
           </h3>
         </div>
         <div className="flex gap-3">
@@ -62,11 +62,11 @@ export function DeviceInfoSection({
         <div className="flex">
           <span className="w-32 text-white/60">Device</span>
           <span className="text-white">
-            {systemInfo?.hostname || "LiveOS Server"}
+            {systemInfo?.hostname || "Homeio Server"}
           </span>
         </div>
         <div className="flex">
-          <span className="w-32 text-white/60">LiveOS</span>
+          <span className="w-32 text-white/60">Homeio</span>
           <span className="text-white">{VERSION}</span>
         </div>
         <div className="flex">

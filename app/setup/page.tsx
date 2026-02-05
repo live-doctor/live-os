@@ -1,17 +1,17 @@
 "use client";
 
 import { hasUsers, registerUser } from "@/app/actions/auth";
-import { installInternalApp } from "@/app/actions/internal-apps";
 import { updateSettings } from "@/app/actions/auth/settings";
+import { installInternalApp } from "@/app/actions/internal-apps";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OrbitLoader } from "@/components/auth/orbit-loader";
 import { PostSetup } from "@/components/auth/post-setup";
 import { RegisterStep } from "@/components/auth/register-step";
 import { PIN_LENGTH, VERSION } from "@/lib/config";
+import type { Step, TailscaleIntent, TailscaleStatus } from "@/types/setup";
 import { CheckCircle2, Rocket, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { Step, TailscaleIntent, TailscaleStatus } from "@/types/setup";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -133,7 +133,7 @@ export default function SetupPage() {
     return (
       <AuthShell
         badge="Setup"
-        title="LiveOS"
+        title="Homeio"
         subtitle="Preparing first-time setup…"
         icon={<Rocket className="h-5 w-5 text-white/80" />}
       >

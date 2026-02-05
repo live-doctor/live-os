@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LiveOS system prerequisites installer
+# Homeio system prerequisites installer
 # Installs runtime dependencies, firewall rules, and basic hardening before install.sh
 
 set -e
@@ -17,7 +17,7 @@ print_dry() { echo -e "${BLUE}[DRY]${NC} Would: $1"; }
 
 DRY_RUN=0
 FROM_SOURCE=0
-HTTP_PORT=${LIVEOS_HTTP_PORT:-80}
+HTTP_PORT=${HOMEIO_HTTP_PORT:-80}
 
 while [[ "$#" -gt 0 ]]; do
   case $1 in
@@ -113,7 +113,7 @@ install_samba() {
 }
 
 install_firewall() {
-  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install and enable UFW with LiveOS/SSH/SMB rules"; return; fi
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install and enable UFW with Homeio/SSH/SMB rules"; return; fi
   if ! command -v ufw >/dev/null 2>&1; then
     if [ -x "$(command -v apt-get)" ]; then
       apt-get update && apt-get install -y ufw
@@ -127,7 +127,7 @@ install_firewall() {
   fi
   ufw --force default deny incoming 2>/dev/null || true
   ufw --force default allow outgoing 2>/dev/null || true
-  ufw allow "${HTTP_PORT}/tcp" comment "LiveOS HTTP" 2>/dev/null || true
+  ufw allow "${HTTP_PORT}/tcp" comment "Homeio HTTP" 2>/dev/null || true
   ufw allow ssh comment "SSH" 2>/dev/null || true
   ufw allow 445/tcp comment "SMB 445" 2>/dev/null || true
   ufw allow 139/tcp comment "SMB 139" 2>/dev/null || true
@@ -151,7 +151,7 @@ install_fail2ban() {
     fi
   fi
   if [ -d /etc/fail2ban/jail.d ]; then
-    cat > /etc/fail2ban/jail.d/liveos-ssh.conf <<'EOF'
+    cat > /etc/fail2ban/jail.d/homeio-ssh.conf <<'EOF'
 [sshd]
 enabled = true
 port    = ssh
@@ -279,7 +279,7 @@ install_bluez() {
 
 apply_sysctl_tuning() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Apply sysctl tuning"; return; fi
-  local conf="/etc/sysctl.d/99-liveos-tuning.conf"
+  local conf="/etc/sysctl.d/99-homeio-tuning.conf"
   cat > "$conf" <<'EOF'
 fs.inotify.max_user_watches=524288
 fs.inotify.max_user_instances=512

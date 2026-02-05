@@ -216,12 +216,12 @@ export function HomeClient({ initialWallpaper }: HomeClientProps) {
         },
         {
           title: "Open settings",
-          description: "Tweak LiveOS preferences",
+          description: "Tweak Homeio preferences",
           keys: ["Cmd", ","],
           onSelect: () => setSettingsOpen(true),
         },
         {
-          title: "Lock LiveOS",
+          title: "Lock Homeio",
           description: "Quickly lock your desktop",
           keys: ["Cmd", "L"],
           onSelect: () => setLocked(true),
@@ -366,7 +366,7 @@ export function HomeClient({ initialWallpaper }: HomeClientProps) {
 
       <LockScreen open={locked} onUnlock={handleUnlock} />
       <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end space-y-1">
-        <div className="text-xs text-white/50">LiveOS - v{VERSION}</div>
+        <div className="text-xs text-white/50">Homeio - v{VERSION}</div>
       </div>
       <RebootOverlay />
     </WallpaperLayout>

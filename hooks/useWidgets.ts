@@ -25,8 +25,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSystemStatus } from "./useSystemStatus";
 import { useUserLocation } from "./useUserLocation";
 
-const STORAGE_KEY = "liveos-selected-widgets";
-const THERMALS_MAX_KEY = "liveos-thermals-max";
+const STORAGE_KEY = "homeio-selected-widgets";
+const THERMALS_MAX_KEY = "homeio-thermals-max";
 const THERMALS_MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 type ThermalsRecord = { value: number; ts: number } | null;
@@ -255,11 +255,13 @@ export function useWidgets(): UseWidgetsReturn {
           ? `${formatBytes(storageUsedBytes)} / ${formatBytes(storageTotalBytes)}`
           : "Loading...",
       subtext:
-        storage.total > 0 ? `${formatBytes(storageFreeBytes)} available` : undefined,
+        storage.total > 0
+          ? `${formatBytes(storageFreeBytes)} available`
+          : undefined,
       progress: storage.usagePercent,
       color: WIDGET_COLORS.storage,
     };
-    dataMap.set("liveos:storage", {
+    dataMap.set("homeio:storage", {
       type: "text-with-progress",
       data: storageData,
     });
@@ -276,7 +278,7 @@ export function useWidgets(): UseWidgetsReturn {
       progress: memory.usage,
       color: WIDGET_COLORS.memory,
     };
-    dataMap.set("liveos:memory", {
+    dataMap.set("homeio:memory", {
       type: "text-with-progress",
       data: memoryData,
     });
@@ -301,7 +303,7 @@ export function useWidgets(): UseWidgetsReturn {
         },
       ],
     };
-    dataMap.set("liveos:system-stats", {
+    dataMap.set("homeio:system-stats", {
       type: "three-stats",
       data: threeStatsData,
     });
@@ -323,7 +325,7 @@ export function useWidgets(): UseWidgetsReturn {
         },
       ],
     };
-    dataMap.set("liveos:cpu-memory", {
+    dataMap.set("homeio:cpu-memory", {
       type: "two-stats-gauge",
       data: gaugeData,
     });
@@ -346,8 +348,7 @@ export function useWidgets(): UseWidgetsReturn {
         {
           label: "Storage",
           value: `${storage.usagePercent.toFixed(0)}%`,
-          subtext:
-            storage.total > 0 ? formatBytes(storageUsedBytes) : "—",
+          subtext: storage.total > 0 ? formatBytes(storageUsedBytes) : "—",
           color: WIDGET_COLORS.storage,
         },
         {
@@ -357,7 +358,7 @@ export function useWidgets(): UseWidgetsReturn {
         },
       ],
     };
-    dataMap.set("liveos:four-stats", {
+    dataMap.set("homeio:four-stats", {
       type: "four-stats",
       data: fourStatsData,
     });
@@ -370,7 +371,7 @@ export function useWidgets(): UseWidgetsReturn {
       cores: thermals?.cores ?? [],
       socket: thermals?.socket ?? [],
     };
-    dataMap.set("liveos:thermals", { type: "thermals", data: thermalsData });
+    dataMap.set("homeio:thermals", { type: "thermals", data: thermalsData });
 
     // Weather widget (uses user's location)
     const weatherData: WeatherWidgetData = {
@@ -380,14 +381,14 @@ export function useWidgets(): UseWidgetsReturn {
       latitude: String(userLocation?.latitude ?? 37.7749),
       longitude: String(userLocation?.longitude ?? -122.4194),
     };
-    dataMap.set("liveos:weather", { type: "weather", data: weatherData });
+    dataMap.set("homeio:weather", { type: "weather", data: weatherData });
 
     // Files widgets (placeholder data)
     const filesListData: FilesListData = {
       files: [],
       title: "Recent Files",
     };
-    dataMap.set("liveos:files-recents", {
+    dataMap.set("homeio:files-recents", {
       type: "files-list",
       data: filesListData,
     });
@@ -396,7 +397,7 @@ export function useWidgets(): UseWidgetsReturn {
       folders: [],
       title: "Favorites",
     };
-    dataMap.set("liveos:files-favorites", {
+    dataMap.set("homeio:files-favorites", {
       type: "files-grid",
       data: filesGridData,
     });

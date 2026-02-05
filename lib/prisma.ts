@@ -3,7 +3,7 @@ import { PrismaClient } from "../app/generated/prisma/client";
 
 const adapter = new PrismaBetterSqlite3(
   {
-    url: "file:./prisma/live-os.db",
+    url: "file:./prisma/homeio.db",
   },
   {
     timestampFormat: "unixepoch-ms",

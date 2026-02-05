@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LiveOS installation script
+# Homeio installation script
 # Licensed under the Apache License, Version 2.0
 
 set -e
@@ -47,15 +47,15 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Default configuration
-HTTP_PORT=${LIVEOS_HTTP_PORT:-80}
-DOMAIN=${LIVEOS_DOMAIN:-""}
+HTTP_PORT=${HOMEIO_HTTP_PORT:-80}
+DOMAIN=${HOMEIO_DOMAIN:-""}
 
 # Installation directory
-INSTALL_DIR="/opt/live-os"
+INSTALL_DIR="/opt/homeio"
 
 # GitHub repository
-REPO_URL="https://github.com/live-doctor/live-os.git"
-GITHUB_REPO="live-doctor/live-os"
+REPO_URL="https://github.com/live-doctor/homeio.git"
+GITHUB_REPO="live-doctor/homeio"
 
 # ─── Architecture detection ───────────────────────────────────────────────────
 
@@ -67,7 +67,7 @@ detect_architecture() {
         aarch64|arm64)   echo "arm64" ;;
         *)
             print_error "Unsupported architecture: $machine"
-            print_error "LiveOS supports amd64 and arm64 only."
+            print_error "Homeio supports amd64 and arm64 only."
             exit 1
             ;;
     esac
@@ -100,7 +100,7 @@ get_latest_version() {
 download_and_verify() {
     local version="$1"
     local arch="$2"
-    local tarball="liveos-${version}-linux-${arch}.tar.gz"
+    local tarball="homeio-${version}-linux-${arch}.tar.gz"
     local base_url="https://github.com/${GITHUB_REPO}/releases/download/${version}"
     local dest="/tmp/${tarball}"
 
@@ -126,7 +126,7 @@ download_and_verify() {
 install_from_artifact() {
     local version="$1"
     local arch="$2"
-    local tarball="liveos-${version}-linux-${arch}.tar.gz"
+    local tarball="homeio-${version}-linux-${arch}.tar.gz"
     local dest="/tmp/${tarball}"
 
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -173,7 +173,7 @@ prompt_port() {
     fi
 
     # Only prompt if environment variable is not set
-    if [ -z "$LIVEOS_HTTP_PORT" ]; then
+    if [ -z "$HOMEIO_HTTP_PORT" ]; then
         echo -n -e "${BLUE}Enter HTTP port (default: 80):${NC} "
         read -r user_http_port < /dev/tty
         if [ -n "$user_http_port" ]; then
@@ -292,19 +292,19 @@ prompt_domain() {
     primary_ip="$(hostname -I | awk '{print $1}')"
 
     # Only prompt if environment variable is not set
-    if [ -z "$LIVEOS_DOMAIN" ]; then
+    if [ -z "$HOMEIO_DOMAIN" ]; then
         echo ""
         print_status "Domain Configuration"
         echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         echo ""
-        echo -e "  You can access LiveOS via:"
+        echo -e "  You can access Homeio via:"
         echo -e "  • Local IP:   ${GREEN}http://$primary_ip:$HTTP_PORT${NC}"
         echo -e "  • localhost:  ${GREEN}http://localhost:$HTTP_PORT${NC}"
         echo -e "  • Custom hostname (optional)"
         echo ""
         echo -e "  ${BLUE}Examples of hostnames (auto .local domain):${NC}"
         echo -e "    - home      → ${GREEN}http://home.local:$HTTP_PORT${NC}"
-        echo -e "    - liveos    → ${GREEN}http://liveos.local:$HTTP_PORT${NC}"
+        echo -e "    - homeio    → ${GREEN}http://homeio.local:$HTTP_PORT${NC}"
         echo ""
         echo -e "  ${BLUE}Note:${NC} With Avahi/mDNS, .local domains work automatically"
         echo -e "        on all devices in your network (no hosts file needed!)"
@@ -330,12 +330,12 @@ prompt_domain() {
             echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
             echo ""
         else
-            print_status "Using default hostname: liveos"
-            DOMAIN="liveos.local"
-            set_hostname "liveos"
+            print_status "Using default hostname: homeio"
+            DOMAIN="homeio.local"
+            set_hostname "homeio"
         fi
     else
-        DOMAIN=$LIVEOS_DOMAIN
+        DOMAIN=$HOMEIO_DOMAIN
         hostname_only="${DOMAIN%.local}"
 
         set_hostname "$hostname_only"
@@ -379,7 +379,7 @@ ensure_git() {
 # ─── Source-based setup (legacy) ──────────────────────────────────────────────
 
 # Clone the repository (git only, no build tools needed yet)
-clone_liveos() {
+clone_HOMEIO() {
     if [ "$DRY_RUN" -eq 1 ]; then
         print_dry "Clone repository from $REPO_URL (branch: $BRANCH)"
         return
@@ -394,12 +394,12 @@ clone_liveos() {
         rm -rf "$INSTALL_DIR"
     fi
 
-    print_status "Cloning LiveOS repository (branch: $BRANCH)..."
+    print_status "Cloning Homeio repository (branch: $BRANCH)..."
     git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
 }
 
 # Build the project (requires Node.js and build tools from setup.sh)
-build_liveos() {
+build_HOMEIO() {
     if [ "$DRY_RUN" -eq 1 ]; then
         print_dry "Install dependencies with npm install (skipping Husky)"
         print_dry "Build project with npm run build"
@@ -466,22 +466,22 @@ create_env_file() {
     print_status "Creating .env file..."
 
     cat > "$INSTALL_DIR/.env" <<EOF
-# LiveOS Configuration
+# Homeio Configuration
 # Generated on $(date)
 
 # Server Configuration
 PORT=$HTTP_PORT
-LIVEOS_HTTP_PORT=$HTTP_PORT
+HOMEIO_HTTP_PORT=$HTTP_PORT
 NODE_ENV=production
 
 # Domain Configuration
 EOF
 
     if [ -n "$DOMAIN" ]; then
-        echo "LIVEOS_DOMAIN=$DOMAIN" >> "$INSTALL_DIR/.env"
+        echo "HOMEIO_DOMAIN=$DOMAIN" >> "$INSTALL_DIR/.env"
         echo "# Access URL: http://$DOMAIN:$HTTP_PORT" >> "$INSTALL_DIR/.env"
     else
-        echo "# LIVEOS_DOMAIN=home.local" >> "$INSTALL_DIR/.env"
+        echo "# HOMEIO_DOMAIN=home.local" >> "$INSTALL_DIR/.env"
         echo "# Uncomment and set your custom domain above" >> "$INSTALL_DIR/.env"
     fi
 
@@ -491,10 +491,10 @@ EOF
 # DOCKER_SOCKET=/var/run/docker.sock
 
 # App Data Directory
-# APP_DATA_DIR=/opt/live-os/app-data
+# APP_DATA_DIR=/opt/homeio/app-data
 
 # Database (Prisma/SQLite)
-DATABASE_URL="file:./prisma/live-os.db"
+DATABASE_URL="file:./prisma/homeio.db"
 
 # Next.js Server Actions (keep stable across builds)
 NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY"
@@ -506,16 +506,16 @@ EOF
 # Create systemd service
 install_service() {
     if [ "$DRY_RUN" -eq 1 ]; then
-        print_dry "Create systemd service for LiveOS"
-        print_dry "Enable and start LiveOS service"
+        print_dry "Create systemd service for Homeio"
+        print_dry "Enable and start Homeio service"
         return
     fi
 
     print_status "Creating systemd service..."
 
-    cat > /etc/systemd/system/liveos.service <<EOF
+    cat > /etc/systemd/system/homeio.service <<EOF
 [Unit]
-Description=LiveOS - Self-hosted Operating System
+Description=Homeio - Self-hosted Operating System
 After=network.target
 
 [Service]
@@ -528,7 +528,7 @@ Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=liveos
+SyslogIdentifier=homeio
 
 [Install]
 WantedBy=multi-user.target
@@ -537,20 +537,20 @@ EOF
     print_status "Reloading systemd daemon..."
     systemctl daemon-reload
 
-    print_status "Enabling LiveOS service..."
-    systemctl enable liveos
+    print_status "Enabling Homeio service..."
+    systemctl enable homeio
 
-    print_status "Starting LiveOS service..."
-    systemctl start liveos
+    print_status "Starting Homeio service..."
+    systemctl start homeio
 
     # Wait a moment for service to start
     sleep 2
 
     # Check service status
-    if systemctl is-active --quiet liveos; then
-        print_status "LiveOS service started successfully!"
+    if systemctl is-active --quiet homeio; then
+        print_status "Homeio service started successfully!"
     else
-        print_error "LiveOS service failed to start. Check logs with: journalctl -u liveos -n 50"
+        print_error "Homeio service failed to start. Check logs with: journalctl -u homeio -n 50"
         exit 1
     fi
 }
@@ -594,7 +594,7 @@ check_port
 # Step 1: Clone or extract the application (so setup.sh is available)
 if [ "$FROM_SOURCE" -eq 1 ]; then
     ensure_git
-    clone_liveos
+    clone_HOMEIO
 else
     # Artifact-based install (default)
     ARCH="$(detect_architecture)"
@@ -603,7 +603,7 @@ else
     else
         VERSION="$(get_latest_version)"
     fi
-    print_status "Installing LiveOS ${VERSION} for ${ARCH}..."
+    print_status "Installing Homeio ${VERSION} for ${ARCH}..."
     install_from_artifact "$VERSION" "$ARCH"
 fi
 
@@ -642,7 +642,7 @@ fi
 
 # Step 4: Build from source (requires Node.js + build tools installed by setup.sh)
 if [ "$FROM_SOURCE" -eq 1 ]; then
-    build_liveos
+    build_HOMEIO
 fi
 
 # Install and start service
@@ -658,7 +658,7 @@ else
     echo -e "${GREEN}╭────────────────────────────────────────────────────╮${NC}"
     echo -e "${GREEN}│         Installation Complete! 🎉                  │${NC}"
     echo -e "${GREEN}├────────────────────────────────────────────────────┤${NC}"
-    echo -e "${GREEN}│${NC}  LiveOS is now running and accessible via:      ${GREEN}│${NC}"
+    echo -e "${GREEN}│${NC}  Homeio is now running and accessible via:      ${GREEN}│${NC}"
     echo -e "${GREEN}│${NC}                                                  ${GREEN}│${NC}"
     if [ -n "$DOMAIN" ]; then
         LOCAL_URL="http://$DOMAIN:$HTTP_PORT"
@@ -675,7 +675,7 @@ else
     echo ""
 
     if [ -n "$DOMAIN" ]; then
-        echo -e "${BLUE}🌐 Access LiveOS:${NC}"
+        echo -e "${BLUE}🌐 Access Homeio:${NC}"
         echo -e "   ${GREEN}http://$DOMAIN:$HTTP_PORT${NC}"
         echo ""
         echo -e "   Works automatically on most devices!"
@@ -684,15 +684,15 @@ else
     fi
 
     echo -e "${BLUE}🔧 Manage the service:${NC}"
-    echo -e "   sudo systemctl [start|stop|restart|status] liveos"
+    echo -e "   sudo systemctl [start|stop|restart|status] homeio"
     echo ""
     echo -e "${BLUE}📋 View logs:${NC}"
-    echo -e "   sudo journalctl -u liveos -f"
+    echo -e "   sudo journalctl -u homeio -f"
     echo ""
     echo -e "${BLUE}⚙️  Configuration:${NC}"
     echo -e "   Edit: $INSTALL_DIR/.env"
     echo ""
-    echo -e "${BLUE}🔄 Update LiveOS:${NC}"
+    echo -e "${BLUE}🔄 Update Homeio:${NC}"
     echo -e "   cd $INSTALL_DIR && sudo bash update.sh"
     echo ""
 fi

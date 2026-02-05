@@ -43,7 +43,7 @@ export function WallpaperLayout({
           >
             <Image
               src={activeWallpaper}
-              alt="LiveOS Background"
+              alt="Homeio Background"
               priority
               fill
               sizes="100vw"
@@ -64,7 +64,7 @@ export function WallpaperLayout({
           >
             <Image
               src={transitionWallpaper}
-              alt="LiveOS Background"
+              alt="Homeio Background"
               fill
               sizes="100vw"
               priority

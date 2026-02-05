@@ -1,10 +1,17 @@
-'use client';
+"use client";
 
-import type { FileSystemItem } from '@/app/actions/filesystem';
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { ClipboardState } from './types';
+import type { FileSystemItem } from "@/app/actions/filesystem";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import type { ClipboardState } from "./types";
 
-const STORAGE_KEY = 'liveos-file-clipboard';
+const STORAGE_KEY = "homeio-file-clipboard";
 
 interface FileClipboardContextValue {
   clipboard: ClipboardState;
@@ -21,7 +28,7 @@ const defaultClipboard: ClipboardState = {
 
 // Load from localStorage during initialization (client-side only)
 function getInitialClipboard(): ClipboardState {
-  if (typeof window === 'undefined') return defaultClipboard;
+  if (typeof window === "undefined") return defaultClipboard;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -36,10 +43,13 @@ function getInitialClipboard(): ClipboardState {
   return defaultClipboard;
 }
 
-const FileClipboardContext = createContext<FileClipboardContextValue | null>(null);
+const FileClipboardContext = createContext<FileClipboardContextValue | null>(
+  null,
+);
 
 export function FileClipboardProvider({ children }: { children: ReactNode }) {
-  const [clipboard, setClipboard] = useState<ClipboardState>(getInitialClipboard);
+  const [clipboard, setClipboard] =
+    useState<ClipboardState>(getInitialClipboard);
 
   // Save to localStorage on change
   useEffect(() => {
@@ -55,11 +65,11 @@ export function FileClipboardProvider({ children }: { children: ReactNode }) {
   }, [clipboard]);
 
   const cut = useCallback((items: FileSystemItem[]) => {
-    setClipboard({ items, operation: 'cut' });
+    setClipboard({ items, operation: "cut" });
   }, []);
 
   const copy = useCallback((items: FileSystemItem[]) => {
-    setClipboard({ items, operation: 'copy' });
+    setClipboard({ items, operation: "copy" });
   }, []);
 
   const clear = useCallback(() => {
@@ -69,7 +79,9 @@ export function FileClipboardProvider({ children }: { children: ReactNode }) {
   const hasContent = clipboard.items.length > 0 && clipboard.operation !== null;
 
   return (
-    <FileClipboardContext.Provider value={{ clipboard, cut, copy, clear, hasContent }}>
+    <FileClipboardContext.Provider
+      value={{ clipboard, cut, copy, clear, hasContent }}
+    >
       {children}
     </FileClipboardContext.Provider>
   );
@@ -78,7 +90,9 @@ export function FileClipboardProvider({ children }: { children: ReactNode }) {
 export function useFileClipboard(): FileClipboardContextValue {
   const context = useContext(FileClipboardContext);
   if (!context) {
-    throw new Error('useFileClipboard must be used within a FileClipboardProvider');
+    throw new Error(
+      "useFileClipboard must be used within a FileClipboardProvider",
+    );
   }
   return context;
 }

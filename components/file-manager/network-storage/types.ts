@@ -13,8 +13,8 @@ export type DiscoveredHost = {
 
 export type ServerInfo = {
   host: string;
-  isLiveOS: boolean;
-  liveOSVersion?: string;
+  isHOMEIO: boolean;
+  HOMEIOVersion?: string;
   shares: string[];
   requiresAuth: boolean;
   error?: string;

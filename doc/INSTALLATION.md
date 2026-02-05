@@ -1,16 +1,16 @@
-# LiveOS Installation Guide
+# Homeio Installation Guide
 
-Complete guide for installing and configuring LiveOS on your server.
+Complete guide for installing and configuring Homeio on your server.
 
 ## Quick Install
 
 ```bash
 # Download and run installer
-curl -fsSL https://raw.githubusercontent.com/live-doctor/live-os/develop/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/develop/install.sh | sudo bash
 
 # Or clone and install
-git clone https://github.com/live-doctor/live-os.git
-cd live-os
+git clone https://github.com/live-doctor/homeio.git
+cd homeio
 sudo bash install.sh
 ```
 
@@ -26,7 +26,7 @@ The installer will guide you through:
 Enter HTTP port (default: 3000):
 ```
 
-Choose the port where LiveOS will be accessible. Default is 3000.
+Choose the port where Homeio will be accessible. Default is 3000.
 
 **Examples:**
 
@@ -40,7 +40,7 @@ Choose the port where LiveOS will be accessible. Default is 3000.
 Domain Configuration
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-You can access LiveOS via:
+You can access Homeio via:
   • Local IP:   http://192.168.1.100:3000
   • localhost:  http://localhost:3000 (on server only)
   • Custom hostname (optional)
@@ -48,7 +48,7 @@ You can access LiveOS via:
 Examples of hostnames (auto .local domain):
   - home      → http://home.local:3000
   - server    → http://server.local:3000
-  - liveos    → http://liveos.local:3000
+  - homeio    → http://homeio.local:3000
   - myserver  → http://myserver.local:3000
 
 Note: With Avahi/mDNS, .local domains work automatically
@@ -110,8 +110,8 @@ The installer performs these actions:
    - npm
 
 3. ✅ **Clones Repository**
-   - Downloads LiveOS from GitHub
-   - Installs to `/opt/live-os`
+   - Downloads Homeio from GitHub
+   - Installs to `/opt/homeio`
 
 4. ✅ **Installs Packages**
    - Runs `npm install --omit=dev --ignore-scripts`
@@ -129,7 +129,7 @@ The installer performs these actions:
 7. ✅ **Creates System Service**
    - Sets up systemd service
    - Enables auto-start on boot
-   - Starts LiveOS immediately
+   - Starts Homeio immediately
 
 ---
 
@@ -137,13 +137,13 @@ The installer performs these actions:
 
 ### Access Your Server
 
-After installation, LiveOS is accessible via:
+After installation, Homeio is accessible via:
 
 ```
 ╭────────────────────────────────────────────────────╮
 │         Installation Complete! 🎉                  │
 ├────────────────────────────────────────────────────┤
-│  LiveOS is now running and accessible via:        │
+│  Homeio is now running and accessible via:        │
 │                                                    │
 │  ✓ Local:      http://localhost:3000              │
 │  ✓ Network:    http://192.168.1.100:3000          │
@@ -156,37 +156,37 @@ After installation, LiveOS is accessible via:
 
 ```bash
 # Start service
-sudo systemctl start liveos
+sudo systemctl start homeio
 
 # Stop service
-sudo systemctl stop liveos
+sudo systemctl stop homeio
 
 # Restart service
-sudo systemctl restart liveos
+sudo systemctl restart homeio
 
 # Check status
-sudo systemctl status liveos
+sudo systemctl status homeio
 
 # View logs
-sudo journalctl -u liveos -f
+sudo journalctl -u homeio -f
 
 # Disable auto-start
-sudo systemctl disable liveos
+sudo systemctl disable homeio
 
 # Enable auto-start
-sudo systemctl enable liveos
+sudo systemctl enable homeio
 ```
 
 ### Configuration File
 
-Your configuration is stored in `/opt/live-os/.env`:
+Your configuration is stored in `/opt/homeio/.env`:
 
 ```bash
 # Edit configuration
-sudo nano /opt/live-os/.env
+sudo nano /opt/homeio/.env
 
 # After editing, restart service
-sudo systemctl restart liveos
+sudo systemctl restart homeio
 ```
 
 **Example .env file:**
@@ -194,11 +194,11 @@ sudo systemctl restart liveos
 ```bash
 # Server Configuration
 PORT=3000
-LIVEOS_HTTP_PORT=3000
+HOMEIO_HTTP_PORT=3000
 NODE_ENV=production
 
 # Domain Configuration
-LIVEOS_DOMAIN=home.local
+HOMEIO_DOMAIN=home.local
 # Access URL: http://home.local:3000
 ```
 
@@ -212,8 +212,8 @@ Set environment variables before installing:
 
 ```bash
 # Set port and domain
-export LIVEOS_HTTP_PORT=8080
-export LIVEOS_DOMAIN=server.local
+export HOMEIO_HTTP_PORT=8080
+export HOMEIO_DOMAIN=server.local
 
 # Run installer (won't prompt)
 sudo -E bash install.sh
@@ -291,12 +291,12 @@ home.local → 192.168.1.100
 
 ---
 
-## Updating LiveOS
+## Updating Homeio
 
 ### Using Update Script
 
 ```bash
-cd /opt/live-os
+cd /opt/homeio
 sudo bash update.sh
 ```
 
@@ -312,7 +312,7 @@ The update script:
 ### Manual Update
 
 ```bash
-cd /opt/live-os
+cd /opt/homeio
 
 # Backup .env
 sudo cp .env .env.backup
@@ -330,7 +330,7 @@ sudo cp .env.backup .env
 sudo npm run build
 
 # Restart
-sudo systemctl restart liveos
+sudo systemctl restart homeio
 ```
 
 ---
@@ -353,17 +353,17 @@ sudo netstat -tuln | grep 3000
 
 ```bash
 # Check logs
-sudo journalctl -u liveos -n 50 --no-pager
+sudo journalctl -u homeio -n 50 --no-pager
 
 # Check service status
-sudo systemctl status liveos
+sudo systemctl status homeio
 
 # Verify Node.js is installed
 node --version
 npm --version
 
 # Check if .env exists
-cat /opt/live-os/.env
+cat /opt/homeio/.env
 ```
 
 ### Domain Not Resolving
@@ -391,7 +391,7 @@ If you see Husky errors:
 # The installer already handles this with --ignore-scripts
 # But if you encounter issues, you can:
 
-cd /opt/live-os
+cd /opt/homeio
 sudo npm install --omit=dev --ignore-scripts --force
 ```
 
@@ -399,10 +399,10 @@ sudo npm install --omit=dev --ignore-scripts --force
 
 ```bash
 # Fix ownership
-sudo chown -R root:root /opt/live-os
+sudo chown -R root:root /opt/homeio
 
 # Fix permissions
-sudo chmod -R 755 /opt/live-os
+sudo chmod -R 755 /opt/homeio
 ```
 
 ---
@@ -411,15 +411,15 @@ sudo chmod -R 755 /opt/live-os
 
 ```bash
 # Stop and disable service
-sudo systemctl stop liveos
-sudo systemctl disable liveos
+sudo systemctl stop homeio
+sudo systemctl disable homeio
 
 # Remove service file
-sudo rm /etc/systemd/system/liveos.service
+sudo rm /etc/systemd/system/homeio.service
 sudo systemctl daemon-reload
 
 # Remove installation
-sudo rm -rf /opt/live-os
+sudo rm -rf /opt/homeio
 
 # Remove configuration (optional)
 # Your .env settings will be deleted
@@ -498,7 +498,7 @@ See [.env.example](./.env.example) for complete configuration options.
 
 - `PORT` - HTTP port (default: 3000)
 - `NODE_ENV` - Environment mode (production/development)
-- `LIVEOS_DOMAIN` - Custom domain
+- `HOMEIO_DOMAIN` - Custom domain
 - `APP_DATA_DIR` - App data directory (future)
 - `DOCKER_SOCKET` - Docker socket path (future)
 
@@ -509,7 +509,7 @@ See [.env.example](./.env.example) for complete configuration options.
 - **Documentation**: [README.md](./README.md)
 - **App Store**: [APP_STORE_GUIDE.md](./APP_STORE_GUIDE.md)
 - **Scripts**: [scripts/README.md](./scripts/README.md)
-- **Issues**: https://github.com/live-doctor/live-os/issues
+- **Issues**: https://github.com/live-doctor/homeio/issues
 
 ---
 
@@ -517,10 +517,10 @@ See [.env.example](./.env.example) for complete configuration options.
 
 After installation:
 
-1. ✅ Access LiveOS via your domain
+1. ✅ Access Homeio via your domain
 2. ✅ Explore the App Store (298 apps available)
 3. ✅ Keep apps updated: `npm run update-apps`
 4. ✅ Monitor your system resources
 5. ✅ Install Docker apps (coming soon)
 
-Enjoy your self-hosted LiveOS! 🎉
+Enjoy your self-hosted Homeio! 🎉

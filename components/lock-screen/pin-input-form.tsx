@@ -1,12 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { button, card, iconBox, text } from "@/components/ui/design-tokens";
 import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { card, iconBox, text, button } from "@/components/ui/design-tokens";
 import { PIN_LENGTH } from "@/lib/config";
 import { Loader2, ShieldCheck, User } from "lucide-react";
 
@@ -29,7 +29,9 @@ export function PinInputForm({
 }: PinInputFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <div className={`${card.base} ${card.padding.lg} shadow-inner shadow-black/30`}>
+      <div
+        className={`${card.base} ${card.padding.lg} shadow-inner shadow-black/30`}
+      >
         {/* User prompt */}
         <div className="mb-4 flex items-center gap-3">
           <div className={`${iconBox.md} rounded-full`}>
@@ -37,7 +39,9 @@ export function PinInputForm({
           </div>
           <div>
             <p className={text.subdued}>Enter your {PIN_LENGTH}-digit PIN</p>
-            <p className="text-xs text-zinc-500">Unlock LiveOS for {username}</p>
+            <p className="text-xs text-zinc-500">
+              Unlock Homeio for {username}
+            </p>
           </div>
         </div>
 

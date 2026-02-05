@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LiveOS",
-  description: "A self-hosted operating system for managing your infrastructure",
+  title: "Homeio",
+  description:
+    "A self-hosted operating system for managing your infrastructure",
 };
 
 export default function RootLayout({

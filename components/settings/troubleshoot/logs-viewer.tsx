@@ -1,30 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { getSystemLogs } from "@/app/actions/maintenance/troubleshoot";
 import { Button } from "@/components/ui/button";
 import { card, text } from "@/components/ui/design-tokens";
 import { cn } from "@/lib/utils";
 import {
-  AlertCircle,
-  AlertTriangle,
-  Info,
-  Bug,
-  RefreshCw,
-  Download,
+    AlertCircle,
+    AlertTriangle,
+    Bug,
+    Download,
+    Info,
+    RefreshCw,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { LogEntry, LogSource } from "./types";
 
 const LOG_SOURCES: { value: LogSource; label: string }[] = [
   { value: "all", label: "All Logs" },
   { value: "system", label: "System" },
   { value: "docker", label: "Docker" },
-  { value: "liveos", label: "LiveOS" },
+  { value: "homeio", label: "Homeio" },
 ];
 
 const LEVEL_CONFIG = {
   error: { icon: AlertCircle, color: "text-red-400", bg: "bg-red-500/10" },
-  warn: { icon: AlertTriangle, color: "text-yellow-400", bg: "bg-yellow-500/10" },
+  warn: {
+    icon: AlertTriangle,
+    color: "text-yellow-400",
+    bg: "bg-yellow-500/10",
+  },
   info: { icon: Info, color: "text-cyan-400", bg: "bg-cyan-500/10" },
   debug: { icon: Bug, color: "text-white/40", bg: "bg-white/5" },
 };
@@ -60,13 +64,16 @@ export function LogsViewer() {
 
   const handleExport = () => {
     const content = logs
-      .map((l) => `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.source}] ${l.message}`)
+      .map(
+        (l) =>
+          `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.source}] ${l.message}`,
+      )
       .join("\n");
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `liveos-logs-${new Date().toISOString().split("T")[0]}.txt`;
+    a.download = `homeio-logs-${new Date().toISOString().split("T")[0]}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -95,10 +102,15 @@ export function LogsViewer() {
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={cn(
               "border border-white/15 text-white text-xs",
-              autoRefresh ? "bg-cyan-500/20 border-cyan-500/30" : "bg-white/10"
+              autoRefresh ? "bg-cyan-500/20 border-cyan-500/30" : "bg-white/10",
             )}
           >
-            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", autoRefresh && "animate-spin")} />
+            <RefreshCw
+              className={cn(
+                "h-3.5 w-3.5 mr-1.5",
+                autoRefresh && "animate-spin",
+              )}
+            />
             {autoRefresh ? "Live" : "Auto"}
           </Button>
           <Button
@@ -123,7 +135,7 @@ export function LogsViewer() {
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
               source === s.value
                 ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10",
             )}
           >
             {s.label}
@@ -154,10 +166,12 @@ export function LogsViewer() {
               key={log.id}
               className={cn(
                 "flex items-start gap-2 px-2 py-1.5 rounded text-xs",
-                config.bg
+                config.bg,
               )}
             >
-              <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", config.color)} />
+              <Icon
+                className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", config.color)}
+              />
               <span className="text-white/40 shrink-0 font-mono">
                 {formatTime(log.timestamp)}
               </span>

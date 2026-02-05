@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
+import { execFileAsync } from "@/lib/exec";
+import { writeJsonFile } from "@/lib/json-store";
 import crypto from "crypto";
 import dns from "dns/promises";
 import fs from "fs/promises";
 import net from "net";
 import path from "path";
-import { execFileAsync } from "@/lib/exec";
-import { writeJsonFile } from "@/lib/json-store";
 
-import { getHomeRoot } from "./filesystem";
 import { logAction } from "../maintenance/logger";
+import { getHomeRoot } from "./filesystem";
 const STORE_FILENAME = ".network-shares.json";
 const AVAHI_TIMEOUT_MS = 10000;
 
@@ -394,7 +394,10 @@ export async function discoverSmbHosts(): Promise<{ hosts: DiscoveredHost[] }> {
     );
     await logAction("network-storage:discover:done", { hosts: hosts.length });
   } catch (err) {
-    const error = err as Error & { stdout?: string | Buffer; stderr?: string | Buffer };
+    const error = err as Error & {
+      stdout?: string | Buffer;
+      stderr?: string | Buffer;
+    };
     const stdout = error.stdout?.toString?.().trim?.();
     const stderr = error.stderr?.toString?.().trim?.();
     await logAction("network-storage:discover:error", {
@@ -402,10 +405,7 @@ export async function discoverSmbHosts(): Promise<{ hosts: DiscoveredHost[] }> {
       stdout: stdout || undefined,
       stderr: stderr || undefined,
     });
-    console.warn(
-      "[network-storage] Discovery failed:",
-      error?.message || err,
-    );
+    console.warn("[network-storage] Discovery failed:", error?.message || err);
     if (stdout) {
       console.info("[network-storage] avahi stdout:", stdout);
     }
@@ -439,7 +439,11 @@ export async function discoverSharesOnServer(
       "[network-storage] discoverSharesOnServer: DNS failed for",
       host,
     );
-    return { success: false, shares: [], error: `Could not resolve host "${host}"` };
+    return {
+      success: false,
+      shares: [],
+      error: `Could not resolve host "${host}"`,
+    };
   }
 
   if (!credentials?.username && !allowGuest) {
@@ -479,13 +483,12 @@ export async function discoverSharesOnServer(
       host,
       count: shares.length,
     });
-    console.info(
-      `[network-storage] Shares on ${host}: ${shares.length} found`,
-    );
+    console.info(`[network-storage] Shares on ${host}: ${shares.length} found`);
 
     return { success: true, shares };
   } catch (err: any) {
-    const message = err?.stderr?.toString?.() || err?.message || "Failed to list shares";
+    const message =
+      err?.stderr?.toString?.() || err?.message || "Failed to list shares";
     await logAction("network-storage:discover-shares:error", {
       host,
       error: message,
@@ -497,7 +500,10 @@ export async function discoverSharesOnServer(
     );
 
     // Check if it's an authentication error
-    if (message.includes("NT_STATUS_ACCESS_DENIED") || message.includes("NT_STATUS_LOGON_FAILURE")) {
+    if (
+      message.includes("NT_STATUS_ACCESS_DENIED") ||
+      message.includes("NT_STATUS_LOGON_FAILURE")
+    ) {
       return { success: false, shares: [], error: "Authentication required" };
     }
 
@@ -506,14 +512,14 @@ export async function discoverSharesOnServer(
 }
 
 /**
- * Check if a server is a LiveOS device by probing for the API endpoint.
+ * Check if a server is a Homeio device by probing for the API endpoint.
  */
-export async function isLiveOSDevice(
+export async function isHOMEIODevice(
   host: string,
-): Promise<{ isLiveOS: boolean; version?: string }> {
+): Promise<{ isHOMEIO: boolean; version?: string }> {
   const resolved = await resolveHost(host);
   if (!resolved) {
-    return { isLiveOS: false };
+    return { isHOMEIO: false };
   }
 
   const urls = [
@@ -535,8 +541,8 @@ export async function isLiveOSDevice(
 
       if (response.ok) {
         const data = await response.json();
-        if (data?.hostname || data?.liveos) {
-          return { isLiveOS: true, version: data.version };
+        if (data?.hostname || data?.homeio) {
+          return { isHOMEIO: true, version: data.version };
         }
       }
     } catch {
@@ -544,7 +550,7 @@ export async function isLiveOSDevice(
     }
   }
 
-  return { isLiveOS: false };
+  return { isHOMEIO: false };
 }
 
 async function resolveHost(host: string): Promise<string | null> {
@@ -651,7 +657,11 @@ export async function addNetworkShare(input: {
       share,
       error: reach.error,
     });
-    return { success: false, error: reach.error, share: await withStatus(record) };
+    return {
+      success: false,
+      error: reach.error,
+      share: await withStatus(record),
+    };
   }
 
   // Attempt mount immediately
@@ -709,7 +719,11 @@ export async function connectNetworkShare(
       ip: record.ip,
       error: reach.error,
     });
-    return { success: false, error: reach.error, share: await withStatus(record) };
+    return {
+      success: false,
+      error: reach.error,
+      share: await withStatus(record),
+    };
   }
 
   const mountResult = await mountShare(record, credentials?.password);
@@ -792,7 +806,7 @@ export async function removeNetworkShare(
 
 /**
  * Get detailed information about a discovered server including:
- * - Whether it's a LiveOS device
+ * - Whether it's a Homeio device
  * - Available SMB shares
  */
 export async function getServerInfo(
@@ -802,17 +816,21 @@ export async function getServerInfo(
   allowGuest = false,
 ): Promise<{
   host: string;
-  isLiveOS: boolean;
-  liveOSVersion?: string;
+  isHOMEIO: boolean;
+  HOMEIOVersion?: string;
   shares: string[];
   requiresAuth: boolean;
   error?: string;
 }> {
-  await logAction("network-storage:server-info:start", { host, ip, allowGuest });
+  await logAction("network-storage:server-info:start", {
+    host,
+    ip,
+    allowGuest,
+  });
 
-  // Check if LiveOS device in parallel with share discovery
-  const [liveOSCheck, sharesResult] = await Promise.all([
-    isLiveOSDevice(host),
+  // Check if Homeio device in parallel with share discovery
+  const [HOMEIOCheck, sharesResult] = await Promise.all([
+    isHOMEIODevice(host),
     discoverSharesOnServer(host, ip, credentials, allowGuest),
   ]);
 
@@ -822,15 +840,15 @@ export async function getServerInfo(
 
   await logAction("network-storage:server-info:done", {
     host,
-    isLiveOS: liveOSCheck.isLiveOS,
+    isHOMEIO: HOMEIOCheck.isHOMEIO,
     shares: sharesResult.shares.length,
     requiresAuth,
   });
 
   return {
     host,
-    isLiveOS: liveOSCheck.isLiveOS,
-    liveOSVersion: liveOSCheck.version,
+    isHOMEIO: HOMEIOCheck.isHOMEIO,
+    HOMEIOVersion: HOMEIOCheck.version,
     shares: sharesResult.shares,
     requiresAuth,
     error: sharesResult.success ? undefined : sharesResult.error,

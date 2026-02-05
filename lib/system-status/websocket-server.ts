@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { pollAndBroadcast } from "@/app/api/system/stream/route";
+import { execAsync } from "@/lib/exec";
 import prisma from "@/lib/prisma";
 import type { Server } from "http";
 import os from "os";
 import type { Systeminformation } from "systeminformation";
 import si from "systeminformation";
 import { WebSocket, WebSocketServer } from "ws";
-import { execAsync } from "@/lib/exec";
 const DEFAULT_APP_ICON = "/icons/default-app-icon.png";
 const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 
@@ -385,7 +385,7 @@ async function collectInstalledApps(): Promise<InstalledApp[]> {
           });
         }
 
-        if (labels["liveos.helper"] === "true") {
+        if (labels["homeio.helper"] === "true") {
           return null;
         }
 
@@ -398,7 +398,7 @@ async function collectInstalledApps(): Promise<InstalledApp[]> {
 
         const meta = metaByContainer.get(containerName);
         const appId =
-          labels["liveos.appId"] ||
+          labels["homeio.appId"] ||
           meta?.appId ||
           getAppIdFromContainerName(containerName);
         const storeMeta = appId ? storeMetaById.get(appId) : undefined;

@@ -122,7 +122,7 @@ If you want to clean up lint warnings:
 
 ## ✅ Conclusion
 
-**Your LiveOS build is working perfectly!**
+**Your Homeio build is working perfectly!**
 
 You can now:
 1. ✅ Deploy to Ubuntu server

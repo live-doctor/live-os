@@ -47,7 +47,7 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
-prisma/live-os.db
+prisma/homeio.db
 
 # custom docker deployments
 /custom-apps

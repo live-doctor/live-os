@@ -1,9 +1,6 @@
-import Image from "next/image";
 import { Image as ImageIcon } from "lucide-react";
-import {
-  SettingsSectionShell,
-  settingsCardClass,
-} from "./section-shell";
+import Image from "next/image";
+import { SettingsSectionShell, settingsCardClass } from "./section-shell";
 import type { WallpaperOption } from "./types";
 
 type WallpaperSectionProps = {
@@ -25,7 +22,7 @@ export function WallpaperSection({
     <SettingsSectionShell
       icon={<ImageIcon className="h-4 w-4 text-white" />}
       title="Wallpaper"
-      subtitle={`Your LiveOS wallpaper and theme${saving ? " • Saving…" : ""}`}
+      subtitle={`Your Homeio wallpaper and theme${saving ? " • Saving…" : ""}`}
       className={settingsCardClass}
     >
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">

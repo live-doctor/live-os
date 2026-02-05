@@ -56,7 +56,7 @@ export default function LoginPage() {
     return (
       <AuthShell
         badge="Login"
-        title="LiveOS"
+        title="Homeio"
         subtitle="Preparing sign-in…"
         icon={<LogIn className="h-5 w-5 text-white/80" />}
       >
@@ -71,7 +71,7 @@ export default function LoginPage() {
     <AuthShell
       badge="Login"
       title="Welcome back"
-      subtitle="Sign in to LiveOS"
+      subtitle="Sign in to Homeio"
       icon={<LogIn className="h-5 w-5 text-white/80" />}
       widthClass="max-w-xl"
     >
@@ -83,7 +83,7 @@ export default function LoginPage() {
             </div>
             <div>
               <p className="text-sm text-white/80">Username</p>
-              <p className="text-xs text-white/50">Your LiveOS account id</p>
+              <p className="text-xs text-white/50">Your Homeio account id</p>
             </div>
           </div>
           <Input
@@ -109,7 +109,9 @@ export default function LoginPage() {
               <p className="text-sm text-white/80">
                 Enter your {PIN_LENGTH}-digit PIN
               </p>
-              <p className="text-xs text-white/50">Secure authentication code</p>
+              <p className="text-xs text-white/50">
+                Secure authentication code
+              </p>
             </div>
           </div>
           <div className="flex flex-col items-center gap-4">

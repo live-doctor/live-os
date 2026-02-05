@@ -116,7 +116,9 @@ export async function updateCredentials(
     }
 
     const { newUsername, newPin } = input;
-    const normalizedPin = input.currentPin.replace(/\D/g, "").slice(0, PIN_LENGTH);
+    const normalizedPin = input.currentPin
+      .replace(/\D/g, "")
+      .slice(0, PIN_LENGTH);
 
     if (normalizedPin.length !== PIN_LENGTH) {
       return { success: false, error: "Current PIN is required" };
@@ -137,7 +139,10 @@ export async function updateCredentials(
     if (newUsername) {
       const username = newUsername.trim();
       if (username.length < 3) {
-        return { success: false, error: "Username must be at least 3 characters" };
+        return {
+          success: false,
+          error: "Username must be at least 3 characters",
+        };
       }
       const existing = await prisma.user.findUnique({ where: { username } });
       if (existing && existing.id !== user.id) {
@@ -149,11 +154,17 @@ export async function updateCredentials(
     if (newPin !== undefined) {
       const normalizedNewPin = newPin.replace(/\D/g, "").slice(0, PIN_LENGTH);
       if (!PIN_REGEX.test(normalizedNewPin)) {
-        return { success: false, error: `New PIN must be exactly ${PIN_LENGTH} digits` };
+        return {
+          success: false,
+          error: `New PIN must be exactly ${PIN_LENGTH} digits`,
+        };
       }
       const samePin = await bcrypt.compare(normalizedNewPin, dbUser.pin);
       if (samePin) {
-        return { success: false, error: "New PIN must be different from current PIN" };
+        return {
+          success: false,
+          error: "New PIN must be different from current PIN",
+        };
       }
       data.pin = await bcrypt.hash(normalizedNewPin, 10);
     }
@@ -169,7 +180,11 @@ export async function updateCredentials(
 
     return {
       success: true,
-      user: { id: updated.id, username: updated.username, role: updated.role as Role },
+      user: {
+        id: updated.id,
+        username: updated.username,
+        role: updated.role as Role,
+      },
     };
   });
 }
@@ -217,7 +232,7 @@ export async function login(
 
       const isSecure =
         process.env.NODE_ENV === "production" &&
-        process.env.LIVEOS_HTTPS === "true";
+        process.env.HOMEIO_HTTPS === "true";
 
       cookieStore.set(SESSION_COOKIE_NAME, session.token, {
         httpOnly: true,

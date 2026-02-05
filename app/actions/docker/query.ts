@@ -4,6 +4,12 @@ import type { InstalledApp } from "@/components/app-store/types";
 import prisma from "@/lib/prisma";
 import { logAction } from "../maintenance/logger";
 import {
+  getAllAppMeta,
+  getInstallConfig,
+  getInstalledAppRecords,
+  getRecordedContainerName,
+} from "./db";
+import {
   CONTAINER_PREFIX,
   DEFAULT_APP_ICON,
   aggregateStatus,
@@ -15,15 +21,9 @@ import {
   validateAppId,
   validatePort,
 } from "./utils";
-import {
-  getAllAppMeta,
-  getInstallConfig,
-  getInstalledAppRecords,
-  getRecordedContainerName,
-} from "./db";
 
 /**
- * Get list of installed LiveOS apps.
+ * Get list of installed Homeio apps.
  * Groups containers by compose project so multi-service apps show as one entry.
  */
 export async function getInstalledApps(): Promise<InstalledApp[]> {
@@ -41,10 +41,7 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
     );
     const metaByAppId = new Map(knownApps.map((app) => [app.appId, app]));
 
-    const appMetaById = new Map<
-      string,
-      (typeof storeApps)[number][]
-    >();
+    const appMetaById = new Map<string, (typeof storeApps)[number][]>();
     for (const app of storeApps) {
       const list = appMetaById.get(app.appId) ?? [];
       list.push(app);
@@ -77,9 +74,7 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
       // Also check if any group container matches a DB record
       const anyRecord =
         record ||
-        groupContainers
-          .map((c) => metaByContainer.get(c.name))
-          .find(Boolean);
+        groupContainers.map((c) => metaByContainer.get(c.name)).find(Boolean);
 
       const resolvedAppId = anyRecord?.appId || projectKey || rawId;
       const storeMetaCandidates = appMetaById.get(resolvedAppId) ?? [];
@@ -102,8 +97,7 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
       apps.push({
         id: primaryContainer.name,
         appId: resolvedAppId,
-        name:
-          anyRecord?.name || storeMeta?.title || storeMeta?.name || rawId,
+        name: anyRecord?.name || storeMeta?.title || storeMeta?.name || rawId,
         icon: anyRecord?.icon || storeMeta?.icon || DEFAULT_APP_ICON,
         status,
         webUIPort,
@@ -112,8 +106,7 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
           containerNames.length > 1
             ? containerNames
             : dbContainers || containerNames,
-        installedAt:
-          anyRecord?.createdAt?.getTime?.() || Date.now(),
+        installedAt: anyRecord?.createdAt?.getTime?.() || Date.now(),
       });
     }
 
@@ -130,9 +123,7 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
 /**
  * Get a single installed app by id
  */
-export async function getAppById(
-  appId: string,
-): Promise<InstalledApp | null> {
+export async function getAppById(appId: string): Promise<InstalledApp | null> {
   if (!validateAppId(appId)) return null;
   const apps = await getInstalledApps();
   const match = apps.find(
@@ -197,12 +188,12 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
       getContainerName(appId),
     ].filter(Boolean) as string[];
     const host =
-      process.env.LIVEOS_DOMAIN ||
-      process.env.LIVEOS_HOST ||
-      process.env.LIVEOS_HTTP_HOST ||
+      process.env.HOMEIO_DOMAIN ||
+      process.env.HOMEIO_HOST ||
+      process.env.HOMEIO_HTTP_HOST ||
       process.env.HOSTNAME ||
       "localhost";
-    const protocol = process.env.LIVEOS_HTTPS === "true" ? "https" : "http";
+    const protocol = process.env.HOMEIO_HTTPS === "true" ? "https" : "http";
 
     let resolvedUrl: string | null = null;
     let resolutionMethod:
@@ -321,8 +312,7 @@ export async function getAppLogs(
     );
     return logs;
   } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       `[Docker] getAppLogs: Error getting logs for "${appId}":`,
       error,

@@ -1,16 +1,16 @@
-'use server';
+"use server";
 
-import fs from 'fs/promises';
-import path from 'path';
-import { execAsync } from '@/lib/exec';
-import { readJsonFile, writeJsonFile } from '@/lib/json-store';
-import { getHomeRoot } from './filesystem';
+import { execAsync } from "@/lib/exec";
+import { readJsonFile, writeJsonFile } from "@/lib/json-store";
+import fs from "fs/promises";
+import path from "path";
+import { getHomeRoot } from "./filesystem";
 
-const SHARES_FILE = '.smb-shares.json';
-const SAMBA_CONFIG_DIR = '/etc/samba';
+const SHARES_FILE = ".smb-shares.json";
+const SAMBA_CONFIG_DIR = "/etc/samba";
 const SAMBA_SHARES_DIR = `${SAMBA_CONFIG_DIR}/shares.d`;
-const SAMBA_SERVICE = 'smbd';
-const DISCOVERY_SERVICES = ['nmbd', 'wsdd2', 'wsdd'];
+const SAMBA_SERVICE = "smbd";
+const DISCOVERY_SERVICES = ["nmbd", "wsdd2", "wsdd"];
 
 export interface SmbShare {
   id: string;
@@ -77,9 +77,13 @@ async function ensureSambaRunning(): Promise<{
   error?: string;
 }> {
   try {
-    await execAsync('which smbd');
+    await execAsync("which smbd");
   } catch {
-    return { installed: false, running: false, error: 'Samba is not installed' };
+    return {
+      installed: false,
+      running: false,
+      error: "Samba is not installed",
+    };
   }
 
   let running = await isServiceActive(SAMBA_SERVICE);
@@ -92,7 +96,11 @@ async function ensureSambaRunning(): Promise<{
     return { installed: true, running: true };
   }
 
-  return { installed: true, running: false, error: 'Samba service is not running' };
+  return {
+    installed: true,
+    running: false,
+    error: "Samba service is not running",
+  };
 }
 
 function generateShareId(): string {
@@ -102,8 +110,8 @@ function generateShareId(): string {
 function sanitizeShareName(name: string): string {
   // Remove invalid characters for SMB share names
   return name
-    .replace(/[<>:"/\\|?*]/g, '')
-    .replace(/\s+/g, '_')
+    .replace(/[<>:"/\\|?*]/g, "")
+    .replace(/\s+/g, "_")
     .substring(0, 64);
 }
 
@@ -118,8 +126,12 @@ export async function checkSambaStatus(): Promise<{
   try {
     return await ensureSambaRunning();
   } catch (error) {
-    console.error('Check Samba status error:', error);
-    return { installed: false, running: false, error: 'Failed to check Samba status' };
+    console.error("Check Samba status error:", error);
+    return {
+      installed: false,
+      running: false,
+      error: "Failed to check Samba status",
+    };
   }
 }
 
@@ -152,10 +164,13 @@ export async function listSmbShares(): Promise<{
 
     return {
       shares: validShares,
-      sambaStatus: { installed: sambaStatus.installed, running: sambaStatus.running },
+      sambaStatus: {
+        installed: sambaStatus.installed,
+        running: sambaStatus.running,
+      },
     };
   } catch (error) {
-    console.error('List SMB shares error:', error);
+    console.error("List SMB shares error:", error);
     return {
       shares: [],
       sambaStatus: { installed: false, running: false },
@@ -169,30 +184,39 @@ export async function listSmbShares(): Promise<{
 export async function createSmbShare(
   dirPath: string,
   shareName: string,
-  options?: { readOnly?: boolean; guestOk?: boolean }
-): Promise<{ success: boolean; share?: SmbShare; sharePath?: string; error?: string }> {
+  options?: { readOnly?: boolean; guestOk?: boolean },
+): Promise<{
+  success: boolean;
+  share?: SmbShare;
+  sharePath?: string;
+  error?: string;
+}> {
   try {
     // Verify directory exists
     const stats = await fs.stat(dirPath);
     if (!stats.isDirectory()) {
-      return { success: false, error: 'Path is not a directory' };
+      return { success: false, error: "Path is not a directory" };
     }
 
     const sanitizedName = sanitizeShareName(shareName);
     if (!sanitizedName) {
-      return { success: false, error: 'Invalid share name' };
+      return { success: false, error: "Invalid share name" };
     }
 
     const data = await readSharesFile();
 
     // Check if share name already exists
-    if (data.shares.some((s) => s.name.toLowerCase() === sanitizedName.toLowerCase())) {
-      return { success: false, error: 'Share name already exists' };
+    if (
+      data.shares.some(
+        (s) => s.name.toLowerCase() === sanitizedName.toLowerCase(),
+      )
+    ) {
+      return { success: false, error: "Share name already exists" };
     }
 
     // Check if path already shared
     if (data.shares.some((s) => s.path === dirPath)) {
-      return { success: false, error: 'This directory is already shared' };
+      return { success: false, error: "This directory is already shared" };
     }
 
     const newShare: SmbShare = {
@@ -209,9 +233,9 @@ export async function createSmbShare(
     if (sambaStatus.installed && sambaStatus.running) {
       try {
         await createSambaConfig(newShare);
-        await execAsync('sudo systemctl reload smbd');
+        await execAsync("sudo systemctl reload smbd");
       } catch (error) {
-        console.error('Failed to create Samba config:', error);
+        console.error("Failed to create Samba config:", error);
         // Continue anyway - store in our file
       }
     }
@@ -220,9 +244,9 @@ export async function createSmbShare(
     await writeSharesFile(data);
 
     // Get hostname for share path
-    let hostname = 'localhost';
+    let hostname = "localhost";
     try {
-      const { stdout } = await execAsync('hostname');
+      const { stdout } = await execAsync("hostname");
       hostname = stdout.trim();
     } catch {
       // Use localhost as fallback
@@ -234,10 +258,10 @@ export async function createSmbShare(
       sharePath: `\\\\${hostname}\\${sanitizedName}`,
     };
   } catch (error: unknown) {
-    console.error('Create SMB share error:', error);
+    console.error("Create SMB share error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create share',
+      error: error instanceof Error ? error.message : "Failed to create share",
     };
   }
 }
@@ -246,14 +270,14 @@ export async function createSmbShare(
  * Remove an SMB share
  */
 export async function removeSmbShare(
-  shareId: string
+  shareId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const data = await readSharesFile();
     const shareIndex = data.shares.findIndex((s) => s.id === shareId);
 
     if (shareIndex === -1) {
-      return { success: false, error: 'Share not found' };
+      return { success: false, error: "Share not found" };
     }
 
     const share = data.shares[shareIndex];
@@ -261,9 +285,9 @@ export async function removeSmbShare(
     // Try to remove Samba config
     try {
       await removeSambaConfig(share.name);
-      await execAsync('sudo systemctl reload smbd');
+      await execAsync("sudo systemctl reload smbd");
     } catch (error) {
-      console.error('Failed to remove Samba config:', error);
+      console.error("Failed to remove Samba config:", error);
       // Continue anyway
     }
 
@@ -272,10 +296,10 @@ export async function removeSmbShare(
 
     return { success: true };
   } catch (error: unknown) {
-    console.error('Remove SMB share error:', error);
+    console.error("Remove SMB share error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to remove share',
+      error: error instanceof Error ? error.message : "Failed to remove share",
     };
   }
 }
@@ -285,11 +309,11 @@ export async function removeSmbShare(
  */
 async function createSambaConfig(share: SmbShare): Promise<void> {
   const config = `[${share.name}]
-   comment = LiveOS Shared Folder
+   comment = Homeio Shared Folder
    path = ${share.path}
    browsable = yes
-   read only = ${share.readOnly ? 'yes' : 'no'}
-   guest ok = ${share.guestOk ? 'yes' : 'no'}
+   read only = ${share.readOnly ? "yes" : "no"}
+   guest ok = ${share.guestOk ? "yes" : "no"}
    create mask = 0755
    directory mask = 0755
 `;
@@ -306,18 +330,22 @@ async function createSambaConfig(share: SmbShare): Promise<void> {
 
   // Write config file (may need sudo)
   try {
-    await fs.writeFile(configPath, config, 'utf-8');
+    await fs.writeFile(configPath, config, "utf-8");
   } catch {
     // Try with sudo
-    await execAsync(`echo '${config.replace(/'/g, "'\\''")}' | sudo tee ${configPath}`);
+    await execAsync(
+      `echo '${config.replace(/'/g, "'\\''")}' | sudo tee ${configPath}`,
+    );
   }
 
   // Include shares.d in main smb.conf if not already
   try {
-    const smbConf = await fs.readFile(`${SAMBA_CONFIG_DIR}/smb.conf`, 'utf-8');
-    if (!smbConf.includes('include = /etc/samba/shares.d/')) {
-      const includeDirective = '\ninclude = /etc/samba/shares.d/*.conf\n';
-      await execAsync(`echo '${includeDirective}' | sudo tee -a ${SAMBA_CONFIG_DIR}/smb.conf`);
+    const smbConf = await fs.readFile(`${SAMBA_CONFIG_DIR}/smb.conf`, "utf-8");
+    if (!smbConf.includes("include = /etc/samba/shares.d/")) {
+      const includeDirective = "\ninclude = /etc/samba/shares.d/*.conf\n";
+      await execAsync(
+        `echo '${includeDirective}' | sudo tee -a ${SAMBA_CONFIG_DIR}/smb.conf`,
+      );
     }
   } catch {
     // Ignore errors checking smb.conf
@@ -341,7 +369,7 @@ async function removeSambaConfig(shareName: string): Promise<void> {
  * Get share info by path
  */
 export async function getShareByPath(
-  dirPath: string
+  dirPath: string,
 ): Promise<SmbShare | null> {
   try {
     const data = await readSharesFile();

@@ -26,10 +26,10 @@ export function RebootOverlay() {
 
   const statusLabel =
     phase === "online"
-      ? "LiveOS is back online"
+      ? "Homeio is back online"
       : phase === "failed"
         ? "Restart failed"
-        : "Restarting LiveOS…";
+        : "Restarting Homeio…";
 
   const subLabel =
     phase === "waiting" || phase === "initiating"

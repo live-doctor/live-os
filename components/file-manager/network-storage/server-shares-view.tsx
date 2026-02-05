@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  AlertCircle,
-  BadgeCheck,
-  Folder,
-  Loader2,
-  Plus,
-  Server,
+    AlertCircle,
+    BadgeCheck,
+    Folder,
+    Loader2,
+    Plus,
+    Server,
 } from "lucide-react";
 import { ServerAuthPrompt } from "./server-auth-prompt";
 import type { DiscoveredHost, ServerInfo } from "./types";
@@ -64,9 +64,9 @@ export function ServerSharesView({
             <span className="text-white font-semibold">
               {server.name || server.host}
             </span>
-            {serverInfo?.isLiveOS && (
+            {serverInfo?.isHOMEIO && (
               <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/20 text-cyan-200 text-[10px] px-2 py-0.5 uppercase tracking-wide">
-                LiveOS
+                Homeio
               </span>
             )}
           </div>
@@ -94,51 +94,55 @@ export function ServerSharesView({
         </div>
       )}
 
-      {serverInfo && !serverInfo.requiresAuth && serverInfo.shares.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-xs text-white/60 uppercase tracking-[0.2em] px-1">
-            Available Shares
-          </div>
-          {serverInfo.shares.map((shareName) => {
-            const alreadyAdded = isShareAdded(shareName);
-            return (
-              <div
-                key={shareName}
-                className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3"
-              >
-                <div className="h-10 w-10 rounded-lg bg-blue-500/15 border border-blue-400/30 flex items-center justify-center">
-                  <Folder className="h-5 w-5 text-blue-200" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white font-medium">{shareName}</div>
-                  <div className="text-[11px] text-white/60">
-                    {`//${server.host}/${shareName}`}
+      {serverInfo &&
+        !serverInfo.requiresAuth &&
+        serverInfo.shares.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-xs text-white/60 uppercase tracking-[0.2em] px-1">
+              Available Shares
+            </div>
+            {serverInfo.shares.map((shareName) => {
+              const alreadyAdded = isShareAdded(shareName);
+              return (
+                <div
+                  key={shareName}
+                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-blue-500/15 border border-blue-400/30 flex items-center justify-center">
+                    <Folder className="h-5 w-5 text-blue-200" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-white font-medium">
+                      {shareName}
+                    </div>
+                    <div className="text-[11px] text-white/60">
+                      {`//${server.host}/${shareName}`}
+                    </div>
+                  </div>
+                  {alreadyAdded ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-200 text-[11px] px-3 py-1">
+                      <BadgeCheck className="h-3 w-3" /> Added
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                      onClick={() => onAddShare(shareName)}
+                      disabled={addingShare === shareName}
+                    >
+                      {addingShare === shareName ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-1" />
+                      )}
+                      Add
+                    </Button>
+                  )}
                 </div>
-                {alreadyAdded ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-200 text-[11px] px-3 py-1">
-                    <BadgeCheck className="h-3 w-3" /> Added
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="bg-cyan-500 hover:bg-cyan-600 text-white"
-                    onClick={() => onAddShare(shareName)}
-                    disabled={addingShare === shareName}
-                  >
-                    {addingShare === shareName ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-1" />
-                    )}
-                    Add
-                  </Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
 
       {serverInfo &&
         !serverInfo.requiresAuth &&
@@ -146,7 +150,9 @@ export function ServerSharesView({
         serverInfo.shares.length === 0 && (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-center">
             <Folder className="h-8 w-8 text-white/30" />
-            <div className="text-sm text-white/70">No shares found on this server</div>
+            <div className="text-sm text-white/70">
+              No shares found on this server
+            </div>
           </div>
         )}
 

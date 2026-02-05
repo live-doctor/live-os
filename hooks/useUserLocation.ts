@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { getSettings, updateSettings } from "@/app/actions/auth/settings";
+import { useCallback, useEffect, useState } from "react";
 
 export interface UserLocation {
   latitude: number;
@@ -31,7 +31,8 @@ export function useUserLocation(): UseUserLocationReturn {
   const [location, setLocation] = useState<UserLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [permissionStatus, setPermissionStatus] = useState<PermissionState | null>(null);
+  const [permissionStatus, setPermissionStatus] =
+    useState<PermissionState | null>(null);
 
   // Request location from browser
   const requestLocationFromBrowser: () => void = useCallback(() => {
@@ -56,18 +57,24 @@ export function useUserLocation(): UseUserLocationReturn {
         try {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            { headers: { "User-Agent": "LiveOS Dashboard" } }
+            { headers: { "User-Agent": "Homeio Dashboard" } },
           );
           if (response.ok) {
             const data = await response.json();
-            city = data.address?.city || data.address?.town || data.address?.village;
+            city =
+              data.address?.city || data.address?.town || data.address?.village;
             country = data.address?.country_code?.toUpperCase();
           }
         } catch {
           // Reverse geocoding failed, continue without city name
         }
 
-        const newLocation: UserLocation = { latitude, longitude, city, country };
+        const newLocation: UserLocation = {
+          latitude,
+          longitude,
+          city,
+          country,
+        };
         setLocation(newLocation);
         setLoading(false);
 
@@ -109,7 +116,7 @@ export function useUserLocation(): UseUserLocationReturn {
         enableHighAccuracy: false,
         timeout: 10000,
         maximumAge: 600000, // Cache for 10 minutes
-      }
+      },
     );
   }, []);
 
