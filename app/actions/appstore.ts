@@ -27,7 +27,7 @@ import { listFiles, resolveAsset } from "./store/utils";
 
 const STORE_ROOT = path.join(process.cwd(), "external-apps");
 const CASAOS_RECOMMEND_LIST_URL =
-  "https://raw.githubusercontent.com/live-doctor/homeio/refs/heads/main/recommend-list.json";
+  "https://raw.githubusercontent.com/doctor-io/homeio/refs/heads/main/recommend-list.json";
 
 type StoreFormat = "casaos" | "umbrel";
 

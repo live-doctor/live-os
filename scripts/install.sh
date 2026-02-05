@@ -54,8 +54,8 @@ DOMAIN=${HOMEIO_DOMAIN:-""}
 INSTALL_DIR="/opt/homeio"
 
 # GitHub repository
-REPO_URL="https://github.com/live-doctor/homeio.git"
-GITHUB_REPO="live-doctor/homeio"
+REPO_URL="https://github.com/doctor-io/homeio.git"
+GITHUB_REPO="doctor-io/homeio"
 
 # ─── Architecture detection ───────────────────────────────────────────────────
 

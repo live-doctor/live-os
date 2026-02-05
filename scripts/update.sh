@@ -7,7 +7,7 @@ set -e
 
 INSTALL_DIR="/opt/homeio"
 SERVICE_NAME="homeio"
-GITHUB_REPO="live-doctor/homeio"
+GITHUB_REPO="doctor-io/homeio"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'

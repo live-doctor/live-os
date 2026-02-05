@@ -28,7 +28,7 @@ We've added `umbrel-apps-ref` as a **git submodule** that references your forked
 ```ini
 [submodule "umbrel-apps-ref"]
  path = umbrel-apps-ref
- url = https://github.com/live-doctor/umbrel-apps-ref.git
+ url = https://github.com/doctor-io/umbrel-apps-ref.git
 ```
 
 **`install.sh` (updated):**
@@ -151,7 +151,7 @@ sudo rm -rf /opt/homeio
 sudo rm /etc/systemd/system/homeio.service
 
 # Install with latest changes
-curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/develop/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/doctor-io/homeio/develop/install.sh -o install.sh
 sudo bash install.sh
 ```
 
@@ -203,7 +203,7 @@ ls -la umbrel-apps-ref/
 
 ```bash
 # Add submodule (already done)
-git submodule add https://github.com/live-doctor/umbrel-apps-ref.git umbrel-apps-ref
+git submodule add https://github.com/doctor-io/umbrel-apps-ref.git umbrel-apps-ref
 
 # Initialize submodule (install.sh does this)
 git submodule update --init --recursive
@@ -232,7 +232,7 @@ Next.js optimizes images by default, but only allows whitelisted domains for sec
 ```ini
 [submodule "umbrel-apps-ref"]
  path = umbrel-apps-ref
- url = https://github.com/live-doctor/umbrel-apps-ref.git
+ url = https://github.com/doctor-io/umbrel-apps-ref.git
 ```
 
 ### 2. `install.sh`

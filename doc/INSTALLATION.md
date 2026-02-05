@@ -6,10 +6,10 @@ Complete guide for installing and configuring Homeio on your server.
 
 ```bash
 # Download and run installer
-curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/develop/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/doctor-io/homeio/develop/install.sh | sudo bash
 
 # Or clone and install
-git clone https://github.com/live-doctor/homeio.git
+git clone https://github.com/doctor-io/homeio.git
 cd homeio
 sudo bash install.sh
 ```
@@ -509,7 +509,7 @@ See [.env.example](./.env.example) for complete configuration options.
 - **Documentation**: [README.md](./README.md)
 - **App Store**: [APP_STORE_GUIDE.md](./APP_STORE_GUIDE.md)
 - **Scripts**: [scripts/README.md](./scripts/README.md)
-- **Issues**: https://github.com/live-doctor/homeio/issues
+- **Issues**: https://github.com/doctor-io/homeio/issues
 
 ---
 

@@ -216,7 +216,7 @@ bash install.sh --dry-run
 
 ```bash
 # On your Ubuntu server
-curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/develop/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/doctor-io/homeio/develop/install.sh -o install.sh
 sudo bash install.sh
 ```
 

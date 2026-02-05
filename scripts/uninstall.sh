@@ -96,6 +96,11 @@ INSTALL_DIR="/opt/homeio"
 SERVICE_NAME="homeio"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
+# Legacy service name (for backward compatibility)
+LEGACY_SERVICE_NAME="liveos"
+LEGACY_SERVICE_FILE="/etc/systemd/system/${LEGACY_SERVICE_NAME}.service"
+LEGACY_INSTALL_DIR="/opt/live-os"
+
 # Check if script is run as root
 if [ "$EUID" -ne 0 ]; then
     print_error "Please run as root"
@@ -119,30 +124,30 @@ fi
 echo ""
 print_status "Starting Homeio uninstallation..."
 
-# Stop the service
-if systemctl is-active --quiet $SERVICE_NAME; then
-    print_status "Stopping Homeio service..."
-    systemctl stop $SERVICE_NAME
-else
-    print_status "Homeio service is not running"
-fi
+# Stop the service (check both new and legacy names)
+for svc in "$SERVICE_NAME" "$LEGACY_SERVICE_NAME"; do
+    if systemctl is-active --quiet "$svc" 2>/dev/null; then
+        print_status "Stopping $svc service..."
+        systemctl stop "$svc"
+    fi
+done
 
-# Disable the service
-if systemctl is-enabled --quiet $SERVICE_NAME 2>/dev/null; then
-    print_status "Disabling Homeio service..."
-    systemctl disable $SERVICE_NAME
-else
-    print_status "Homeio service is not enabled"
-fi
+# Disable the service (check both new and legacy names)
+for svc in "$SERVICE_NAME" "$LEGACY_SERVICE_NAME"; do
+    if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
+        print_status "Disabling $svc service..."
+        systemctl disable "$svc"
+    fi
+done
 
-# Remove service file
-if [ -f "$SERVICE_FILE" ]; then
-    print_status "Removing systemd service file..."
-    rm -f "$SERVICE_FILE"
-    systemctl daemon-reload
-else
-    print_status "Service file not found, skipping"
-fi
+# Remove service files (check both new and legacy)
+for svc_file in "$SERVICE_FILE" "$LEGACY_SERVICE_FILE"; do
+    if [ -f "$svc_file" ]; then
+        print_status "Removing service file: $svc_file"
+        rm -f "$svc_file"
+    fi
+done
+systemctl daemon-reload
 
 # Offer to remove Docker resources
 cleanup_docker_resources
@@ -151,13 +156,13 @@ cleanup_data_dir
 # Change to safe directory before removing installation
 cd /tmp || cd /
 
-# Remove installation directory
-if [ -d "$INSTALL_DIR" ]; then
-    print_status "Removing installation directory..."
-    rm -rf "$INSTALL_DIR"
-else
-    print_status "Installation directory not found, skipping"
-fi
+# Remove installation directories (check both new and legacy)
+for install_dir in "$INSTALL_DIR" "$LEGACY_INSTALL_DIR"; do
+    if [ -d "$install_dir" ]; then
+        print_status "Removing installation directory: $install_dir"
+        rm -rf "$install_dir"
+    fi
+done
 
 print_status "\n"
 print_status "╭─────────────────────────────────────────╮"

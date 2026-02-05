@@ -423,7 +423,7 @@ To contribute apps to the official Umbrel repository:
 ## Resources
 
 - **Umbrel Apps**: https://github.com/getumbrel/umbrel-apps
-- **Your Fork**: https://github.com/live-doctor/umbrel-apps-ref
+- **Your Fork**: https://github.com/doctor-io/umbrel-apps-ref
 - **App Gallery**: https://getumbrel.github.io/umbrel-apps-gallery/
 - **Docker Compose Docs**: https://docs.docker.com/compose/
 - **Script Documentation**: [scripts/README.md](./scripts/README.md)

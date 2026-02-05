@@ -105,7 +105,7 @@ sudo rm -rf /opt/homeio
 sudo rm /etc/systemd/system/homeio.service
 
 # Fresh install with updated script
-curl -fsSL https://raw.githubusercontent.com/live-doctor/homeio/develop/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/doctor-io/homeio/develop/install.sh -o install.sh
 sudo bash install.sh
 
 # Restore .env if you had custom settings
