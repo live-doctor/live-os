@@ -41,6 +41,10 @@ export interface InstalledApp {
   containers?: string[];
   installedAt: number;
   storeId?: string;
+  // Version tracking for updates
+  version?: string;
+  availableVersion?: string;
+  hasUpdate?: boolean;
 }
 
 /**

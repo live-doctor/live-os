@@ -10,6 +10,28 @@ import { WebSocket, WebSocketServer } from "ws";
 const DEFAULT_APP_ICON = "/icons/default-app-icon.png";
 const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 
+/**
+ * Compare two semantic version strings
+ * Returns: 1 if a > b, -1 if a < b, 0 if equal
+ */
+function compareVersions(a: string, b: string): number {
+  const normalize = (v: string) =>
+    v
+      .replace(/^v/i, "")
+      .split(".")
+      .map((n) => parseInt(n, 10) || 0);
+
+  const partsA = normalize(a);
+  const partsB = normalize(b);
+  const len = Math.max(partsA.length, partsB.length);
+
+  for (let i = 0; i < len; i++) {
+    const diff = (partsA[i] ?? 0) - (partsB[i] ?? 0);
+    if (diff !== 0) return diff > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
 // Types for the data we broadcast
 export interface SystemStats {
   cpu: { usage: number; temperature: number; power: number };
@@ -49,6 +71,10 @@ export interface InstalledApp {
   containerName: string;
   installedAt: number;
   storeId?: string;
+  // Version tracking for updates
+  version?: string;
+  availableVersion?: string;
+  hasUpdate?: boolean;
 }
 
 export interface OtherContainer {
@@ -367,7 +393,9 @@ interface CollectedApps {
 }
 
 /**
- * Collect installed Docker containers and unmanaged containers
+ * Collect installed Docker containers and unmanaged containers.
+ * Uses com.docker.compose.project label (set by --project-name) to identify
+ * managed apps — same pattern as Umbrel.
  */
 async function collectInstalledApps(): Promise<CollectedApps> {
   try {
@@ -375,12 +403,19 @@ async function collectInstalledApps(): Promise<CollectedApps> {
       prisma.installedApp.findMany(),
       prisma.app.findMany(),
     ]);
+
+    // Build lookup maps
+    const metaByAppId = new Map(
+      knownApps.map((app) => [app.appId, app]),
+    );
     const metaByContainer = new Map(
       knownApps.map((app) => [app.containerName, app]),
     );
     const storeMetaById = new Map(storeApps.map((app) => [app.appId, app]));
 
-    // Get set of managed container names for quick lookup
+    // Set of known appIds for matching against compose project labels
+    const managedAppIds = new Set(knownApps.map((app) => app.appId));
+    // Also keep container names as fallback for legacy installs
     const managedContainerNames = new Set(knownApps.map((app) => app.containerName));
 
     const { stdout } = await execAsync(
@@ -391,41 +426,27 @@ async function collectInstalledApps(): Promise<CollectedApps> {
 
     const lines = stdout.trim().split("\n");
 
+    // Group containers by compose project (appId)
+    // Each managed app may have multiple containers (e.g. app + db)
+    const seenAppIds = new Set<string>();
     const installedApps: InstalledApp[] = [];
     const otherContainers: OtherContainer[] = [];
 
-    await Promise.all(
+    // First pass: resolve all containers with ports
+    const containerData = await Promise.all(
       lines.map(async (line) => {
         const [containerName, status, image, labelsRaw] = line.split("\t");
 
         const labels: Record<string, string> = {};
         if (labelsRaw) {
           labelsRaw.split(",").forEach((pair) => {
-            const [key, value] = pair.split("=");
-            if (key) labels[key.trim()] = (value || "").trim();
+            const eqIdx = pair.indexOf("=");
+            if (eqIdx > 0) {
+              const key = pair.substring(0, eqIdx).trim();
+              const value = pair.substring(eqIdx + 1).trim();
+              labels[key] = value;
+            }
           });
-        }
-
-        // Skip helper containers entirely
-        if (labels["homeio.helper"] === "true") {
-          return;
-        }
-
-        // Skip known helper/infrastructure containers from multi-service composes
-        const lowerName = containerName.toLowerCase();
-        const helperPatterns = [
-          /-docker-\d+$/,      // Docker-in-Docker services (e.g., portainer-docker-1)
-          /-dind-\d+$/,        // DinD services
-          /-tor-\d+$/,         // Tor services (Umbrel)
-          /-proxy-\d+$/,       // Proxy services
-          /-redis-\d+$/,       // Redis helper services
-          /-db-\d+$/,          // Database helper services
-          /-postgres-\d+$/,    // Postgres helper services
-          /-mysql-\d+$/,       // MySQL helper services
-          /-mariadb-\d+$/,     // MariaDB helper services
-        ];
-        if (helperPatterns.some((pattern) => pattern.test(lowerName))) {
-          return;
         }
 
         let appStatus: "running" | "stopped" | "error" = "error";
@@ -438,46 +459,95 @@ async function collectInstalledApps(): Promise<CollectedApps> {
         const hostPort = await resolveHostPort(containerName);
         const webUIPort = hostPort ? parseInt(hostPort, 10) : undefined;
 
-        // Check if this is a managed app (in DB)
-        if (managedContainerNames.has(containerName)) {
-          const meta = metaByContainer.get(containerName);
-          const appId =
-            labels["homeio.appId"] ||
-            meta?.appId ||
-            getAppIdFromContainerName(containerName);
-          const storeMeta = appId ? storeMetaById.get(appId) : undefined;
+        // Get the compose project name (set by --project-name during deploy)
+        const composeProject = labels["com.docker.compose.project"] || "";
 
-          installedApps.push({
-            id: containerName,
-            appId,
-            name:
-              meta?.name ||
-              storeMeta?.title ||
-              storeMeta?.name ||
-              containerName
-                .replace(/-/g, " ")
-                .replace(/\b\w/g, (c) => c.toUpperCase()),
-            icon: meta?.icon || storeMeta?.icon || DEFAULT_APP_ICON,
-            status: appStatus,
-            containerName,
-            installedAt: meta?.createdAt?.getTime?.() || Date.now(),
-            webUIPort,
-            storeId: (meta as any)?.storeId || undefined,
-          });
-        } else {
-          // Unmanaged container (started via SSH, docker run, etc.)
-          otherContainers.push({
-            id: containerName,
-            name: containerName
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase()),
-            image: image || "unknown",
-            status: appStatus,
-            webUIPort,
-          });
-        }
+        return { containerName, status: appStatus, image, labels, webUIPort, composeProject };
       }),
     );
+
+    for (const container of containerData) {
+      const { containerName, status, image, labels, webUIPort, composeProject } = container;
+
+      // Skip homeio helper containers
+      if (labels["homeio.helper"] === "true") continue;
+
+      // Determine if this container belongs to a managed app:
+      // 1. Check compose project label against known appIds (Umbrel pattern)
+      // 2. Fallback: check container name against DB (legacy)
+      const matchedAppId =
+        (composeProject && managedAppIds.has(composeProject) ? composeProject : null) ||
+        (managedContainerNames.has(containerName) ? metaByContainer.get(containerName)?.appId : null);
+
+      if (matchedAppId) {
+        // Skip if we already added this app (multi-container apps: only show main one)
+        if (seenAppIds.has(matchedAppId)) continue;
+        seenAppIds.add(matchedAppId);
+
+        const meta = metaByAppId.get(matchedAppId);
+        const storeMeta = storeMetaById.get(matchedAppId);
+
+        // Version comparison for update detection
+        const installedVersion = (meta as any)?.version ?? undefined;
+        const availableVersion = storeMeta?.version ?? undefined;
+        let hasUpdate = false;
+        if (installedVersion && availableVersion) {
+          hasUpdate = compareVersions(availableVersion, installedVersion) > 0;
+        } else if (!installedVersion && availableVersion) {
+          hasUpdate = true;
+        }
+
+        installedApps.push({
+          id: matchedAppId,
+          appId: matchedAppId,
+          name:
+            meta?.name ||
+            storeMeta?.title ||
+            storeMeta?.name ||
+            matchedAppId
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
+          icon: meta?.icon || storeMeta?.icon || DEFAULT_APP_ICON,
+          status,
+          containerName: meta?.containerName || containerName,
+          installedAt: meta?.createdAt?.getTime?.() || Date.now(),
+          webUIPort,
+          storeId: (meta as any)?.storeId || undefined,
+          version: installedVersion,
+          availableVersion,
+          hasUpdate,
+        });
+      } else {
+        // Skip helper containers from multi-service composes
+        const lowerName = containerName.toLowerCase();
+        const helperPatterns = [
+          /-docker-\d+$/,
+          /-dind-\d+$/,
+          /-tor-\d+$/,
+          /-proxy-\d+$/,
+          /-redis-\d+$/,
+          /-db-\d+$/,
+          /-postgres-\d+$/,
+          /-mysql-\d+$/,
+          /-mariadb-\d+$/,
+        ];
+        if (helperPatterns.some((pattern) => pattern.test(lowerName))) continue;
+
+        // Also skip if this container belongs to a managed compose project
+        // (helper service of a managed app, just not the main container)
+        if (composeProject && managedAppIds.has(composeProject)) continue;
+
+        otherContainers.push({
+          id: containerName,
+          name: containerName
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+          image: image || "unknown",
+          status,
+          webUIPort,
+        });
+      }
+    }
 
     return { installedApps, otherContainers };
   } catch {

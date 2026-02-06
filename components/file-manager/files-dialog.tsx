@@ -20,8 +20,17 @@ import { FilesToolbar } from "@/components/file-manager/files-toolbar";
 import { NetworkStorageDialog } from "@/components/file-manager/network-storage";
 import { SmbShareDialog } from "@/components/file-manager/smb-share-dialog";
 import { useFilesDialog } from "@/components/file-manager/use-files-dialog";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, Trash2 } from "lucide-react";
 
 type InteractOutsideEvent = {
   target: EventTarget | null;
@@ -104,6 +113,11 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(
     null,
   );
+  const [trashTarget, setTrashTarget] = useState<FileSystemItem | null>(null);
+  const [trashing, setTrashing] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<FileSystemItem | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const portalAnchorRef = useCallback((node: HTMLDivElement | null) => {
     setPortalContainer(node);
   }, []);
@@ -169,13 +183,33 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
     setSmbShareDialogOpen(true);
   }, []);
 
-  // Handle rename with prompt
+  // Handle rename lifecycle
   const handleRename = useCallback(
     (item: FileSystemItem) => {
-      renameItem(item);
+      setRenameTarget(item);
+      setRenameValue(item.name);
     },
     [renameItem],
   );
+
+  const handleRenameSubmit = useCallback(async () => {
+    if (!renameTarget) return;
+    const next = renameValue.trim();
+    if (!next || next === renameTarget.name) {
+      setRenameTarget(null);
+      return;
+    }
+    setRenaming(true);
+    await renameItem(renameTarget, next);
+    setRenaming(false);
+    setRenameTarget(null);
+  }, [renameItem, renameTarget, renameValue]);
+
+  const handleRenameCancel = useCallback(() => {
+    if (renaming) return;
+    setRenameTarget(null);
+    setRenameValue("");
+  }, [renaming]);
 
   // Keyboard shortcuts for clipboard operations
   useEffect(() => {
@@ -212,14 +246,7 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
       // Trash: Cmd+Backspace
       if (isMeta && event.key === "Backspace" && target) {
         event.preventDefault();
-        if (!confirm(`Move "${target.name}" to trash?`)) return;
-        const result = await trashItem(target.path);
-        if (result.success) {
-          toast.success("Item moved to trash");
-          refresh();
-        } else {
-          toast.error(result.error || "Failed to move item to trash");
-        }
+        setTrashTarget(target);
         return;
       }
     };
@@ -323,14 +350,21 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
             )}
 
             <FileUploadZone targetDir={currentPath} onUploadComplete={refresh}>
-              <FilesContent
-                loading={loading}
-                viewMode={viewMode}
-                items={filteredItems}
-                onOpenItem={handleOpenItem}
-                onContextMenu={openContextMenu}
-                onMoveItem={moveItem}
-              />
+            <FilesContent
+              loading={loading}
+              viewMode={viewMode}
+              items={filteredItems}
+              onOpenItem={handleOpenItem}
+              onContextMenu={openContextMenu}
+              onMoveItem={moveItem}
+              onRenameStart={handleRename}
+              renameTargetPath={renameTarget?.path ?? null}
+              renameValue={renameValue}
+              onRenameValueChange={setRenameValue}
+              onRenameSubmit={handleRenameSubmit}
+              onRenameCancel={handleRenameCancel}
+              renaming={renaming}
+            />
             </FileUploadZone>
 
             <div className="px-6 py-3 border-t border-zinc-800">
@@ -392,8 +426,62 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
         onPreview={(item) => setViewerItem(item)}
         onRename={handleRename}
         onShareNetwork={handleShareNetwork}
+        onConfirmTrash={(item) => setTrashTarget(item)}
         onClose={closeContextMenu}
       />
+
+      {/* Trash confirmation dialog */}
+      <Dialog
+        open={!!trashTarget}
+        onOpenChange={(next) => {
+          if (!next && !trashing) setTrashTarget(null);
+        }}
+      >
+        <DialogContent className="max-w-md border border-white/10 bg-white/90 dark:bg-black/90 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-red-400" />
+              Move to trash?
+            </DialogTitle>
+            <DialogDescription>
+              {trashTarget
+                ? `“${trashTarget.name}” will be moved to trash. You can restore it later.`
+                : "Selected item will be moved to trash."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setTrashTarget(null)}
+              disabled={trashing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!trashTarget) return;
+                setTrashing(true);
+                const result = await trashItem(trashTarget.path);
+                if (result.success) {
+                  toast.success("Item moved to trash");
+                  refresh();
+                } else {
+                  toast.error(result.error || "Failed to move item to trash");
+                }
+                setTrashing(false);
+                setTrashTarget(null);
+              }}
+              disabled={trashing}
+            >
+              {trashing && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Move to trash
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

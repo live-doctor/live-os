@@ -978,6 +978,7 @@ export const InstalledAppScalarFieldEnum = {
   storeId: 'storeId',
   container: 'container',
   containers: 'containers',
+  version: 'version',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

@@ -36,6 +36,7 @@ interface FilesContextMenuProps {
   onOpenInEditor: (path: string) => void;
   onRename: (item: FileSystemItem) => void;
   onShareNetwork: (item: FileSystemItem) => void;
+  onConfirmTrash?: (item: FileSystemItem) => void;
   onClose: () => void;
 }
 
@@ -55,6 +56,7 @@ export function FilesContextMenu({
   onOpenInEditor,
   onRename,
   onShareNetwork,
+  onConfirmTrash,
   onClose,
 }: FilesContextMenuProps) {
   const { handleAction } = useContextMenuActions({
@@ -69,6 +71,7 @@ export function FilesContextMenu({
     onOpenInEditor,
     onRename,
     onShareNetwork,
+    onConfirmTrash,
     onClose,
   });
 

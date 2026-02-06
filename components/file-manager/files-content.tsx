@@ -11,6 +11,8 @@ import {
   useCallback,
   useMemo,
   useState,
+  useRef,
+  useEffect,
 } from "react";
 
 interface FilesContentProps {
@@ -20,6 +22,13 @@ interface FilesContentProps {
   onOpenItem: (item: FileSystemItem) => void;
   onContextMenu: (event: MouseEvent, item: FileSystemItem) => void;
   onMoveItem?: (sourcePath: string, targetFolderPath: string) => void;
+  onRenameStart?: (item: FileSystemItem) => void;
+  renameTargetPath?: string | null;
+  renameValue?: string;
+  onRenameValueChange?: (value: string) => void;
+  onRenameSubmit?: () => void;
+  onRenameCancel?: () => void;
+  renaming?: boolean;
 }
 
 const formatSize = (size: number) => {
@@ -46,6 +55,13 @@ interface FileGridItemProps {
   onOpen: (item: FileSystemItem) => void;
   onContext: (event: MouseEvent, item: FileSystemItem) => void;
   onMoveItem?: (sourcePath: string, targetFolderPath: string) => void;
+  onRename?: (item: FileSystemItem) => void;
+  renameTargetPath?: string | null;
+  renameValue?: string;
+  onRenameValueChange?: (value: string) => void;
+  onRenameSubmit?: () => void;
+  onRenameCancel?: () => void;
+  renaming?: boolean;
 }
 
 const FileGridItem = memo(function FileGridItem({
@@ -55,22 +71,40 @@ const FileGridItem = memo(function FileGridItem({
   onOpen,
   onContext,
   onMoveItem,
+  onRename,
+  renameTargetPath,
+  renameValue,
+  onRenameValueChange,
+  onRenameSubmit,
+  onRenameCancel,
+  renaming,
 }: FileGridItemProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const isRenaming = renameTargetPath === item.path;
 
-  const handleClick = useCallback(() => onOpen(item), [onOpen, item]);
+  const handleClick = useCallback(() => {
+    if (isRenaming) return;
+    onOpen(item);
+  }, [isRenaming, onOpen, item]);
+
   const handleContext = useCallback(
     (event: MouseEvent) => onContext(event, item),
     [onContext, item],
   );
 
+  const handleRenameStart = useCallback(() => {
+    if (onRename) onRename(item);
+  }, [onRename, item]);
+
   // Drag handlers - make item draggable
   const handleDragStart = useCallback(
     (e: DragEvent) => {
+      if (isRenaming) return;
       e.dataTransfer.setData("text/plain", item.path);
       e.dataTransfer.effectAllowed = "move";
     },
-    [item.path],
+    [isRenaming, item.path],
   );
 
   // Drop handlers - only for directories
@@ -107,9 +141,16 @@ const FileGridItem = memo(function FileGridItem({
     [item.type, item.path, onMoveItem],
   );
 
+  useEffect(() => {
+    if (isRenaming) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [isRenaming]);
+
   return (
     <button
-      draggable
+      draggable={!isRenaming}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -143,12 +184,42 @@ const FileGridItem = memo(function FileGridItem({
       )}
 
       <div className="text-center max-w-full">
-        <div className="text-sm font-medium text-white/90 -tracking-[0.01em] truncate">
-          {item.displayName || item.name}
-        </div>
-        <div className="text-xs text-white/40 -tracking-[0.01em]">
-          {item.type === "directory" ? "Folder" : formatSize(item.size)}
-        </div>
+        {isRenaming ? (
+          <div className="flex flex-col items-center gap-1">
+            <input
+              ref={inputRef}
+              className="w-32 rounded-md bg-white/90 text-black px-2 py-1 text-sm font-medium shadow focus:outline-none"
+              value={renameValue ?? ""}
+              onChange={(e) => onRenameValueChange?.(e.target.value)}
+              onBlur={() => onRenameSubmit?.()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onRenameSubmit?.();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  onRenameCancel?.();
+                }
+              }}
+              disabled={renaming}
+            />
+            <div className="text-[11px] text-white/60">
+              Press Enter to save, Esc to cancel
+            </div>
+          </div>
+        ) : (
+          <>
+            <div
+              className="text-sm font-medium text-white/90 -tracking-[0.01em] truncate cursor-text"
+              onDoubleClick={handleRenameStart}
+            >
+              {item.displayName || item.name}
+            </div>
+            <div className="text-xs text-white/40 -tracking-[0.01em]">
+              {item.type === "directory" ? "Folder" : formatSize(item.size)}
+            </div>
+          </>
+        )}
       </div>
     </button>
   );
@@ -162,6 +233,13 @@ interface FileListItemProps {
   onOpen: (item: FileSystemItem) => void;
   onContext: (event: MouseEvent, item: FileSystemItem) => void;
   onMoveItem?: (sourcePath: string, targetFolderPath: string) => void;
+  onRename?: (item: FileSystemItem) => void;
+  renameTargetPath?: string | null;
+  renameValue?: string;
+  onRenameValueChange?: (value: string) => void;
+  onRenameSubmit?: () => void;
+  onRenameCancel?: () => void;
+  renaming?: boolean;
 }
 
 const FileListItem = memo(function FileListItem({
@@ -169,16 +247,34 @@ const FileListItem = memo(function FileListItem({
   FileIcon,
   extLabel,
   onOpen,
+  onRename,
   onContext,
   onMoveItem,
+  renameTargetPath,
+  renameValue,
+  onRenameValueChange,
+  onRenameSubmit,
+  onRenameCancel,
+  renaming,
 }: FileListItemProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const isRenaming = renameTargetPath === item.path;
 
-  const handleClick = useCallback(() => onOpen(item), [onOpen, item]);
+  const handleClick = useCallback(() => {
+    if (isRenaming) return;
+    onOpen(item);
+  }, [isRenaming, onOpen, item]);
   const handleContext = useCallback(
     (event: MouseEvent) => onContext(event, item),
     [onContext, item],
   );
+
+  const handleRenameStart = useCallback(() => {
+    if (onRename) {
+      onRename(item);
+    }
+  }, [item, onRename]);
 
   // Memoize formatted values
   const formattedInfo = useMemo(() => {
@@ -191,10 +287,11 @@ const FileListItem = memo(function FileListItem({
   // Drag handlers
   const handleDragStart = useCallback(
     (e: DragEvent) => {
+      if (isRenaming) return;
       e.dataTransfer.setData("text/plain", item.path);
       e.dataTransfer.effectAllowed = "move";
     },
-    [item.path],
+    [isRenaming, item.path],
   );
 
   const handleDragOver = useCallback(
@@ -230,9 +327,16 @@ const FileListItem = memo(function FileListItem({
     [item.type, item.path, onMoveItem],
   );
 
+  useEffect(() => {
+    if (isRenaming) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [isRenaming]);
+
   return (
     <button
-      draggable
+      draggable={!isRenaming}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -266,9 +370,32 @@ const FileListItem = memo(function FileListItem({
         </div>
       )}
       <div className="flex-1 text-left min-w-0">
-        <div className="text-sm font-medium text-white/90 -tracking-[0.01em] truncate">
-          {item.displayName || item.name}
-        </div>
+        {isRenaming ? (
+          <input
+            ref={inputRef}
+            className="w-full rounded-md bg-white/90 text-black px-2 py-1 text-sm font-medium shadow focus:outline-none"
+            value={renameValue ?? ""}
+            onChange={(e) => onRenameValueChange?.(e.target.value)}
+            onBlur={() => onRenameSubmit?.()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onRenameSubmit?.();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                onRenameCancel?.();
+              }
+            }}
+            disabled={renaming}
+          />
+        ) : (
+          <div
+            className="text-sm font-medium text-white/90 -tracking-[0.01em] truncate cursor-text"
+            onDoubleClick={handleRenameStart}
+          >
+            {item.displayName || item.name}
+          </div>
+        )}
       </div>
       <div className="text-xs text-white/50 -tracking-[0.01em] flex-shrink-0">
         {formattedInfo}
@@ -284,6 +411,13 @@ export function FilesContent({
   onOpenItem,
   onContextMenu,
   onMoveItem,
+  onRenameStart,
+  renameTargetPath,
+  renameValue,
+  onRenameValueChange,
+  onRenameSubmit,
+  onRenameCancel,
+  renaming,
 }: FilesContentProps) {
   // Pre-compute icons and extension labels for all files
   const itemsWithMeta = useMemo(() => {
@@ -314,6 +448,13 @@ export function FilesContent({
                 onOpen={onOpenItem}
                 onContext={onContextMenu}
                 onMoveItem={onMoveItem}
+                onRename={onRenameStart}
+                renameTargetPath={renameTargetPath}
+                renameValue={renameValue}
+                onRenameValueChange={onRenameValueChange}
+                onRenameSubmit={onRenameSubmit}
+                onRenameCancel={onRenameCancel}
+                renaming={renaming}
               />
             ))}
           </div>
@@ -328,6 +469,13 @@ export function FilesContent({
                 onOpen={onOpenItem}
                 onContext={onContextMenu}
                 onMoveItem={onMoveItem}
+                onRename={onRenameStart}
+                renameTargetPath={renameTargetPath}
+                renameValue={renameValue}
+                onRenameValueChange={onRenameValueChange}
+                onRenameSubmit={onRenameSubmit}
+                onRenameCancel={onRenameCancel}
+                renaming={renaming}
               />
             ))}
           </div>

@@ -76,6 +76,7 @@ async function resolveComposeForLifecycle(
 /**
  * Run a compose lifecycle command (start/stop/restart) if a compose file exists.
  * Falls back to plain docker command for legacy containers.
+ * Uses --project-name to match Umbrel's container management pattern.
  */
 async function composeLifecycle(
   appId: string,
@@ -88,7 +89,7 @@ async function composeLifecycle(
       `[Docker] ${action}App: Using compose for "${appId}" at ${sanitizedPath}`,
     );
     await execAsync(
-      `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" ${action}`,
+      `cd "${resolved.appDir}" && docker compose --project-name "${appId}" -f "${sanitizedPath}" ${action}`,
     );
     return true;
   }
@@ -249,13 +250,13 @@ export async function updateApp(containerName: string): Promise<boolean> {
 
     emitProgress(0.2, "Pulling latest images");
     await execAsync(
-      `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" pull`,
+      `cd "${resolved.appDir}" && docker compose --project-name "${containerName}" -f "${sanitizedPath}" pull`,
       { env: envVars },
     );
 
     emitProgress(0.6, "Recreating containers");
     await execAsync(
-      `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" up -d`,
+      `cd "${resolved.appDir}" && docker compose --project-name "${containerName}" -f "${sanitizedPath}" up -d`,
       { env: envVars },
     );
 
@@ -274,7 +275,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
           resolved.composePath,
         );
         await execAsync(
-          `cd "${resolved.appDir}" && docker compose -f "${rollbackSanitized}" up -d`,
+          `cd "${resolved.appDir}" && docker compose --project-name "${containerName}" -f "${rollbackSanitized}" up -d`,
           { env: envVars },
         ).catch(() => null);
       }
@@ -313,7 +314,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
         // Use original
       }
       await execAsync(
-        `cd "${resolved.appDir}" && docker compose -f "${rollbackPath}" up -d`,
+        `cd "${resolved.appDir}" && docker compose --project-name "${containerName}" -f "${rollbackPath}" up -d`,
         { env: envVars },
       ).catch(() => null);
     }
@@ -355,7 +356,7 @@ export async function uninstallApp(appId: string): Promise<boolean> {
           `[Docker] uninstallApp: docker compose down for "${appId}" at ${sanitizedPath}`,
         );
         await execAsync(
-          `cd "${resolved.appDir}" && docker compose -f "${sanitizedPath}" down -v --remove-orphans`,
+          `cd "${resolved.appDir}" && docker compose --project-name "${appId}" -f "${sanitizedPath}" down -v --remove-orphans`,
         );
       } catch (composeErr) {
         console.warn(

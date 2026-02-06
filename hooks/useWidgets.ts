@@ -105,7 +105,7 @@ async function getInitialSelectedIds(): Promise<string[]> {
   // Prefer DB-backed settings
   try {
     const settings = await getSettings();
-    if (settings.selectedWidgets && settings.selectedWidgets.length > 0) {
+    if (Array.isArray(settings.selectedWidgets)) {
       return settings.selectedWidgets.slice(0, MAX_WIDGETS);
     }
   } catch (err) {
@@ -374,10 +374,14 @@ export function useWidgets(): UseWidgetsReturn {
     dataMap.set("homeio:thermals", { type: "thermals", data: thermalsData });
 
     // Weather widget (uses user's location)
-    const weatherData: WeatherWidgetData = {
-      location: userLocation?.city
+    const weatherLocationLabel = userLocation
+      ? userLocation.city
         ? `${userLocation.city}${userLocation.country ? `, ${userLocation.country}` : ""}`
-        : "Loading location...",
+        : `${userLocation.latitude.toFixed(2)}, ${userLocation.longitude.toFixed(2)}`
+      : "Loading location...";
+
+    const weatherData: WeatherWidgetData = {
+      location: weatherLocationLabel,
       latitude: String(userLocation?.latitude ?? 37.7749),
       longitude: String(userLocation?.longitude ?? -122.4194),
     };

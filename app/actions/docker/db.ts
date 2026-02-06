@@ -37,8 +37,20 @@ export async function recordInstalledApp(
   installConfig?: Record<string, unknown>,
   storeId?: string,
   container?: Record<string, unknown>,
+  version?: string,
 ): Promise<void> {
   const meta = await getAppMeta(appId, override);
+
+  // Get version from store if not provided
+  let appVersion = version;
+  if (!appVersion) {
+    const storeApp = await prisma.app.findFirst({
+      where: { appId },
+      orderBy: { createdAt: "desc" },
+      select: { version: true },
+    });
+    appVersion = storeApp?.version ?? undefined;
+  }
 
   await prisma.installedApp.upsert({
     where: { containerName },
@@ -53,6 +65,7 @@ export async function recordInstalledApp(
       ...(container !== undefined && {
         container: container as Prisma.InputJsonValue,
       }),
+      ...(appVersion !== undefined && { version: appVersion }),
     },
     create: {
       appId,
@@ -66,6 +79,7 @@ export async function recordInstalledApp(
       ...(container !== undefined && {
         container: container as Prisma.InputJsonValue,
       }),
+      ...(appVersion !== undefined && { version: appVersion }),
     },
   });
 }
@@ -127,4 +141,149 @@ export async function getAllAppMeta() {
   return prisma.app.findMany({
     include: { store: { select: { slug: true } } },
   });
+}
+
+/**
+ * Compare two semantic version strings
+ * Returns: 1 if a > b, -1 if a < b, 0 if equal
+ */
+function compareVersions(a: string, b: string): number {
+  const normalize = (v: string) =>
+    v
+      .replace(/^v/i, "")
+      .split(".")
+      .map((n) => parseInt(n, 10) || 0);
+
+  const partsA = normalize(a);
+  const partsB = normalize(b);
+  const len = Math.max(partsA.length, partsB.length);
+
+  for (let i = 0; i < len; i++) {
+    const diff = (partsA[i] ?? 0) - (partsB[i] ?? 0);
+    if (diff !== 0) return diff > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
+export interface AppUpdateInfo {
+  appId: string;
+  containerName: string;
+  name: string;
+  icon: string;
+  installedVersion: string | null;
+  availableVersion: string | null;
+  hasUpdate: boolean;
+  storeId: string | null;
+}
+
+/**
+ * Check for updates for all installed apps
+ */
+export async function checkAllAppUpdates(): Promise<AppUpdateInfo[]> {
+  const installedApps = await prisma.installedApp.findMany({
+    select: {
+      appId: true,
+      containerName: true,
+      name: true,
+      icon: true,
+      version: true,
+      storeId: true,
+    },
+  });
+
+  const results: AppUpdateInfo[] = [];
+
+  for (const installed of installedApps) {
+    // Find the store app to get the latest version
+    const storeApp = await prisma.app.findFirst({
+      where: {
+        appId: installed.appId,
+        ...(installed.storeId && { storeId: installed.storeId }),
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { version: true },
+    });
+
+    const installedVersion = installed.version;
+    const availableVersion = storeApp?.version ?? null;
+
+    let hasUpdate = false;
+    if (installedVersion && availableVersion) {
+      hasUpdate = compareVersions(availableVersion, installedVersion) > 0;
+    } else if (!installedVersion && availableVersion) {
+      // If no installed version recorded, assume update available
+      hasUpdate = true;
+    }
+
+    results.push({
+      appId: installed.appId,
+      containerName: installed.containerName,
+      name: installed.name,
+      icon: installed.icon,
+      installedVersion,
+      availableVersion,
+      hasUpdate,
+      storeId: installed.storeId,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Check for update for a specific installed app
+ */
+export async function checkAppUpdate(appId: string): Promise<AppUpdateInfo | null> {
+  const installed = await prisma.installedApp.findFirst({
+    where: { appId },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      appId: true,
+      containerName: true,
+      name: true,
+      icon: true,
+      version: true,
+      storeId: true,
+    },
+  });
+
+  if (!installed) return null;
+
+  const storeApp = await prisma.app.findFirst({
+    where: {
+      appId: installed.appId,
+      ...(installed.storeId && { storeId: installed.storeId }),
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { version: true },
+  });
+
+  const installedVersion = installed.version;
+  const availableVersion = storeApp?.version ?? null;
+
+  let hasUpdate = false;
+  if (installedVersion && availableVersion) {
+    hasUpdate = compareVersions(availableVersion, installedVersion) > 0;
+  } else if (!installedVersion && availableVersion) {
+    hasUpdate = true;
+  }
+
+  return {
+    appId: installed.appId,
+    containerName: installed.containerName,
+    name: installed.name,
+    icon: installed.icon,
+    installedVersion,
+    availableVersion,
+    hasUpdate,
+    storeId: installed.storeId,
+  };
+}
+
+/**
+ * Get apps with available updates
+ */
+export async function getAppsWithUpdates(): Promise<AppUpdateInfo[]> {
+  const allUpdates = await checkAllAppUpdates();
+  return allUpdates.filter((app) => app.hasUpdate);
 }

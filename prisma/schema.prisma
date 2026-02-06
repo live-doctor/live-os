@@ -101,6 +101,7 @@ model InstalledApp {
   store         Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
   container     Json?
   containers    Json?
+  version       String?  // Installed version for update detection
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

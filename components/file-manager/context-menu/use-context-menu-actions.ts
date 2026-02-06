@@ -25,6 +25,7 @@ interface UseContextMenuActionsProps {
   onOpenInEditor: (path: string) => void;
   onRename: (item: FileSystemItem) => void;
   onShareNetwork: (item: FileSystemItem) => void;
+  onConfirmTrash?: (item: FileSystemItem) => void;
   onClose: () => void;
 }
 
@@ -40,6 +41,7 @@ export function useContextMenuActions({
   onOpenInEditor,
   onRename,
   onShareNetwork,
+  onConfirmTrash,
   onClose,
 }: UseContextMenuActionsProps) {
   const handleAction = useCallback(
@@ -109,10 +111,14 @@ export function useContextMenuActions({
             onRefresh();
           } catch (error) {
             toast.error('Paste operation failed');
-                      }
+          }
           break;
 
         case 'trash':
+          if (onConfirmTrash) {
+            onConfirmTrash(item);
+            return;
+          }
           if (!confirm(`Move "${item.name}" to trash?`)) return;
           try {
             const result = await trashItem(item.path);
@@ -201,6 +207,7 @@ export function useContextMenuActions({
       onRefresh,
       onRename,
       onShareNetwork,
+      onConfirmTrash,
     ]
   );
 

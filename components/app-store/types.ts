@@ -91,4 +91,8 @@ export interface InstalledApp {
   containers?: string[]; // All container names in compose project
   installedAt: number; // Timestamp
   storeId?: string; // Store ID (foreign key to Store table)
+  // Version tracking for updates
+  version?: string; // Installed version
+  availableVersion?: string; // Latest version from store
+  hasUpdate?: boolean; // Whether update is available
 }

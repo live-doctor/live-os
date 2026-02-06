@@ -10,7 +10,7 @@ import type {
 } from "@/hooks/system-status-types";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { motion } from "framer-motion";
-import { Box } from "lucide-react";
+import { ArrowUp, Box } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -31,6 +31,9 @@ export function InstalledAppsGrid() {
     containerName: wsApp.containerName,
     containers: wsApp.containers,
     installedAt: wsApp.installedAt,
+    version: wsApp.version,
+    availableVersion: wsApp.availableVersion,
+    hasUpdate: wsApp.hasUpdate,
   }));
 
   // Update icons when apps change (and replace placeholder with real icon if it arrives later)
@@ -183,6 +186,18 @@ function AppCard({
                 title={app.status}
               />
             </div>
+
+            {/* Update Badge - Umbrel-style */}
+            {app.hasUpdate && (
+              <div className="absolute top-2 left-2">
+                <div
+                  className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 shadow-lg shadow-blue-500/40"
+                  title={`Update available: ${app.availableVersion}`}
+                >
+                  <ArrowUp className="w-3 h-3 text-white" />
+                </div>
+              </div>
+            )}
 
             {/* App Icon */}
             <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0">

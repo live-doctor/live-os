@@ -30,7 +30,6 @@ import {
   getContainerName,
   getContainerNameFromCompose,
   getInstalledAppDir,
-  guessComposeContainerName,
   INSTALLED_APPS_ROOT,
   preSeedDataFiles,
   sanitizeComposeFile,
@@ -167,16 +166,17 @@ export async function deployApp(
     emitProgress(0.35, "Pulling images");
     await streamComposePull(
       appDir,
+      appId,
       sanitizedPath,
       envVars,
       (progress, message) =>
         emitProgress(progress, message ?? "Pulling images"),
     );
 
-    // Start services
+    // Start services (--project-name ensures deterministic container naming like Umbrel)
     emitProgress(0.85, "Starting services");
     const { stdout, stderr } = await execAsync(
-      `cd "${appDir}" && docker compose -f "${sanitizedPath}" up -d`,
+      `cd "${appDir}" && docker compose --project-name "${appId}" -f "${sanitizedPath}" up -d`,
       { env: envVars },
     );
 
@@ -189,13 +189,12 @@ export async function deployApp(
 
     emitProgress(0.9, "Finalizing deployment");
 
-    // Detect container names
+    // Detect container names using project-name for reliable matching
     const detectedContainer =
-      (await detectComposeContainerName(appDir, sanitizedPath)) ||
-      guessComposeContainerName(resolvedComposePath) ||
+      (await detectComposeContainerName(appDir, sanitizedPath, appId)) ||
       containerName;
 
-    const allContainers = await detectAllComposeContainerNames(appDir);
+    const allContainers = await detectAllComposeContainerNames(appDir, appId);
 
     // Extract web UI port and network mode from compose (best-effort)
     const composeMeta = await extractComposeMeta(sanitizedPath);
@@ -492,12 +491,13 @@ async function resolveContainerMeta(
  */
 function streamComposePull(
   appDir: string,
+  appId: string,
   composePath: string,
   envVars: NodeJS.ProcessEnv,
   onProgress: (progress: number, message?: string) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const pull = spawn("docker", ["compose", "-f", composePath, "pull"], {
+    const pull = spawn("docker", ["compose", "--project-name", appId, "-f", composePath, "pull"], {
       cwd: appDir,
       env: envVars,
     });

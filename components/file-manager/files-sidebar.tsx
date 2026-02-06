@@ -4,7 +4,7 @@ import { type DefaultDirectory } from "@/app/actions/filesystem";
 import { FolderIcon } from "@/components/icons/files";
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Grid3x3, Home, Plus, Star, Trash2 } from "lucide-react";
+import { Grid3x3, Home, Plus, Star, Trash2 } from "lucide-react";
 
 interface FilesSidebarProps {
   homePath: string;
@@ -34,6 +34,10 @@ export function FilesSidebar({
   const isInTrash = currentPath === trashPath;
   const homeLabel = homePath.split("/").filter(Boolean).pop() || "Home";
   const favoritesSet = new Set(favorites);
+  const getFolderName = (path: string) => {
+    const parts = path.split("/").filter(Boolean);
+    return parts[parts.length - 1] || path;
+  };
   const baseLocations = shortcuts.map((shortcut) => ({
     ...shortcut,
     isFavorite: favoritesSet.has(shortcut.path),
@@ -46,12 +50,6 @@ export function FilesSidebar({
       isFavorite: true,
     }));
   const locations = [...baseLocations, ...extraFavorites];
-
-  // Get folder name from path
-  const getFolderName = (path: string) => {
-    const parts = path.split("/").filter(Boolean);
-    return parts[parts.length - 1] || path;
-  };
 
   return (
     <div className="w-60 bg-black/30 backdrop-blur-xl border-r border-white/10 flex flex-col">
@@ -89,7 +87,7 @@ export function FilesSidebar({
 
           <div className="pt-4 pb-2">
             <div className="text-xs text-white/50 px-3 -tracking-[0.01em]">
-              Locations
+              Favorites
             </div>
           </div>
 
@@ -105,7 +103,8 @@ export function FilesSidebar({
               <span className="text-sm -tracking-[0.01em]">
                 {shortcut.name === "AppData"
                   ? "App"
-                  : shortcut.name.charAt(0).toUpperCase() + shortcut.name.slice(1)}
+                  : shortcut.name.charAt(0).toUpperCase() +
+                    shortcut.name.slice(1)}
                 {shortcut.isFavorite && (
                   <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-[2px] text-[10px] uppercase tracking-[0.12em] text-amber-200 border border-amber-400/30">
                     <Star className="h-3 w-3" />

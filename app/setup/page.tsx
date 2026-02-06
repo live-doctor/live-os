@@ -2,16 +2,15 @@
 
 import { hasUsers, registerUser } from "@/app/actions/auth";
 import { updateSettings } from "@/app/actions/auth/settings";
-import { installInternalApp } from "@/app/actions/internal-apps";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OrbitLoader } from "@/components/auth/orbit-loader";
 import { PostSetup } from "@/components/auth/post-setup";
 import { RegisterStep } from "@/components/auth/register-step";
 import { PIN_LENGTH, VERSION } from "@/lib/config";
-import type { Step, TailscaleIntent, TailscaleStatus } from "@/types/setup";
+import type { Step } from "@/types/setup";
 import { CheckCircle2, Rocket, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -24,11 +23,7 @@ export default function SetupPage() {
   const [step, setStep] = useState<Step>("register");
   const [locationStatus, setLocationStatus] = useState("");
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [tailscaleIntent, setTailscaleIntent] =
-    useState<TailscaleIntent>("pending");
-  const [tailscaleStatus, setTailscaleStatus] =
-    useState<TailscaleStatus>("idle");
-  const [tailscaleError, setTailscaleError] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     hasUsers().then((exists) => {
@@ -66,15 +61,18 @@ export default function SetupPage() {
       setLoading(false);
     } else {
       setStep("next");
+      handleUseLocation();
       setLoading(false);
     }
   };
 
-  const handleUseLocation = () => {
+  const handleUseLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setLocationError("Geolocation not supported in this browser");
+      setLocating(false);
       return;
     }
+    setLocating(true);
     setLocationStatus("Requesting location…");
     setLocationError(null);
 
@@ -82,10 +80,36 @@ export default function SetupPage() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         setLocationStatus("Saving location…");
+
+        // Best-effort reverse geocode to include city/country in settings
+        let city: string | null = null;
+        let country: string | null = null;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            { headers: { "User-Agent": "Homeio Dashboard Setup" } },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            city =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.village ||
+              null;
+            country = data.address?.country_code
+              ? String(data.address.country_code).toUpperCase()
+              : null;
+          }
+        } catch {
+          // Reverse geocoding is optional; continue without it
+        }
+
         try {
           await updateSettings({
             userLatitude: latitude,
             userLongitude: longitude,
+            userCity: city,
+            userCountry: country,
           });
           setLocationStatus("Location saved for widgets and weather.");
         } catch (err) {
@@ -94,38 +118,32 @@ export default function SetupPage() {
           );
           setLocationStatus("");
         }
+        setLocating(false);
       },
       (err) => {
-        setLocationError(err.message || "Failed to get location");
+        let message = err.message || "Failed to get location";
+
+        if (err.code === err.PERMISSION_DENIED) {
+          message =
+            "Location permission denied. Click the lock icon in the address bar and allow location.";
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          message = "Location unavailable. Check that device location services are on.";
+        } else if (err.code === err.TIMEOUT) {
+          message = "Timed out waiting for location. Try again.";
+        }
+
+        if (message.toLowerCase().includes("secure origin")) {
+          message =
+            "Chrome blocks geolocation on non-HTTPS origins. Use https:// or http://localhost.";
+        }
+
+        setLocationError(message);
         setLocationStatus("");
+        setLocating(false);
       },
       { timeout: 10000, maximumAge: 600000 },
     );
-  };
-
-  const handleTailscaleChoice = async (
-    choice: Exclude<TailscaleIntent, "pending">,
-  ) => {
-    setTailscaleIntent(choice);
-    setTailscaleError(null);
-
-    if (choice === "auto") {
-      if (tailscaleStatus === "installing" || tailscaleStatus === "installed")
-        return;
-      setTailscaleStatus("installing");
-      const result = await installInternalApp("tailscale");
-      if (result.success) {
-        setTailscaleStatus("installed");
-      } else {
-        setTailscaleStatus("error");
-        setTailscaleError(result.error || "Failed to install Tailscale.");
-      }
-    } else {
-      if (tailscaleStatus !== "installed") {
-        setTailscaleStatus("idle");
-      }
-    }
-  };
+  }, []);
 
   const handleFinish = () => router.push("/login");
 
@@ -156,11 +174,8 @@ export default function SetupPage() {
         <PostSetup
           locationStatus={locationStatus}
           locationError={locationError}
-          tailscaleIntent={tailscaleIntent}
-          tailscaleStatus={tailscaleStatus}
-          tailscaleError={tailscaleError}
+          isLocating={locating}
           onUseLocation={handleUseLocation}
-          onTailscaleChoice={handleTailscaleChoice}
           version={VERSION}
           onFinish={handleFinish}
         />

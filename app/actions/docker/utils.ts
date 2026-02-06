@@ -75,15 +75,18 @@ export function guessComposeContainerName(composePath: string): string | null {
 }
 
 /**
- * Detect container name from running compose project
+ * Detect container name from running compose project.
+ * Uses --project-name for reliable matching (Umbrel pattern).
  */
 export async function detectComposeContainerName(
   appDir: string,
   composePath: string,
+  appId?: string,
 ): Promise<string | null> {
   try {
+    const projectFlag = appId ? `--project-name "${appId}" ` : "";
     const { stdout } = await execAsync(
-      `cd "${appDir}" && docker compose -f "${composePath}" ps --format "{{.Names}}"`,
+      `cd "${appDir}" && docker compose ${projectFlag}-f "${composePath}" ps --format "{{.Names}}"`,
     );
     const names = stdout
       .split("\n")
@@ -334,13 +337,16 @@ export function aggregateStatus(
 
 /**
  * Detect all container names from a compose project directory.
+ * Uses --project-name for reliable matching (Umbrel pattern).
  */
 export async function detectAllComposeContainerNames(
   appDir: string,
+  appId?: string,
 ): Promise<string[]> {
   try {
+    const projectFlag = appId ? `--project-name "${appId}" ` : "";
     const { stdout } = await execAsync(
-      `cd "${appDir}" && docker compose ps --format "{{.Names}}"`,
+      `cd "${appDir}" && docker compose ${projectFlag}ps --format "{{.Names}}"`,
     );
     return stdout
       .split("\n")

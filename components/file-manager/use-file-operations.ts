@@ -70,8 +70,7 @@ export function useFileOperations(
   );
 
   const handleRename = useCallback(
-    async (item: FileSystemItem) => {
-      const newName = prompt(`Rename "${item.name}" to:`, item.name);
+    async (item: FileSystemItem, newName: string) => {
       if (!newName || newName === item.name) return;
       const result = await renameItem(item.path, newName);
       if (result.success) {

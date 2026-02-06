@@ -67,4 +67,9 @@ export {
   recordInstalledApp,
   getRecordedContainerName,
   getInstallConfig,
+  checkAllAppUpdates,
+  checkAppUpdate,
+  getAppsWithUpdates,
 } from "./db";
+
+export type { AppUpdateInfo } from "./db";
