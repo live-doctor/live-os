@@ -99,7 +99,7 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
           className="h-[92vh] w-full"
           viewportClassName="homeio-scrollarea-fit umbrel-fade-scroller-y h-full w-full"
         >
-          <div className="flex min-w-0 flex-col gap-4 px-3 pb-6 pt-4 md:px-[28px] md:pt-7 xl:px-[40px]">
+          <div className="flex min-w-0 flex-col gap-4 overflow-hidden px-3 pb-6 pt-4 md:px-[28px] md:pt-7 xl:px-[40px]">
             <AppStoreHeader
               searchQuery={s.searchQuery}
               categories={s.categories}

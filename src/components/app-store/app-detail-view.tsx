@@ -103,7 +103,7 @@ export function AppDetailView({
         </Button>
 
         <ScrollArea className="h-[92vh] w-full" viewportClassName="homeio-scrollarea-fit h-full w-full">
-          <div className="flex flex-col gap-5 px-3 pb-8 pt-6 md:px-[40px] md:pt-12 xl:px-[70px]">
+          <div className="flex min-w-0 flex-col gap-5 px-3 pb-8 pt-6 md:px-[40px] md:pt-12 xl:px-[70px]">
             <div className="flex flex-col gap-8">
               <div className="space-y-5">
                 <button
@@ -159,7 +159,7 @@ export function AppDetailView({
               </div>
 
               {screenshotsList.length > 0 && (
-                <div className="scrollbar-hide -mx-3 flex gap-2 overflow-x-auto px-3 md:-mx-[40px] md:gap-5 md:px-[40px] xl:-mx-[70px] xl:px-[70px]">
+                <div className="scrollbar-hide flex gap-2 overflow-x-auto md:gap-5">
                   {screenshotsList.map((screenshot, index) => (
                     <a
                       key={`${screenshot}-${index}`}
