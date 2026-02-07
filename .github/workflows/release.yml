@@ -124,31 +124,40 @@ jobs:
           ARCH="${{ matrix.arch }}"
           TARBALL="homeio-${VERSION}-linux-${ARCH}.tar.gz"
 
+          INCLUDE_PATHS=(
+            ".next/"
+            "src/"
+            "node_modules/"
+            "prisma/"
+            "public/"
+            "external-apps/"
+            "installed-apps/"
+            "store/"
+            "server.ts"
+            "proxy.ts"
+            "package.json"
+            "next.config.ts"
+            "tsconfig.json"
+            "prisma.config.ts"
+            "postcss.config.mjs"
+            "components.json"
+            "recommend-list.json"
+            "scripts/install.sh"
+            "scripts/setup.sh"
+            "scripts/uninstall.sh"
+            "scripts/update.sh"
+          )
+
+          EXISTING_PATHS=()
+          for path in "${INCLUDE_PATHS[@]}"; do
+            if [ -e "$path" ]; then
+              EXISTING_PATHS+=("$path")
+            fi
+          done
+
           tar czf "${TARBALL}" \
             --exclude='.next/cache' \
-            .next/ \
-            app/ \
-            components/ \
-            hooks/ \
-            lib/ \
-            constants/ \
-            node_modules/ \
-            prisma/ \
-            public/ \
-            internal-apps/ \
-            server.ts \
-            proxy.ts \
-            package.json \
-            next.config.ts \
-            tsconfig.json \
-            prisma.config.ts \
-            postcss.config.mjs \
-            components.json \
-            recommend-list.json \
-            scripts/install.sh \
-            scripts/setup.sh \
-            scripts/uninstall.sh \
-            scripts/update.sh
+            "${EXISTING_PATHS[@]}"
 
           sha256sum "${TARBALL}" > "${TARBALL}.sha256"
 

@@ -18,6 +18,38 @@ print_status() { echo -e "${GREEN}[+]${NC} $1"; }
 print_error() { echo -e "${RED}[!]${NC} $1"; }
 print_info() { echo -e "${BLUE}[i]${NC} $1"; }
 
+UPDATE_STATE_FILE="/var/lib/homeio/update-state.json"
+UPDATE_MODE=""
+UPDATE_CURRENT_VERSION=""
+UPDATE_TARGET_VERSION=""
+
+json_escape() {
+    echo "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+write_update_state() {
+    local phase="$1"
+    local status="$2"
+    local message="${3:-}"
+    local timestamp
+    local escaped_message
+
+    timestamp="$(date -Iseconds)"
+    escaped_message="$(json_escape "$message")"
+    mkdir -p "$(dirname "$UPDATE_STATE_FILE")"
+    cat > "$UPDATE_STATE_FILE" <<EOF
+{
+  "mode": "$(json_escape "$UPDATE_MODE")",
+  "phase": "$(json_escape "$phase")",
+  "status": "$(json_escape "$status")",
+  "currentVersion": "$(json_escape "$UPDATE_CURRENT_VERSION")",
+  "targetVersion": "$(json_escape "$UPDATE_TARGET_VERSION")",
+  "message": "$escaped_message",
+  "timestamp": "$timestamp"
+}
+EOF
+}
+
 # ─── Parse arguments ─────────────────────────────────────────────────────────
 
 FROM_SOURCE=0
@@ -297,6 +329,70 @@ ensure_bluez() {
     fi
 }
 
+get_total_memory_mb() {
+    awk '/MemTotal:/ { print int($2 / 1024) }' /proc/meminfo 2>/dev/null || echo 0
+}
+
+ensure_zram_and_vm_profile() {
+    print_status "Ensuring zram + VM tuning profile..."
+
+    local mem_mb zram_percent swappiness dirty_ratio dirty_background_ratio vfs_cache_pressure
+    mem_mb="$(get_total_memory_mb)"
+    zram_percent=50
+    swappiness=100
+    dirty_background_ratio=5
+    dirty_ratio=20
+    vfs_cache_pressure=100
+
+    if [ "$mem_mb" -le 2048 ]; then
+        zram_percent=100
+        swappiness=180
+        dirty_background_ratio=3
+        dirty_ratio=10
+        vfs_cache_pressure=200
+    elif [ "$mem_mb" -le 4096 ]; then
+        zram_percent=75
+        swappiness=140
+        dirty_background_ratio=4
+        dirty_ratio=15
+        vfs_cache_pressure=150
+    fi
+
+    if [ -x "$(command -v apt-get)" ]; then
+        apt-get update
+        apt-get install -y zram-tools
+        cat > /etc/default/zramswap <<EOF
+ALGO=zstd
+PERCENT=${zram_percent}
+PRIORITY=100
+EOF
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl enable zramswap 2>/dev/null || true
+            systemctl restart zramswap 2>/dev/null || true
+        fi
+    elif [ -d /etc/systemd ]; then
+        cat > /etc/systemd/zram-generator.conf <<'EOF'
+[zram0]
+zram-size = ram / 2
+compression-algorithm = zstd
+swap-priority = 100
+EOF
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl daemon-reload 2>/dev/null || true
+            systemctl restart systemd-zram-setup@zram0.service 2>/dev/null || true
+        fi
+    fi
+
+    cat > /etc/sysctl.d/99-homeio-vm.conf <<EOF
+vm.swappiness=${swappiness}
+vm.dirty_background_ratio=${dirty_background_ratio}
+vm.dirty_ratio=${dirty_ratio}
+vm.vfs_cache_pressure=${vfs_cache_pressure}
+vm.page-cluster=0
+EOF
+    sysctl --system >/dev/null 2>&1 || true
+}
+
 ensure_migrations_ready() {
     print_status "Checking Prisma migration status..."
     if ! npx prisma migrate status --schema=prisma/schema.prisma; then
@@ -339,17 +435,21 @@ else
 fi
 
 print_info "Current installed version: $LOCAL_VERSION"
+UPDATE_CURRENT_VERSION="$LOCAL_VERSION"
 
 # ─── Artifact-based update (default) ─────────────────────────────────────────
 
 update_from_artifact() {
-    local arch
-    arch="$(detect_architecture)"
+    local arch latest_tag latest_version tarball base_url dest
+    local backup_dir rollback_dir
 
-    local latest_tag
+    arch="$(detect_architecture)"
     latest_tag="$(get_latest_release_tag)"
-    local latest_version
     latest_version="$(strip_v "$latest_tag")"
+
+    UPDATE_MODE="artifact"
+    UPDATE_TARGET_VERSION="$latest_version"
+    write_update_state "prepare" "running" "Preparing artifact update"
 
     print_info "Latest available version: $latest_version"
 
@@ -358,149 +458,172 @@ update_from_artifact() {
     ensure_samba
     ensure_firewall
     ensure_fail2ban
+    ensure_zram_and_vm_profile
 
     if [ "$LOCAL_VERSION" = "$latest_version" ]; then
+        write_update_state "complete" "skipped" "Already on latest version"
         print_status "Homeio is already up to date!"
-        exit 0
+        return 0
     fi
 
     print_status "Updating Homeio from $LOCAL_VERSION to $latest_version..."
+    write_update_state "download" "running" "Downloading release artifact"
 
-    local tarball="homeio-${latest_tag}-linux-${arch}.tar.gz"
-    local base_url="https://github.com/${GITHUB_REPO}/releases/download/${latest_tag}"
-    local dest="/tmp/${tarball}"
+    tarball="homeio-${latest_tag}-linux-${arch}.tar.gz"
+    base_url="https://github.com/${GITHUB_REPO}/releases/download/${latest_tag}"
+    dest="/tmp/${tarball}"
+    backup_dir="/tmp/homeio-backup-$$"
+    rollback_dir="/tmp/homeio-rollback-$$"
 
-    # Download tarball + checksum
-    print_status "Downloading ${tarball}..."
+    rollback_artifact_update() {
+        if [ -d "$rollback_dir/current" ]; then
+            print_info "Rolling back to previous Homeio installation..."
+            rm -rf "$INSTALL_DIR"
+            mv "$rollback_dir/current" "$INSTALL_DIR"
+            systemctl start "$SERVICE_NAME" 2>/dev/null || true
+            cd "$INSTALL_DIR"
+        fi
+    }
+
+    on_artifact_error() {
+        local exit_code="$?"
+        print_error "Update failed; attempting rollback..."
+        write_update_state "rollback" "running" "Update failed, restoring previous version"
+        rollback_artifact_update
+        write_update_state "rollback" "done" "Rollback completed"
+        exit "$exit_code"
+    }
+
+    trap on_artifact_error ERR
+
     if command -v curl >/dev/null 2>&1; then
         curl -fSL -o "$dest" "${base_url}/${tarball}"
         curl -fSL -o "${dest}.sha256" "${base_url}/${tarball}.sha256"
     elif command -v wget >/dev/null 2>&1; then
         wget -q -O "$dest" "${base_url}/${tarball}"
         wget -q -O "${dest}.sha256" "${base_url}/${tarball}.sha256"
+    else
+        print_error "curl or wget is required."
+        exit 1
     fi
 
     print_status "Verifying checksum..."
     (cd /tmp && sha256sum -c "${tarball}.sha256")
-    if [ $? -ne 0 ]; then
-        print_error "Checksum verification failed!"
-        rm -f "$dest" "${dest}.sha256"
-        exit 1
-    fi
     print_status "Checksum OK"
 
-    # Backup .env and database
-    local backup_dir="/tmp/homeio-backup-$$"
-    mkdir -p "$backup_dir"
+    write_update_state "backup" "running" "Creating rollback snapshot"
+    mkdir -p "$backup_dir" "$rollback_dir"
+    cp -a "$INSTALL_DIR" "$rollback_dir/current"
 
     if [ -f "$INSTALL_DIR/.env" ]; then
-        print_info "Backing up .env..."
         cp "$INSTALL_DIR/.env" "$backup_dir/.env"
     fi
 
     if [ -f "$INSTALL_DIR/prisma/homeio.db" ]; then
-        print_info "Backing up database..."
         cp "$INSTALL_DIR/prisma/homeio.db" "$backup_dir/homeio.db"
     fi
 
-    # Preserve external-apps if present
     if [ -d "$INSTALL_DIR/external-apps" ]; then
-        print_info "Backing up external-apps..."
         cp -r "$INSTALL_DIR/external-apps" "$backup_dir/external-apps"
     fi
 
-    # Stop service
+    write_update_state "apply" "running" "Applying update payload"
     print_status "Stopping Homeio service..."
     systemctl stop "$SERVICE_NAME" 2>/dev/null || true
 
-    # Remove old installation and extract new
-    print_status "Extracting new version..."
     rm -rf "$INSTALL_DIR"
     mkdir -p "$INSTALL_DIR"
     tar xzf "$dest" -C "$INSTALL_DIR"
-
-    # Cleanup download
     rm -f "$dest" "${dest}.sha256"
 
-    # Restore backups
     if [ -f "$backup_dir/.env" ]; then
         cp "$backup_dir/.env" "$INSTALL_DIR/.env"
-        print_status "Restored .env configuration"
     fi
 
     if [ -f "$backup_dir/homeio.db" ]; then
         cp "$backup_dir/homeio.db" "$INSTALL_DIR/prisma/homeio.db"
-        print_status "Restored database"
     fi
 
     if [ -d "$backup_dir/external-apps" ]; then
         cp -r "$backup_dir/external-apps" "$INSTALL_DIR/external-apps"
-        print_status "Restored external-apps"
     fi
-
-    rm -rf "$backup_dir"
 
     cd "$INSTALL_DIR"
 
-    # Run migrations
-    print_status "Running database migrations..."
-    if ! npx prisma migrate deploy --schema=prisma/schema.prisma; then
-        print_error "Prisma migrations failed. Database may be out of sync."
-        exit 1
-    fi
+    write_update_state "migrate" "running" "Running database migrations"
+    npx prisma migrate deploy --schema=prisma/schema.prisma
 
-    # Restart service
-    print_status "Restarting Homeio service..."
+    write_update_state "restart" "running" "Starting Homeio service"
     systemctl start "$SERVICE_NAME"
-
-    # Wait for service to start
     sleep 3
+    systemctl is-active --quiet "$SERVICE_NAME"
 
-    if systemctl is-active --quiet "$SERVICE_NAME"; then
-        print_status "Update complete! Homeio is now at version $latest_version"
-        print_status "Service is running successfully"
-        echo ""
-        print_info "View logs with: sudo journalctl -u $SERVICE_NAME -f"
-        print_info "Check status with: sudo systemctl status $SERVICE_NAME"
-    else
-        print_error "Service failed to start after update"
-        print_error "Check logs with: sudo journalctl -u $SERVICE_NAME -n 50"
-        exit 1
-    fi
+    trap - ERR
+    rm -rf "$backup_dir" "$rollback_dir"
+
+    write_update_state "complete" "done" "Update completed successfully"
+    print_status "Update complete! Homeio is now at version $latest_version"
+    print_status "Service is running successfully"
+    echo ""
+    print_info "View logs with: sudo journalctl -u $SERVICE_NAME -f"
+    print_info "Check status with: sudo systemctl status $SERVICE_NAME"
 }
 
 # ─── Source-based update (legacy / --from-source) ────────────────────────────
 
 update_from_source() {
-    # Fetch latest changes from git
+    local remote_branch remote_version previous_commit
+
+    UPDATE_MODE="source"
+    write_update_state "prepare" "running" "Preparing source update"
+
     git fetch origin
+    remote_branch="$(git rev-parse --abbrev-ref HEAD)"
+    remote_version="$(git show origin/$remote_branch:package.json | get_version_from_stdin)"
+    UPDATE_TARGET_VERSION="$remote_version"
 
-    # Get remote version from branch (assuming develop by default)
-    REMOTE_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-    REMOTE_VERSION=$(git show origin/$REMOTE_BRANCH:package.json | get_version_from_stdin)
+    print_info "Latest available version: $remote_version"
 
-    print_info "Latest available version: $REMOTE_VERSION"
-
-    if [ "$LOCAL_VERSION" == "$REMOTE_VERSION" ]; then
+    if [ "$LOCAL_VERSION" == "$remote_version" ]; then
+        write_update_state "complete" "skipped" "Already on latest version"
         print_status "Homeio is already up to date!"
-        exit 0
+        return 0
     fi
 
-    print_status "Updating Homeio from version $LOCAL_VERSION to $REMOTE_VERSION..."
+    print_status "Updating Homeio from version $LOCAL_VERSION to $remote_version..."
+    previous_commit="$(git rev-parse HEAD)"
 
-    # Backup .env file once before all operations
+    rollback_source_update() {
+        print_info "Rolling back source update..."
+        git reset --hard "$previous_commit"
+        if [ -f "$INSTALL_DIR/.env.backup" ]; then
+            cp "$INSTALL_DIR/.env.backup" "$INSTALL_DIR/.env"
+            rm -f "$INSTALL_DIR/.env.backup"
+        fi
+        systemctl restart "$SERVICE_NAME" 2>/dev/null || true
+    }
+
+    on_source_error() {
+        local exit_code="$?"
+        print_error "Source update failed; attempting rollback..."
+        write_update_state "rollback" "running" "Source update failed, restoring previous commit"
+        rollback_source_update
+        write_update_state "rollback" "done" "Rollback completed"
+        exit "$exit_code"
+    }
+
+    trap on_source_error ERR
+
+    write_update_state "backup" "running" "Backing up runtime configuration"
     if [ -f "$INSTALL_DIR/.env" ]; then
-        print_info "Backing up .env file..."
         cp "$INSTALL_DIR/.env" "$INSTALL_DIR/.env.backup"
     fi
 
-    # Pull latest changes
-    git fetch origin "$REMOTE_BRANCH"
-    git reset --hard origin/"$REMOTE_BRANCH"
+    write_update_state "apply" "running" "Applying git update"
+    git fetch origin "$remote_branch"
+    git reset --hard origin/"$remote_branch"
 
-    # Install dependencies (skip Husky setup scripts)
-    # Note: TypeScript is needed for build even in production
-    print_status "Installing dependencies..."
+    write_update_state "dependencies" "running" "Installing dependencies and platform prerequisites"
     npm ci --include=dev --ignore-scripts
 
     ensure_archive_tools
@@ -509,75 +632,46 @@ update_from_source() {
     ensure_firewall
     ensure_fail2ban
     ensure_bluez
+    ensure_zram_and_vm_profile
     ensure_migrations_ready
 
-    # Rebuild native modules
-    print_status "Rebuilding native modules..."
-
-    # Rebuild node-pty (for terminal feature)
+    write_update_state "build" "running" "Rebuilding native modules"
     if [ ! -f "node_modules/node-pty/build/Release/pty.node" ]; then
         print_status "Building node-pty..."
         npm rebuild node-pty 2>&1 | tee /tmp/node-pty-build.log || {
             print_error "Warning: node-pty build failed. Terminal feature will not be available."
             print_info "The application will still work without terminal functionality"
         }
-    else
-        print_status "node-pty already built"
     fi
 
-    # Rebuild better-sqlite3 (CRITICAL for database)
-    print_status "Building better-sqlite3 for database..."
-    npm rebuild better-sqlite3 2>&1 | tee /tmp/better-sqlite3-build.log || {
-        print_error "Error: better-sqlite3 build failed. Database will not work."
-        print_error "Check /tmp/better-sqlite3-build.log for details"
-        exit 1
-    }
+    npm rebuild better-sqlite3 2>&1 | tee /tmp/better-sqlite3-build.log
     print_status "better-sqlite3 built successfully"
 
-    # Run database migrations
-    print_status "Running database migrations..."
-    if ! npx prisma migrate deploy --schema=prisma/schema.prisma; then
-        print_error "Prisma migrations failed. Database may be out of sync."
-        exit 1
-    fi
-
-    # Regenerate Prisma client to match installed runtime
-    print_status "Generating Prisma client..."
+    write_update_state "migrate" "running" "Running database migrations"
+    npx prisma migrate deploy --schema=prisma/schema.prisma
     npx prisma generate --schema=prisma/schema.prisma
 
-    # Build project
-    print_status "Building project..."
+    write_update_state "build" "running" "Building production bundle"
     npm run build
 
-    # Restore .env configuration from backup
     if [ -f "$INSTALL_DIR/.env.backup" ]; then
         cp "$INSTALL_DIR/.env.backup" "$INSTALL_DIR/.env"
-        print_status "Restored .env configuration"
-        # Clean up backup file
         rm -f "$INSTALL_DIR/.env.backup"
-    else
-        print_info "No .env backup found - using default or git version"
+        print_status "Restored .env configuration"
     fi
 
-    # Restart service
-    print_status "Restarting Homeio service..."
+    write_update_state "restart" "running" "Restarting service"
     systemctl restart "$SERVICE_NAME"
-
-    # Wait for service to start
     sleep 3
+    systemctl is-active --quiet "$SERVICE_NAME"
 
-    # Check service status
-    if systemctl is-active --quiet "$SERVICE_NAME"; then
-        print_status "Update complete! Homeio is now at version $REMOTE_VERSION"
-        print_status "Service is running successfully"
-        echo ""
-        print_info "View logs with: sudo journalctl -u $SERVICE_NAME -f"
-        print_info "Check status with: sudo systemctl status $SERVICE_NAME"
-    else
-        print_error "Service failed to start after update"
-        print_error "Check logs with: sudo journalctl -u $SERVICE_NAME -n 50"
-        exit 1
-    fi
+    trap - ERR
+    write_update_state "complete" "done" "Update completed successfully"
+    print_status "Update complete! Homeio is now at version $remote_version"
+    print_status "Service is running successfully"
+    echo ""
+    print_info "View logs with: sudo journalctl -u $SERVICE_NAME -f"
+    print_info "Check status with: sudo systemctl status $SERVICE_NAME"
 }
 
 # ─── Main ────────────────────────────────────────────────────────────────────

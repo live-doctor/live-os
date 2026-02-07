@@ -2,6 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  HOMEIO_DIALOG_CLOSE_BUTTON_CLASS,
+  HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+  HOMEIO_DIALOG_SHELL_CLASS,
+  HOMEIO_DIALOG_SUBTITLE_CLASS,
+  HOMEIO_DIALOG_TITLE_CLASS,
+} from "@/components/ui/dialog-chrome";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -88,12 +95,12 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       // Initialize xterm.js
       term = new Terminal({
         cursorBlink: true,
-        fontSize: 13,
+        fontSize: 12.5,
         fontFamily:
           'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        fontWeight: 500,
+        fontWeight: 400,
         allowTransparency: true,
-        letterSpacing: 0.2,
+        letterSpacing: 0.1,
         theme: {
           background: "#00000000",
           foreground: "#E6EAF2",
@@ -256,7 +263,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="min-w-[220px] rounded-[12px] border-white/8 bg-[rgba(35,40,54,0.88)] text-white backdrop-blur-xl"
+        className="min-w-[220px] rounded-[12px] border border-white/10 bg-[rgba(35,40,54,0.88)] text-white backdrop-blur-xl"
       >
         <DropdownMenuLabel className="text-white/80">Connect to</DropdownMenuLabel>
         <DropdownMenuItem
@@ -303,7 +310,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[92vh] max-w-[95vw] flex flex-col gap-0 overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl scrollbar-hide transition-all sm:max-w-[1280px]"
+        className={`${HOMEIO_DIALOG_SHELL_CLASS} flex flex-col gap-0 scrollbar-hide transition-all`}
         aria-describedby="terminal-description"
       >
         <DialogTitle className="sr-only">Terminal</DialogTitle>
@@ -314,22 +321,29 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
           variant="ghost"
           size="icon"
           onClick={() => onOpenChange(false)}
-          className="absolute right-5 top-5 z-20 h-8 w-8 cursor-pointer rounded-full border border-white/15 bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
+          className={HOMEIO_DIALOG_CLOSE_BUTTON_CLASS}
         >
           <X className="h-4 w-4" />
         </Button>
-        <div className="flex min-w-0 items-start pl-3 pr-14 pt-4 md:pl-[28px] md:pr-[84px] md:pt-7 xl:pl-[40px] xl:pr-[96px]">
+        <div
+          className={`flex min-w-0 items-start pt-4 pr-14 md:pt-7 md:pr-[84px] xl:pr-[96px] ${HOMEIO_DIALOG_CONTENT_GUTTER_CLASS}`}
+        >
           <div className="flex min-w-0 flex-col gap-0.5 px-1">
-            <h2 className="text-[20px] font-bold leading-none tracking-[-0.03em] text-white/80 md:text-[32px]">
+            <h2 className={HOMEIO_DIALOG_TITLE_CLASS}>
               Terminal
             </h2>
+            <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
+              Interactive shell for host and running containers.
+            </p>
           </div>
         </div>
         {/* Terminal Container */}
-        <div className="flex min-h-0 flex-1 px-3 pb-3 md:px-[28px] md:pb-5 xl:px-[40px]">
+        <div
+          className={`flex min-h-0 flex-1 pb-3 md:pb-5 ${HOMEIO_DIALOG_CONTENT_GUTTER_CLASS}`}
+        >
           <div
             ref={terminalRef}
-            className="w-full min-h-0 flex-1 rounded-[14px] border border-white/15 bg-[linear-gradient(160deg,rgba(15,20,36,0.92),rgba(10,14,28,0.9))] p-3 backdrop-blur-xl scrollbar-hide terminal-scrollbar-hide md:p-4"
+            className="w-full min-h-0 flex-1 rounded-[14px] border border-white/10 bg-[linear-gradient(160deg,rgba(13,17,31,0.9),rgba(9,13,25,0.88))] p-3 backdrop-blur-xl scrollbar-hide terminal-scrollbar-hide md:p-4"
             style={{ overflow: "hidden" }}
           />
         </div>
@@ -337,7 +351,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
           {targetSelector}
         </div>
         {statusMessage && (
-          <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[min(420px,calc(100%-24px))] rounded-md border border-amber-700/40 bg-amber-950/80 px-3 py-2 text-xs text-amber-200 shadow-lg backdrop-blur-md md:bottom-5 md:left-[28px] xl:left-[40px]">
+          <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[min(420px,calc(100%-24px))] rounded-[10px] border border-amber-600/35 bg-amber-950/70 px-3 py-2 text-xs text-amber-100 shadow-lg backdrop-blur-md md:bottom-5 md:left-[28px] xl:left-[40px]">
             {statusMessage}
           </div>
         )}

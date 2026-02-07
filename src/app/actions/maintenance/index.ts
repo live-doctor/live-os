@@ -9,5 +9,10 @@ export {
 } from "./troubleshoot";
 
 // Updates
-export { checkForUpdates, type UpdateStatus } from "./update";
-
+export {
+  checkForUpdates,
+  clearUpdateRuntimeState,
+  getUpdateRuntimeState,
+  type UpdateRuntimeState,
+  type UpdateStatus,
+} from "./update";

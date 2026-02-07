@@ -38,6 +38,12 @@ import { SystemDetailsDialog } from "./system-details-dialog";
 import { TroubleshootDialog } from "./troubleshoot/troubleshoot-dialog";
 import { useSettingsDialogData } from "./use-settings-dialog-data";
 import { WifiDialog } from "./wifi-dialog";
+import {
+  HOMEIO_DIALOG_CLOSE_BUTTON_CLASS,
+  HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+  HOMEIO_DIALOG_SHELL_CLASS,
+  HOMEIO_DIALOG_TITLE_CLASS,
+} from "@/components/ui/dialog-chrome";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -59,7 +65,7 @@ export function SettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[92vh] max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl sm:max-w-[1280px]"
+        className={HOMEIO_DIALOG_SHELL_CLASS}
         aria-describedby="settings-description"
       >
         <DialogTitle className="sr-only text-4xl font-semibold text-white drop-shadow">
@@ -72,7 +78,7 @@ export function SettingsDialog({
           variant="ghost"
           size="icon"
           onClick={handleClose}
-          className="absolute right-5 top-5 z-20 h-8 w-8 cursor-pointer rounded-full border border-white/15 bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
+          className={HOMEIO_DIALOG_CLOSE_BUTTON_CLASS}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -81,9 +87,11 @@ export function SettingsDialog({
           className="h-[92vh] w-full"
           viewportClassName="umbrel-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0"
         >
-          <div className="flex flex-col gap-4 px-3 pt-4 md:px-[28px] md:pt-7 xl:px-[40px]">
+          <div
+            className={`flex flex-col gap-4 pt-4 md:pt-7 ${HOMEIO_DIALOG_CONTENT_GUTTER_CLASS}`}
+          >
             <div className="flex flex-col gap-0.5 px-1">
-              <h2 className="text-[20px] font-bold leading-none tracking-[-0.03em] text-white/80 md:text-[32px]">
+              <h2 className={HOMEIO_DIALOG_TITLE_CLASS}>
                 Settings
               </h2>
             </div>

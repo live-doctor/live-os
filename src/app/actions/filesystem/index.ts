@@ -17,6 +17,5 @@ export {
 export {
     addNetworkShare,
     connectNetworkShare,
-    disconnectNetworkShare, discoverSharesOnServer, discoverSmbHosts, getServerInfo, isHOMEIODevice, listNetworkShares, reconnectDisconnectedShares, removeNetworkShare, type DiscoveredHost, type NetworkShare
+    disconnectNetworkShare, discoverSharesOnServer, discoverSmbHosts, getServerInfo, isHOMEIODevice, listNetworkShares, reconnectDisconnectedShares, removeNetworkShare, rotateNetworkShareSecrets, type DiscoveredHost, type NetworkShare
 } from "./network-storage";
-

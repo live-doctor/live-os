@@ -2,6 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  HOMEIO_DIALOG_CLOSE_BUTTON_CLASS,
+  HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+  HOMEIO_DIALOG_SHELL_CLASS,
+  HOMEIO_DIALOG_SUBTITLE_CLASS,
+  HOMEIO_DIALOG_TITLE_CLASS,
+} from "@/components/ui/dialog-chrome";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -80,7 +87,7 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[92vh] max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl sm:max-w-[1280px]"
+        className={HOMEIO_DIALOG_SHELL_CLASS}
       >
         <DialogTitle className="sr-only">App Store</DialogTitle>
         <DialogDescription className="sr-only">
@@ -90,7 +97,7 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
           variant="ghost"
           size="icon"
           onClick={handleClose}
-          className="absolute right-5 top-5 z-20 h-8 w-8 cursor-pointer rounded-full border border-white/15 bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
+          className={HOMEIO_DIALOG_CLOSE_BUTTON_CLASS}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -99,7 +106,9 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
           className="h-[92vh] w-full min-w-0"
           viewportClassName="homeio-scrollarea-fit umbrel-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0 [&>div]:!max-w-full [&>div]:!overflow-x-hidden"
         >
-          <div className="flex min-w-0 max-w-full flex-col gap-4 overflow-hidden px-3 pb-6 pt-4 md:px-[28px] md:pt-7 xl:px-[40px]">
+          <div
+            className={`flex min-w-0 max-w-full flex-col gap-4 overflow-hidden pb-6 pt-4 md:pt-7 ${HOMEIO_DIALOG_CONTENT_GUTTER_CLASS}`}
+          >
             <AppStoreHeader
               searchQuery={s.searchQuery}
               categories={s.categories}
@@ -118,23 +127,23 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
             <div className="min-w-0 space-y-8">
               {!s.loading && !s.error && (
                 <div className="space-y-1 px-2.5">
-                  <h3 className="text-[18px] font-bold leading-tight tracking-[-0.03em] md:text-[32px]">
+                  <h3 className={HOMEIO_DIALOG_TITLE_CLASS}>
                     {s.isDiscoverView
                       ? "Discover"
                       : s.categoryLabel(s.selectedCategory)}
                   </h3>
                   {s.isDiscoverView ? (
-                    <p className="text-[13px] text-white/55">
+                    <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
                       Curated highlights, popular picks, and the freshest
                       arrivals.
                     </p>
                   ) : s.searchQuery ? (
-                    <p className="text-[13px] text-white/55">
+                    <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
                       {s.filteredApps.length} results for &quot;{s.searchQuery}
                       &quot;
                     </p>
                   ) : s.selectedCategory === "all" ? (
-                    <p className="text-[13px] text-white/55">
+                    <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
                       {s.apps.length} total apps available
                     </p>
                   ) : null}

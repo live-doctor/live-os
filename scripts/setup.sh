@@ -315,15 +315,103 @@ install_bluez() {
   fi
 }
 
+get_total_memory_mb() {
+  awk '/MemTotal:/ { print int($2 / 1024) }' /proc/meminfo 2>/dev/null || echo 0
+}
+
+install_zram_swap() {
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install and configure zram swap"; return; fi
+
+  local mem_mb zram_percent
+  mem_mb="$(get_total_memory_mb)"
+  zram_percent=50
+
+  if [ "$mem_mb" -le 2048 ]; then
+    zram_percent=100
+  elif [ "$mem_mb" -le 4096 ]; then
+    zram_percent=75
+  fi
+
+  if [ -x "$(command -v apt-get)" ]; then
+    apt-get update && apt-get install -y zram-tools
+    cat > /etc/default/zramswap <<EOF
+ALGO=zstd
+PERCENT=${zram_percent}
+PRIORITY=100
+EOF
+    command -v systemctl >/dev/null 2>&1 && {
+      systemctl enable zramswap 2>/dev/null || true
+      systemctl restart zramswap 2>/dev/null || true
+    }
+    print_status "zram configured (PERCENT=${zram_percent}, RAM=${mem_mb}MB)"
+    return
+  fi
+
+  # Best-effort fallback for non-apt systems that support zram-generator
+  if [ -x "$(command -v dnf)" ]; then
+    dnf install -y zram-generator-defaults 2>/dev/null || true
+  elif [ -x "$(command -v yum)" ]; then
+    yum install -y zram-generator-defaults 2>/dev/null || true
+  fi
+
+  if [ -d /etc/systemd ]; then
+    cat > /etc/systemd/zram-generator.conf <<'EOF'
+[zram0]
+zram-size = ram / 2
+compression-algorithm = zstd
+swap-priority = 100
+EOF
+    command -v systemctl >/dev/null 2>&1 && {
+      systemctl daemon-reload 2>/dev/null || true
+      systemctl restart systemd-zram-setup@zram0.service 2>/dev/null || true
+    }
+    print_status "zram-generator profile written"
+  else
+    print_info "Skipping zram setup: unsupported distribution"
+  fi
+}
+
 apply_sysctl_tuning() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Apply sysctl tuning"; return; fi
   local conf="/etc/sysctl.d/99-homeio-tuning.conf"
+  local vm_conf="/etc/sysctl.d/99-homeio-vm.conf"
+  local mem_mb swappiness dirty_ratio dirty_background_ratio vfs_cache_pressure
+
+  mem_mb="$(get_total_memory_mb)"
+  swappiness=100
+  dirty_background_ratio=5
+  dirty_ratio=20
+  vfs_cache_pressure=100
+
+  # Prefer responsiveness on low-memory systems (e.g. Raspberry Pi).
+  if [ "$mem_mb" -le 2048 ]; then
+    swappiness=180
+    dirty_background_ratio=3
+    dirty_ratio=10
+    vfs_cache_pressure=200
+  elif [ "$mem_mb" -le 4096 ]; then
+    swappiness=140
+    dirty_background_ratio=4
+    dirty_ratio=15
+    vfs_cache_pressure=150
+  fi
+
   cat > "$conf" <<'EOF'
 fs.inotify.max_user_watches=524288
 fs.inotify.max_user_instances=512
 net.core.somaxconn=65535
 EOF
+
+  cat > "$vm_conf" <<EOF
+vm.swappiness=${swappiness}
+vm.dirty_background_ratio=${dirty_background_ratio}
+vm.dirty_ratio=${dirty_ratio}
+vm.vfs_cache_pressure=${vfs_cache_pressure}
+vm.page-cluster=0
+EOF
+
   sysctl --system >/dev/null 2>&1 || true
+  print_status "VM profile applied (RAM=${mem_mb}MB, swappiness=${swappiness})"
 }
 
 limit_journald() {
@@ -418,6 +506,7 @@ install_avahi
 install_nmcli
 ensure_nm_manages_wifi
 install_bluez
+install_zram_swap
 install_arp_scan
 install_tlp
 disable_sleep_targets

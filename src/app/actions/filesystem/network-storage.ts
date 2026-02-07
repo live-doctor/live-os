@@ -3,6 +3,13 @@
 
 import { execFileAsync } from "@/lib/exec";
 import { writeJsonFile } from "@/lib/json-store";
+import {
+  decryptSecret,
+  encryptSecret,
+  getOrCreateSecretKey,
+  isEncryptedValue,
+  writeSecretKey,
+} from "@/lib/secret-crypto";
 import crypto from "crypto";
 import dns from "dns/promises";
 import fs from "fs/promises";
@@ -12,22 +19,25 @@ import path from "path";
 import { logAction } from "../maintenance/logger";
 import { getHomeRoot } from "./filesystem";
 const STORE_FILENAME = ".network-shares.json";
+const SECRET_KEY_DIR = ".network-storage";
+const SECRET_KEY_FILE = "secrets.key";
 const AVAHI_TIMEOUT_MS = 10000;
 
-// Stored locally under the Devices directory; passwords are kept in plain text to allow reconnects.
 type StoredShare = {
   id: string;
   host: string;
   ip?: string;
   share: string;
   username?: string;
+  passwordCipher?: string;
+  // Legacy plaintext password field kept for migration only.
   password?: string;
   mountPath: string;
   lastError?: string | null;
   createdAt: number;
 };
 
-export type NetworkShare = Omit<StoredShare, "password"> & {
+export type NetworkShare = Omit<StoredShare, "password" | "passwordCipher"> & {
   status: "connected" | "disconnected";
 };
 
@@ -53,17 +63,94 @@ async function getStorePath(): Promise<string> {
   return path.join(devicesDir, STORE_FILENAME);
 }
 
+async function getSecretKeyPath(): Promise<string> {
+  const homeRoot = await getHomeRoot();
+  const secretsDir = path.join(homeRoot, SECRET_KEY_DIR);
+  await fs.mkdir(secretsDir, { recursive: true, mode: 0o700 });
+  return path.join(secretsDir, SECRET_KEY_FILE);
+}
+
+let cachedSecretKey: Buffer | null = null;
+
+async function getSecretKey(): Promise<Buffer> {
+  if (cachedSecretKey) {
+    return cachedSecretKey;
+  }
+  cachedSecretKey = await getOrCreateSecretKey(await getSecretKeyPath());
+  return cachedSecretKey;
+}
+
+async function encryptSharePassword(password?: string): Promise<string | undefined> {
+  if (password === undefined) {
+    return undefined;
+  }
+  return encryptSecret(await getSecretKey(), password);
+}
+
+async function decryptSharePassword(share: StoredShare): Promise<{
+  password?: string;
+  error?: string;
+}> {
+  if (!share.passwordCipher) {
+    return {};
+  }
+
+  try {
+    const plaintext = decryptSecret(await getSecretKey(), share.passwordCipher);
+    return { password: plaintext };
+  } catch {
+    return {
+      error:
+        "Stored credentials cannot be decrypted. Remove and re-add this share.",
+    };
+  }
+}
+
+async function normalizeShareSecrets(shares: StoredShare[]): Promise<{
+  shares: StoredShare[];
+  changed: boolean;
+}> {
+  let changed = false;
+  const nextShares: StoredShare[] = [];
+
+  for (const share of shares) {
+    const next = { ...share };
+
+    if (next.password && !next.passwordCipher) {
+      next.passwordCipher = await encryptSharePassword(next.password);
+      delete next.password;
+      changed = true;
+    } else if (next.passwordCipher && !isEncryptedValue(next.passwordCipher)) {
+      // Legacy malformed field - treat as plaintext and upgrade.
+      next.passwordCipher = await encryptSharePassword(next.passwordCipher);
+      changed = true;
+    } else if (next.password !== undefined) {
+      delete next.password;
+      changed = true;
+    }
+
+    nextShares.push(next);
+  }
+
+  return { shares: nextShares, changed };
+}
+
 async function loadShares(): Promise<StoredShare[]> {
   try {
     const raw = await fs.readFile(await getStorePath(), "utf8");
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
+    const shares = parsed.filter(
       (item) =>
         item &&
         typeof item.id === "string" &&
         typeof item.mountPath === "string",
     );
+    const normalized = await normalizeShareSecrets(shares);
+    if (normalized.changed) {
+      await saveShares(normalized.shares);
+    }
+    return normalized.shares;
   } catch (error: any) {
     if (error?.code === "ENOENT") return [];
     console.error("[network-storage] Failed to read store:", error);
@@ -166,7 +253,14 @@ async function mountShare(share: StoredShare, passwordOverride?: string) {
   }
 
   const source = `//${resolved}/${share.share}`;
-  const password = passwordOverride ?? share.password;
+  let password = passwordOverride;
+  if (password === undefined) {
+    const decrypted = await decryptSharePassword(share);
+    if (decrypted.error) {
+      return { success: false as const, error: decrypted.error };
+    }
+    password = decrypted.password;
+  }
 
   try {
     await fs.mkdir(share.mountPath, { recursive: true });
@@ -638,7 +732,10 @@ export async function addNetworkShare(input: {
     ip: ip || existing?.ip,
     share,
     username: input.username?.trim() || existing?.username,
-    password: input.password ?? existing?.password,
+    passwordCipher:
+      input.password !== undefined
+        ? await encryptSharePassword(input.password)
+        : existing?.passwordCipher,
     mountPath,
     lastError: null,
     createdAt: existing?.createdAt || Date.now(),
@@ -706,8 +803,9 @@ export async function connectNetworkShare(
     record.username = credentials.username || undefined;
   }
   if (credentials?.password !== undefined) {
-    record.password = credentials.password;
+    record.passwordCipher = await encryptSharePassword(credentials.password);
   }
+  delete record.password;
 
   const reach = await checkReachable(record.host, 3000, record.ip);
   if (!reach.ok) {
@@ -802,6 +900,66 @@ export async function removeNetworkShare(
 
   await logAction("network-storage:remove:done", { id });
   return { success: true };
+}
+
+export async function rotateNetworkShareSecrets(): Promise<{
+  success: boolean;
+  rotated: number;
+  skipped: number;
+  error?: string;
+}> {
+  await logAction("network-storage:rotate-secrets:start");
+
+  try {
+    const shares = await loadShares();
+    const keyPath = await getSecretKeyPath();
+    const oldKey = await getSecretKey();
+    const newKey = crypto.randomBytes(32);
+    let rotated = 0;
+    let skipped = 0;
+
+    const updatedShares = shares.map((share) => ({ ...share }));
+
+    for (const share of updatedShares) {
+      if (!share.passwordCipher) {
+        continue;
+      }
+
+      try {
+        const password = decryptSecret(oldKey, share.passwordCipher);
+        share.passwordCipher = encryptSecret(newKey, password);
+        rotated += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    try {
+      await fs.copyFile(keyPath, `${keyPath}.bak-${Date.now()}`);
+    } catch {
+      // Best-effort backup.
+    }
+
+    await writeSecretKey(keyPath, newKey);
+    cachedSecretKey = newKey;
+    await saveShares(updatedShares);
+
+    await logAction("network-storage:rotate-secrets:done", {
+      rotated,
+      skipped,
+    });
+    return { success: true, rotated, skipped };
+  } catch (error) {
+    await logAction("network-storage:rotate-secrets:error", {
+      error: (error as Error)?.message || "unknown",
+    });
+    return {
+      success: false,
+      rotated: 0,
+      skipped: 0,
+      error: (error as Error)?.message || "Failed to rotate secrets",
+    };
+  }
 }
 
 /**

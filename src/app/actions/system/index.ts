@@ -15,4 +15,12 @@ export {
 } from "./system-status";
 
 // Storage
-export { type StorageInfo, getStorageInfo } from "./storage";
+export {
+  getStorageInfo,
+  listExternalStorageDevices,
+  migrateToExternalStorage,
+  mountExternalStorageDevice,
+  unmountExternalStorageDevice,
+  type ExternalStorageInfo,
+  type StorageInfo,
+} from "./storage";

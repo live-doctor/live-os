@@ -13,6 +13,19 @@ export type UpdateStatus = {
   aheadOfRemote?: boolean;
 };
 
+export type UpdateRuntimeState = {
+  mode?: "artifact" | "source" | string;
+  phase: string;
+  status: "running" | "done" | "failed" | "skipped" | string;
+  currentVersion?: string;
+  targetVersion?: string;
+  message?: string;
+  timestamp?: string;
+};
+
+const UPDATE_STATE_PATH =
+  process.env.HOMEIO_UPDATE_STATE_FILE || "/var/lib/homeio/update-state.json";
+
 /**
  * Check for a newer version using git tags (preferred) and origin/main package.json (fallback).
  * Compares semantic versions and only reports an update when remote > current.
@@ -132,6 +145,43 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
       hasUpdate: false,
       message:
         "Could not reach remote repository. You appear to be on the latest local build.",
+    };
+  }
+}
+
+export async function getUpdateRuntimeState(): Promise<UpdateRuntimeState | null> {
+  try {
+    const raw = await fs.readFile(UPDATE_STATE_PATH, "utf-8");
+    const parsed = JSON.parse(raw) as UpdateRuntimeState;
+    if (!parsed || typeof parsed.phase !== "string") {
+      return null;
+    }
+    return parsed;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+      return null;
+    }
+    await logAction("update:runtime-state:error", {
+      error: (error as Error)?.message || "unknown",
+    });
+    return null;
+  }
+}
+
+export async function clearUpdateRuntimeState(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    await fs.unlink(UPDATE_STATE_PATH);
+    return { success: true };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+      return { success: true };
+    }
+    return {
+      success: false,
+      error: (error as Error)?.message || "Failed to clear update state",
     };
   }
 }
