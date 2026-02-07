@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Homeio is a self-hosted operating system dashboard for managing infrastructure, built with Next.js 16. It provides real-time system monitoring (CPU, RAM, storage), Docker container management, and an app store inspired by UmbrelOS and CasaOS.
+Homeio is a self-hosted operating system dashboard for managing infrastructure, built with Next.js 16. It provides real-time system monitoring (CPU, RAM, storage), Docker container management, a web terminal, a widget-based dashboard, file management, and a multi-source app store.
 
 **Design Philosophy**: Clean, consistent, user-friendly interface following KISS (Keep It Simple, Stupid) principles with inspiration from UmbrelOS and CasaOS.
 
@@ -15,24 +15,24 @@ Homeio is a self-hosted operating system dashboard for managing infrastructure, 
 **Always apply SOLID principles when writing or refactoring code:**
 
 - **Single Responsibility**: Each component, function, or module should have one clear purpose
-  - ✅ Good: `app/actions/system-status.ts` handles only system metrics
-  - ❌ Bad: Mixing UI and business logic in same component
+  - Good: `src/app/actions/system/system-status.ts` handles only system metrics
+  - Bad: Mixing UI and business logic in same component
 
 - **Open/Closed**: Open for extension, closed for modification
-  - ✅ Good: Use composition and props for variants
-  - ❌ Bad: Modifying existing components for new features
+  - Good: Use composition and props for variants
+  - Bad: Modifying existing components for new features
 
 - **Liskov Substitution**: Derived classes must be substitutable for their base classes
-  - ✅ Good: All app card variants follow the same `App` interface
-  - ❌ Bad: Changing expected behavior in subclasses
+  - Good: All app card variants follow the same `App` interface
+  - Bad: Changing expected behavior in subclasses
 
 - **Interface Segregation**: Clients shouldn't depend on interfaces they don't use
-  - ✅ Good: Separate `InstalledApp` and `App` types
-  - ❌ Bad: One massive type with optional fields
+  - Good: Separate `InstalledApp` and `App` types
+  - Bad: One massive type with optional fields
 
 - **Dependency Inversion**: Depend on abstractions, not concretions
-  - ✅ Good: Server actions as abstraction layer
-  - ❌ Bad: Direct Docker CLI calls from components
+  - Good: Server actions as abstraction layer
+  - Bad: Direct Docker CLI calls from components
 
 ### 2. KISS Principle (Keep It Simple, Stupid)
 
@@ -69,63 +69,24 @@ When a component exceeds limits, extract into:
 **Example Structure:**
 
 ```
-components/system-monitor/
+src/components/system-monitor/
 ├── index.ts                    # Barrel export
-├── system-monitor-dialog.tsx   # Main orchestrator (~170 lines max)
+├── system-monitor-dialog.tsx   # Main orchestrator
 ├── types.ts                    # Type definitions
 ├── utils.ts                    # Utility functions
 ├── dialog-header.tsx           # Header micro-component
 ├── metric-chart-card.tsx       # Reusable metric card
 ├── network-chart.tsx           # Network activity chart
-├── app-list.tsx               # Applications list
-├── app-list-item.tsx          # Single app item
-├── app-breakdown-panel.tsx    # Breakdown panel
-└── connection-status.tsx      # Status indicator
-```
-
-#### Good vs Bad Examples
-
-**❌ BAD - Monolithic Component (500+ lines):**
-
-```tsx
-// system-monitor-dialog.tsx - 500 lines
-export function SystemMonitorDialog() {
-  // All state, effects, handlers, and UI in one file
-  // Hard to maintain, test, and reuse
-}
-```
-
-**✅ GOOD - Micro-Component Architecture:**
-
-```tsx
-// system-monitor-dialog.tsx - 170 lines
-import { DialogHeader } from "./dialog-header";
-import { MetricChartCard } from "./metric-chart-card";
-import { NetworkChart } from "./network-chart";
-
-export function SystemMonitorDialog() {
-  // State and orchestration only
-  return (
-    <Dialog>
-      <DialogHeader connected={connected} onClose={handleClose} />
-      <MetricChartCard label="CPU" value={cpuUsage} />
-      <NetworkChart data={networkHistory} />
-    </Dialog>
-  );
-}
+├── app-list.tsx                # Applications list
+├── app-list-item.tsx           # Single app item
+└── connection-status.tsx       # Status indicator
 ```
 
 ### 4. Design Consistency with Design Tokens
 
-**CRITICAL: Always use the design tokens from `components/ui/design-tokens.ts`**
+**CRITICAL: Always use the design tokens from `src/components/ui/design-tokens.ts`**
 
 All UI components MUST use the shared design tokens for consistency. Never hardcode styles.
-
-#### Design Tokens File Location
-
-```
-components/ui/design-tokens.ts
-```
 
 #### Available Design Tokens
 
@@ -134,9 +95,18 @@ components/ui/design-tokens.ts
 ```typescript
 import { card } from "@/components/ui/design-tokens";
 
-// Usage
 className={`${card.base} ${card.padding.md}`}
-// Outputs: "bg-black/30 backdrop-blur-xl rounded-2xl border border-white/15 shadow-lg shadow-black/25 p-5"
+```
+
+**Surface Styles (glass panels):**
+
+```typescript
+import { surface } from "@/components/ui/design-tokens";
+
+// surface.panel - Glass panel style
+// surface.panelInteractive - Interactive glass panel with hover effects
+// surface.label - Surface label text
+// surface.labelMuted - Muted surface label text
 ```
 
 **Typography:**
@@ -144,9 +114,9 @@ className={`${card.base} ${card.padding.md}`}
 ```typescript
 import { text } from "@/components/ui/design-tokens";
 
-// Available: text.label, text.labelUppercase, text.value, text.valueLarge,
-//            text.valueSmall, text.heading, text.headingLarge, text.headingXL,
-//            text.muted, text.subdued
+// text.label, text.labelUppercase, text.value, text.valueLarge,
+// text.valueSmall, text.heading, text.headingLarge, text.headingXL,
+// text.muted, text.subdued
 ```
 
 **Colors:**
@@ -162,524 +132,354 @@ import { colors } from "@/components/ui/design-tokens";
 // colors.network.download = "#ec4899"
 ```
 
-**Buttons:**
+**Other tokens:** `button`, `statusDot`, `alert`, `iconBox`, `dialog`, `badge`, `input`, `progressBar`
 
-```typescript
-import { button } from "@/components/ui/design-tokens";
-
-// button.ghost = "border border-white/15 bg-white/10 hover:bg-white/20 text-white"
-// button.closeIcon = "h-10 w-10 rounded-full border border-white/15 bg-white/10..."
-```
-
-**Status Indicators:**
-
-```typescript
-import { statusDot } from "@/components/ui/design-tokens";
-
-// statusDot.base = "w-2 h-2 rounded-full"
-// statusDot.live = "bg-cyan-500"
-// statusDot.connected = "bg-green-400"
-// statusDot.disconnected = "bg-red-400"
-```
-
-**Alerts:**
-
-```typescript
-import { alert } from "@/components/ui/design-tokens";
-
-// alert.error = "rounded-xl border border-red-500/30 bg-red-500/10 p-4"
-// alert.warning = "rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4"
-// alert.info = "rounded-xl border border-blue-500/30 bg-blue-500/10 p-4"
-// alert.success = "rounded-xl border border-green-500/30 bg-green-500/10 p-4"
-```
-
-**Icon Boxes:**
-
-```typescript
-import { iconBox } from "@/components/ui/design-tokens";
-
-// iconBox.sm = "h-8 w-8 rounded-lg bg-white/10..."
-// iconBox.md = "h-10 w-10 rounded-xl bg-white/10..."
-// iconBox.lg = "h-14 w-14 rounded-full border border-white/15..."
-```
-
-**Dialog Styles:**
-
-```typescript
-import { dialog } from "@/components/ui/design-tokens";
-
-// dialog.content = "bg-white/5 border border-white/10 backdrop-blur-xl..."
-// dialog.header = "border-b border-white/5 bg-gradient-to-r from-white/10..."
-```
+**Utility functions:** `cn()` for combining classes, `getMetricColor()` for percentage-based coloring.
 
 #### Design Token Usage Rules
 
 1. **Always import from design-tokens.ts** - Never hardcode repeated styles
-2. **Use template literals** - Combine tokens: `${card.base} ${card.padding.lg}`
-3. **Extend, don't override** - Add classes after tokens: `${text.label} mb-2`
+2. **Use template literals** - Combine tokens: `` `${card.base} ${card.padding.lg}` ``
+3. **Extend, don't override** - Add classes after tokens: `` `${text.label} mb-2` ``
 4. **Create new tokens** - If a pattern repeats 3+ times, add it to design-tokens.ts
 
-### 5. Detecting Design Inconsistencies
-
-When you detect inconsistent design, **automatically fix it**. Common issues:
-
-- **Hardcoded styles that match tokens** → Replace with token import
-- **Component > 150 lines** → Break into micro-components
-- **Repeated style patterns** → Extract to design-tokens.ts
-- **Inconsistent spacing** → Standardize using tokens
-- **Mixed border radius** → Use consistent values from tokens
-
-### 6. Performance First (Low-Powered Devices)
+### 5. Performance First (Low-Powered Devices)
 
 **CRITICAL: This app runs on low-powered servers like Raspberry Pi 4**
 
-All code MUST be optimized for:
+All code MUST be optimized for limited CPU (4-core ARM), limited RAM (2-8 GB), and limited I/O bandwidth.
 
-- Limited CPU (4-core ARM)
-- Limited RAM (2-8 GB)
-- Limited I/O bandwidth
-- Battery-powered scenarios
+#### Key Performance Rules
 
-#### Performance Rules
+- **Polling intervals**: >= 3000ms for data, >= 500ms for UI
+- **History arrays**: Max 30-60 items, always use `.slice(-N)`
+- **Memoization**: `useMemo` for computed values, `useCallback` for event handlers
+- **Heavy components**: `dynamic()` import with `ssr: false`
+- **Images**: Use Next.js `<Image>`, lazy loading
+- **Animations**: CSS transforms over JS, `will-change` sparingly
+- **Cleanup**: Always clean up subscriptions, intervals, event listeners in `useEffect` returns
+- **AbortController**: Use for fetch requests
+- **Real-time monitoring**: Use SSE/WebSocket, debounce 500ms minimum between re-renders
+- **Chart data points**: 30 max for mini charts, 60 for full charts
 
-**React Optimization:**
+#### Anti-Patterns to Avoid
 
-```tsx
-// ✅ GOOD - Memoize expensive computations
-const sortedApps = useMemo(
-  () => apps.sort((a, b) => b.cpuUsage - a.cpuUsage),
-  [apps],
-);
-
-// ✅ GOOD - Memoize callbacks passed to children
-const handleClick = useCallback(() => {
-  setSelected(id);
-}, [id]);
-
-// ✅ GOOD - Lazy load heavy components
-const SystemMonitor = dynamic(() => import("./SystemMonitor"), {
-  loading: () => <Skeleton />,
-  ssr: false,
-});
-
-// ❌ BAD - Inline function creates new reference every render
-<Button onClick={() => handleAction(id)} />;
-
-// ❌ BAD - Computing on every render
-const sorted = apps.sort((a, b) => b.cpu - a.cpu);
-```
-
-**Data Fetching:**
-
-```tsx
-// ✅ GOOD - Debounce frequent updates (500ms minimum)
-const lastUpdateRef = useRef(0);
-if (Date.now() - lastUpdateRef.current < 500) return;
-
-// ✅ GOOD - Limit history arrays
-setHistory((prev) => [...prev, value].slice(-30)); // Max 30 items
-
-// ✅ GOOD - Cleanup on unmount
-useEffect(() => {
-  const interval = setInterval(fetch, 3000);
-  return () => clearInterval(interval);
-}, []);
-
-// ❌ BAD - Polling too frequently
-setInterval(fetch, 100); // Too fast!
-
-// ❌ BAD - Unbounded arrays
-setHistory((prev) => [...prev, value]); // Memory leak!
-```
-
-**Bundle Size:**
-
-```tsx
-// ✅ GOOD - Import only what you need
-import { X, Settings } from "lucide-react";
-
-// ✅ GOOD - Dynamic imports for heavy libraries
-const Chart = dynamic(() => import("recharts").then((m) => m.AreaChart));
-
-// ❌ BAD - Import entire library
-import * as Icons from "lucide-react";
-
-// ❌ BAD - Heavy library in main bundle
-import { AreaChart, LineChart, BarChart } from "recharts";
-```
-
-#### Performance Checklist
-
-| Check            | Rule                                 |
-| ---------------- | ------------------------------------ |
-| Polling interval | ≥ 3000ms for data, ≥ 500ms for UI    |
-| History arrays   | Max 30-60 items                      |
-| Memoization      | `useMemo` for computed values        |
-| Callbacks        | `useCallback` for event handlers     |
-| Heavy components | `dynamic()` import with `ssr: false` |
-| Images           | WebP format, lazy loading            |
-| Animations       | CSS over JS, `will-change` sparingly |
-
-#### Specific Optimizations
-
-**Real-Time Monitoring:**
-
-- Use Server-Sent Events (SSE) instead of WebSocket polling
-- Debounce updates: 500ms minimum between re-renders
-- Limit chart data points: 30 max for mini charts, 60 for full charts
-- Clear data on component unmount
-
-**Image Handling:**
-
-```tsx
-// ✅ GOOD - Next.js Image with optimization
-<Image
-  src={icon}
-  width={64}
-  height={64}
-  loading="lazy"
-  placeholder="blur"
-/>
-
-// ❌ BAD - Unoptimized img tag
-<img src={icon} />
-```
-
-**Lists & Grids:**
-
-```tsx
-// ✅ GOOD - Virtualize long lists (>20 items)
-import { VirtualizedList } from "react-window";
-
-// ✅ GOOD - Pagination over infinite scroll
-const [page, setPage] = useState(1);
-const items = allItems.slice(0, page * 20);
-
-// ❌ BAD - Render all items at once
-{
-  allItems.map((item) => <Card key={item.id} />);
-}
-```
-
-**State Management:**
-
-```tsx
-// ✅ GOOD - Split state to minimize re-renders
-const [loading, setLoading] = useState(false);
-const [data, setData] = useState(null);
-
-// ✅ GOOD - Use refs for non-reactive values
-const lastUpdateRef = useRef(0);
-
-// ❌ BAD - Single state object causes full re-render
-const [state, setState] = useState({ loading: false, data: null, error: null });
-```
-
-**CSS Performance:**
-
-```css
-/* ✅ GOOD - Use transform for animations */
-.card:hover {
-  transform: scale(1.02);
-}
-
-/* ✅ GOOD - Contain paint for complex components */
-.dialog {
-  contain: layout paint;
-}
-
-/* ❌ BAD - Animating expensive properties */
-.card:hover {
-  width: 110%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-```
-
-#### Memory Management
-
-**Cleanup Patterns:**
-
-```tsx
-useEffect(() => {
-  const controller = new AbortController();
-
-  fetch("/api/data", { signal: controller.signal })
-    .then(setData)
-    .catch(() => {});
-
-  return () => controller.abort(); // Cleanup!
-}, []);
-```
-
-**Avoid Memory Leaks:**
-
-- Always cleanup subscriptions, intervals, event listeners
-- Use `AbortController` for fetch requests
-- Limit array/object growth with `.slice()`
-- Set refs to `null` on unmount if storing large objects
-
-#### Server-Side Considerations
-
-**For Raspberry Pi / Low-Powered Servers:**
-
-```bash
-# Limit Node.js memory usage
-NODE_OPTIONS="--max-old-space-size=512" npm start
-
-# Use production mode (critical!)
-NODE_ENV=production npm start
-```
-
-**Next.js Configuration:**
-
-```js
-// next.config.js
-module.exports = {
-  // Reduce build memory usage
-  swcMinify: true,
-
-  // Optimize images for ARM
-  images: {
-    formats: ["image/webp"],
-    minimumCacheTTL: 60 * 60 * 24, // 24h cache
-  },
-
-  // Disable features not needed
-  reactStrictMode: false, // Disable in production for performance
-};
-```
-
-#### Performance Anti-Patterns to Avoid
-
-| Anti-Pattern             | Problem                   | Solution                                 |
-| ------------------------ | ------------------------- | ---------------------------------------- |
-| `useEffect` without deps | Runs every render         | Add dependency array                     |
-| Inline objects/arrays    | New reference each render | `useMemo` or move outside                |
-| Polling < 1s             | CPU overload              | Increase interval                        |
-| Unbounded state arrays   | Memory leak               | Use `.slice(-N)`                         |
-| Heavy sync operations    | Blocks main thread        | Use Web Workers or `requestIdleCallback` |
-| Unoptimized images       | Large downloads           | Use Next.js Image                        |
-| Console.log in prod      | Memory + CPU waste        | Remove or use debug flag                 |
+| Anti-Pattern             | Solution                                 |
+| ------------------------ | ---------------------------------------- |
+| `useEffect` without deps | Add dependency array                     |
+| Inline objects/arrays    | `useMemo` or move outside                |
+| Polling < 1s             | Increase interval                        |
+| Unbounded state arrays   | Use `.slice(-N)`                         |
+| Heavy sync operations    | Use Web Workers or `requestIdleCallback` |
+| Console.log in prod      | Remove or use debug flag                 |
 
 ## Development Commands
 
 ```bash
-# Development
-npm run dev              # Start Next.js dev server on port 3000
+# Development (custom server with WebSocket support)
+npm run dev              # Runs tsx server.ts on port 3000
 
 # Building
-npm run build           # Production build
-npm start               # Start production server
+npm run build            # Next.js production build
+npm start                # Runs tsx server.ts in production mode
 
 # Linting
-npm run lint            # Run ESLint
-npm run lint:fix        # Run ESLint with auto-fix
+npm run lint             # Run ESLint
+npm run lint:fix         # Run ESLint with auto-fix
+
+# Testing
+npm run test:unit        # Run Vitest unit tests
+
+# Database
+npm run db:init          # Run Prisma migrations
+
+# App Store
+npm run update-apps      # Update app store catalog
+npm run update-apps:auto # Auto-update app store (no prompts)
+npm run test-apps        # Test app store integration
 ```
+
+**Note**: `npm run dev` and `npm start` both run `tsx server.ts`, a custom HTTP server that wraps Next.js and adds WebSocket support for the terminal and real-time system monitoring.
 
 ## Production Deployment
 
-The project is designed to be installed via a shell script to `/opt/homeio` and run as a systemd service. The installation process:
+Installed via shell script to `/opt/homeio` and run as a systemd service:
 
-- Clones the repository
-- Runs `npm install` and `npm run build`
-- Creates a systemd service that runs `npm start`
+- Supports pre-built releases (no compilation needed) or `--from-source` builds
 - Configurable via `HOMEIO_HTTP_PORT` environment variable (default: 3000)
-
-Service management:
+- Avahi/mDNS support for `.local` domain access
 
 ```bash
 sudo systemctl [start|stop|restart] homeio
 sudo systemctl status homeio
 sudo journalctl -u homeio -f
+
+# Update
+cd /opt/homeio && sudo bash scripts/update.sh
 ```
 
 ## Project Architecture
+
+### Source Directory
+
+**All source code lives under `src/`.** The path alias `@/*` maps to `./src/*`.
 
 ### Folder Organization
 
 ```
 homeio/
-├── app/                          # Next.js App Router
-│   ├── actions/                  # Server Actions (API layer)
-│   │   ├── system/              # System info, metrics, storage
-│   │   │   ├── index.ts
-│   │   │   ├── system.ts
-│   │   │   ├── system-status.ts
-│   │   │   └── storage.ts
-│   │   ├── filesystem/          # File manager, favorites, SMB, NFS
-│   │   │   ├── index.ts
-│   │   │   ├── filesystem.ts
-│   │   │   ├── favorites.ts
-│   │   │   ├── smb-share.ts
-│   │   │   └── network-storage.ts
-│   │   ├── network/             # WiFi, firewall, Bluetooth
-│   │   │   ├── index.ts
-│   │   │   ├── network.ts
-│   │   │   ├── firewall.ts
-│   │   │   └── bluetooth.ts
-│   │   ├── auth/                # Auth & user settings
-│   │   │   ├── index.ts
-│   │   │   ├── auth.ts
-│   │   │   └── settings.ts
-│   │   ├── maintenance/         # Logging, updates, troubleshoot
-│   │   │   ├── index.ts
-│   │   │   ├── logger.ts
-│   │   │   ├── update.ts
-│   │   │   └── troubleshoot.ts
-│   │   ├── docker/              # Docker operations (SOLID split)
-│   │   ├── docker.ts            # Docker barrel re-export
-│   │   ├── store/               # App store integrations
-│   │   ├── appstore.ts          # App store orchestrator
-│   │   └── internal-apps.ts     # Built-in apps
-│   ├── layout.tsx               # Root layout
-│   ├── page.tsx                 # Main dashboard
-│   └── globals.css              # Global styles
+├── server.ts                     # Custom HTTP server (WebSocket + Next.js)
+├── next.config.ts                # Next.js configuration
+├── prisma/                       # Database schema & migrations
+│   ├── schema.prisma
+│   └── migrations/
 │
-├── components/                   # React components
-│   ├── ui/                      # shadcn/ui base components + design tokens
-│   │   └── design-tokens.ts     # 🔴 CRITICAL: Shared design tokens
-│   │
-│   ├── system-monitor/          # System monitoring (micro-components)
-│   │   ├── index.ts             # Barrel export
-│   │   ├── system-monitor-dialog.tsx  # Main orchestrator
-│   │   ├── types.ts             # Type definitions
-│   │   ├── utils.ts             # Utility functions
-│   │   ├── dialog-header.tsx    # Header component
-│   │   ├── metric-chart-card.tsx # Reusable metric card
-│   │   ├── network-chart.tsx    # Network chart
-│   │   ├── app-list.tsx         # App list
-│   │   ├── app-list-item.tsx    # Single app item
-│   │   ├── app-breakdown-panel.tsx # Breakdown panel
-│   │   └── connection-status.tsx # Status indicator
-│   │
-│   ├── settings/                # Settings dialogs (micro-components)
-│   │   ├── index.ts             # Barrel export
-│   │   ├── settings-dialog.tsx  # Main settings dialog
-│   │   ├── settings-sidebar.tsx # Sidebar component
-│   │   ├── system-details-dialog.tsx # System details
-│   │   ├── wifi-dialog.tsx      # WiFi dialog
-│   │   ├── metric-card.tsx      # Reusable metric card
-│   │   ├── info-row.tsx         # Info row component
-│   │   ├── sections.tsx         # Settings sections
-│   │   ├── types.ts             # Type definitions
-│   │   ├── hardware-utils.ts    # Hardware utilities
-│   │   ├── tabs/                # Tab micro-components
-│   │   │   ├── index.ts
-│   │   │   ├── system-tab.tsx
-│   │   │   ├── cpu-tab.tsx
-│   │   │   ├── memory-tab.tsx
-│   │   │   ├── battery-tab.tsx
-│   │   │   ├── graphics-tab.tsx
-│   │   │   ├── network-tab.tsx
-│   │   │   ├── thermals-tab.tsx
-│   │   │   └── settings-tab-trigger.tsx
-│   │   └── wifi/                # WiFi micro-components
-│   │       ├── index.ts
-│   │       ├── network-item.tsx
-│   │       ├── status-message.tsx
-│   │       └── wifi-dialog-header.tsx
-│   │
-│   ├── lock-screen/             # Lock screen (micro-components)
-│   │   ├── index.ts
-│   │   ├── lock-screen.tsx
-│   │   ├── user-header.tsx
-│   │   └── pin-input-form.tsx
-│   │
-│   ├── app-store/               # App store related
-│   ├── installed-apps/          # Installed apps management
-│   ├── system-status/           # System status widget
-│   ├── greeting-card/           # User greeting & clock
-│   └── layout/                  # Layout components
-│
-├── lib/                         # Utility functions
-│   ├── exec.ts                 # Centralized execAsync / execFileAsync
-│   ├── json-store.ts           # Generic JSON file read/write helpers
-│   ├── prisma.ts               # Prisma client singleton
-│   ├── utils.ts                # General utilities
-│   └── system-status/          # WebSocket server for real-time metrics
-├── store/                       # App Store (Umbrel format)
-├── public/                      # Static assets
-└── types/                       # TypeScript type definitions
+└── src/
+    ├── app/                      # Next.js App Router
+    │   ├── layout.tsx            # Root layout
+    │   ├── page.tsx              # Main dashboard
+    │   ├── globals.css           # Global styles (Tailwind CSS 4)
+    │   ├── login/                # Login page
+    │   ├── setup/                # Initial setup page
+    │   ├── external-apps/        # External app embedding
+    │   ├── generated/            # Generated assets
+    │   ├── actions/              # Server Actions (API layer)
+    │   │   ├── system/           # System info, metrics, storage
+    │   │   ├── filesystem/       # File manager, favorites, SMB, NFS
+    │   │   ├── network/          # WiFi, firewall, Bluetooth
+    │   │   ├── auth/             # Authentication, user settings
+    │   │   ├── maintenance/      # Logger, updates, troubleshooting
+    │   │   ├── docker/           # Docker operations (SOLID split)
+    │   │   ├── docker.ts         # Docker barrel re-export
+    │   │   ├── store/            # App store integrations
+    │   │   │   ├── linuxserver-store.ts
+    │   │   │   ├── linuxserver-helpers.ts
+    │   │   │   ├── umbrel-store.ts
+    │   │   │   ├── utils.ts
+    │   │   │   └── types.ts
+    │   │   ├── appstore.ts       # App store orchestrator
+    │   │   └── internal-apps.ts  # Built-in apps
+    │   └── api/                  # API Routes
+    │       ├── auth/             # Auth endpoints
+    │       ├── docker/           # Docker endpoints
+    │       ├── external-apps/    # External app proxy
+    │       ├── files/            # File download, view, upload, favorites
+    │       └── system/           # System status endpoints
+    │
+    ├── modules/                  # Modular monolith feature modules
+    │   ├── docker/               # Docker module
+    │   ├── files/                # File management module
+    │   ├── home/                 # Home dashboard module
+    │   ├── monitoring/           # System monitoring module
+    │   ├── settings/             # Settings module
+    │   └── terminal/             # Terminal module
+    │
+    ├── core/                     # Cross-cutting concerns
+    │   ├── auth.ts               # Authentication utilities
+    │   ├── bus.ts                # Event bus system
+    │   ├── permissions.ts        # Permission system
+    │   ├── registry.ts           # Module registry
+    │   ├── sse.ts                # SSE helpers
+    │   └── index.ts              # Barrel export
+    │
+    ├── hooks/                    # Custom React hooks
+    │   ├── system-status-types.ts
+    │   ├── useRebootTracker.ts
+    │   ├── useSystemStatus.ts    # WebSocket-based system status
+    │   ├── useUserLocation.ts
+    │   ├── useWeatherData.ts
+    │   └── useWidgets.ts
+    │
+    ├── constants/                # Application constants
+    │   └── index.ts              # Weather codes, humidity levels, etc.
+    │
+    ├── components/               # React components
+    │   ├── ui/                   # shadcn/ui base components + design tokens
+    │   │   └── design-tokens.ts  # CRITICAL: Shared design tokens
+    │   ├── widgets/              # Dashboard widget system (15+ widget types)
+    │   │   ├── widget-grid.tsx
+    │   │   ├── widget-container.tsx
+    │   │   ├── widget-selector.tsx
+    │   │   ├── widget-checker.tsx
+    │   │   ├── widget-section.tsx
+    │   │   ├── widget-data-utils.ts
+    │   │   ├── widget-data-utils.test.ts
+    │   │   ├── constants.ts
+    │   │   ├── types.ts
+    │   │   ├── shared/           # Shared widget sub-components
+    │   │   └── widgets/          # Individual widget implementations
+    │   │       ├── custom.tsx
+    │   │       ├── files-grid.tsx
+    │   │       ├── files-list.tsx
+    │   │       ├── four-stats.tsx
+    │   │       ├── three-stats.tsx
+    │   │       ├── two-stats-gauge.tsx
+    │   │       ├── list-emoji.tsx
+    │   │       ├── list-widget.tsx
+    │   │       ├── network-stats.tsx
+    │   │       ├── system-pills.tsx
+    │   │       ├── text-with-buttons.tsx
+    │   │       ├── text-with-progress.tsx
+    │   │       ├── thermals.tsx
+    │   │       └── weather.tsx
+    │   ├── system-monitor/       # System monitoring (micro-components)
+    │   ├── settings/             # Settings dialogs (micro-components)
+    │   ├── lock-screen/          # Lock screen (micro-components)
+    │   ├── terminal/             # Web terminal (xterm.js + node-pty)
+    │   ├── auth/                 # Authentication UI
+    │   ├── file-manager/         # File manager
+    │   ├── app-store/            # App store UI
+    │   ├── installed-apps/       # Installed apps management
+    │   ├── system-status/        # System status widget
+    │   ├── greeting-card/        # User greeting & clock
+    │   ├── home/                 # Home page components
+    │   ├── search/               # Search UI
+    │   ├── keyboard-shortcuts/   # Keyboard shortcuts
+    │   ├── icons/                # Custom icon components
+    │   ├── system/               # System-level components
+    │   ├── theme/                # Theme provider
+    │   └── layout/               # Layout components
+    │
+    ├── lib/                      # Utility libraries
+    │   ├── exec.ts               # Centralized execAsync / execFileAsync
+    │   ├── json-store.ts         # Generic JSON file read/write helpers
+    │   ├── prisma.ts             # Prisma client singleton
+    │   ├── utils.ts              # General utilities
+    │   ├── config.ts             # App configuration
+    │   ├── auth-utils.ts         # Auth utility functions
+    │   ├── fetchWeatherData.ts   # Weather data fetching
+    │   ├── system-status/        # WebSocket server for real-time metrics
+    │   └── terminal/             # WebSocket server for terminal
+    │
+    └── types/                    # TypeScript type definitions
 ```
+
+### Modular Monolith Architecture (`src/modules/`)
+
+Feature modules follow a consistent shape:
+
+| File             | Purpose                                    |
+| ---------------- | ------------------------------------------ |
+| `actions.ts`     | Server actions exposed by the module       |
+| `domain.ts`      | Domain models/types                        |
+| `service.ts`     | Pure business logic helpers                |
+| `streams.ts`     | SSE/WebSocket/client stream adapters       |
+| `components/`    | Feature-specific UI components             |
+| `ui.tsx`         | Primary UI exports used by app shell       |
+| `index.ts`       | Module barrel export                       |
+
+**Rules:**
+- Keep module internals private; import from `@/modules/<name>`
+- Pure logic in `service.ts`, side effects in `actions.ts` and `streams.ts`
+- Use `@/core` for cross-cutting concerns (auth, permissions, registry, event bus, SSE helpers)
+
+### Custom Server (`server.ts`)
+
+The app uses a custom HTTP server wrapping Next.js to support:
+
+1. **Terminal WebSocket** - `node-pty` + `xterm.js` for host/container terminals (optional, gracefully fails if `node-pty` unavailable)
+2. **System Status WebSocket** - Real-time system metrics broadcasting
+
+Port configured via `HOMEIO_HTTP_PORT` or `PORT` env vars (default: 3000).
 
 ### Server Actions Pattern
 
-The app uses Next.js Server Actions (functions marked with `'use server'`) as the API layer, organized into domain folders with barrel `index.ts` exports:
+Server Actions (`'use server'`) are the primary API layer, organized into domain folders under `src/app/actions/`:
 
-- **`app/actions/system/`**: System info, real-time metrics, storage
-- **`app/actions/filesystem/`**: File manager, favorites, SMB shares, network storage
-- **`app/actions/network/`**: WiFi, firewall, Bluetooth
-- **`app/actions/auth/`**: Authentication, user settings
-- **`app/actions/maintenance/`**: Logger, updates, troubleshooting
-- **`app/actions/docker/`**: Docker container management (SOLID split)
-- **`app/actions/appstore.ts`**: App store orchestrator
+- **`system/`**: System info, real-time metrics, storage
+- **`filesystem/`**: File manager, favorites, SMB shares, network storage
+- **`network/`**: WiFi, firewall, Bluetooth
+- **`auth/`**: Authentication, user settings
+- **`maintenance/`**: Logger, updates, troubleshooting
+- **`docker/`**: Docker container management (SOLID split into: `backup.ts`, `db.ts`, `dependencies.ts`, `deploy.ts`, `health.ts`, `lifecycle.ts`, `query.ts`, `utils.ts`, `env/`)
+- **`store/`**: Multi-source app store (LinuxServer.io, Umbrel)
+- **`appstore.ts`**: App store orchestrator
 
-Import from barrel files (e.g. `@/app/actions/system`) or from specific files (e.g. `@/app/actions/system/storage`). These actions are called directly from client components, eliminating the need for separate API routes.
+Import from barrel files (e.g. `@/app/actions/system`) or specific files.
 
-### Common Helpers (`lib/`)
+### Common Helpers (`src/lib/`)
 
-- **`lib/exec.ts`**: Centralized `execAsync` and `execFileAsync` — import instead of defining `promisify(exec)` locally
-- **`lib/json-store.ts`**: Generic `readJsonFile(path, fallback)` and `writeJsonFile(path, data, mode?)` — use for JSON config files instead of manual `readFile`/`writeFile` + `JSON.parse`/`stringify`
+- **`lib/exec.ts`**: Centralized `execAsync` and `execFileAsync` - import instead of defining `promisify(exec)` locally
+- **`lib/json-store.ts`**: Generic `readJsonFile(path, fallback)` and `writeJsonFile(path, data, mode?)` - use for JSON config files
+- **`lib/prisma.ts`**: Prisma client singleton
+- **`lib/config.ts`**: Application configuration
+- **`lib/auth-utils.ts`**: Auth utility functions
 
-### Component Structure
+### Database (Prisma)
 
-**Micro-Component Examples:**
+The app uses **Prisma** with support for both PostgreSQL and SQLite adapters:
 
-**System Monitor** (`components/system-monitor/`):
+- Schema: `prisma/schema.prisma`
+- Migrations: `prisma/migrations/`
+- Initialize: `npm run db:init`
+- Client singleton: `src/lib/prisma.ts`
 
-- `metric-chart-card.tsx` (80 lines) - Reusable card with chart
-- `app-list-item.tsx` (25 lines) - Single app display
-- `connection-status.tsx` (20 lines) - Status indicator
+### Authentication
 
-**Settings** (`components/settings/`):
+PIN-based authentication system:
 
-- `metric-card.tsx` (43 lines) - Metric display
-- `info-row.tsx` (13 lines) - Label/value row
-- Each tab is its own file (15-60 lines each)
+- Login page: `src/app/login/`
+- Setup page: `src/app/setup/`
+- Auth components: `src/components/auth/`
+- Lock screen: `src/components/lock-screen/`
+- Server actions: `src/app/actions/auth/`
+- Password hashing: `bcryptjs`
 
-**Lock Screen** (`components/lock-screen/`):
+### App Store (Multi-Source)
 
-- `user-header.tsx` (25 lines) - User info display
-- `pin-input-form.tsx` (80 lines) - PIN input
+The app store supports multiple sources (not just Umbrel):
 
-### App Store Structure (Umbrel Format)
+- **CasaOS** - Default store
+- **LinuxServer.io** - Community images
+- **Umbrel** - Umbrel app format
 
-**Reference**: https://github.com/getumbrel/umbrel-apps
+Store integration code in `src/app/actions/store/`. Docker operations use CLI commands via `exec` (not dockerode).
 
-Each app in `store/` directory follows Umbrel's structure:
+### Path Aliases
 
-```
-store/AppName/
-├── docker-compose.yml    # Container configuration
-├── appfile.json          # App metadata
-├── icon.png              # App icon (256x256 recommended)
-├── thumbnail.png         # Thumbnail (optional)
-└── screenshot-*.png      # Screenshots
-```
+`@/*` maps to `./src/*` (configured in `tsconfig.json`)
 
-**appfile.json format**:
+## Key Dependencies
 
-```json
-{
-  "id": "app-name",
-  "name": "App Display Name",
-  "tagline": "Short description",
-  "overview": "Detailed description",
-  "category": ["productivity", "media"],
-  "developer": "Developer Name",
-  "version": "1.0.0",
-  "website": "https://example.com",
-  "repo": "https://github.com/user/repo"
-}
-```
+| Package | Purpose |
+| ------- | ------- |
+| `next` (16) | React framework with App Router |
+| `react` (19) | UI library |
+| `tailwindcss` (4) | Utility-first CSS |
+| `framer-motion` | Animation library |
+| `lucide-react` | Icon library |
+| `recharts` | Charting library |
+| `@prisma/client` | Database ORM |
+| `node-pty` | Terminal PTY (optional) |
+| `xterm` + addons | Terminal UI |
+| `ws` | WebSocket server |
+| `systeminformation` | System metrics collection |
+| `bcryptjs` | Password hashing |
+| `sonner` | Toast notifications |
+| `next-themes` | Theme management |
+| `openmeteo` | Weather data API |
+| `composerize` | Docker Compose converter |
+| `@monaco-editor/react` | Code editor |
+| `input-otp` | OTP/PIN input |
+| `yaml` | YAML parsing |
+| `class-variance-authority` + `clsx` + `tailwind-merge` | Component variant utilities |
+| `shadcn/ui` (Radix) | Base UI components |
+| `vitest` | Unit testing framework |
 
-### Styling System
+## TypeScript Configuration
 
-**Consistent Design Tokens** (MUST USE):
+- Target: ES2017
+- Strict mode enabled
+- JSX: react-jsx
+- Module resolution: bundler
+- Path aliases: `@/*` -> `./src/*`
 
-- All styles defined in `components/ui/design-tokens.ts`
-- **Tailwind CSS 4** with custom theme tokens in `app/globals.css`
-- Uses CSS variables for light/dark mode (`.dark` class)
+## Styling System
+
+- **Tailwind CSS 4** with `@theme inline` directive in `src/app/globals.css`
+- Uses `tw-animate-css` for animation utilities
+- Design tokens in `src/components/ui/design-tokens.ts`
+- Dark mode via `next-themes`
 
 **Standard Color Palette:**
 
@@ -689,169 +489,43 @@ store/AppName/
 - Storage: `#10b981` (emerald)
 - Network Upload: `#8b5cf6` (violet)
 - Network Download: `#ec4899` (pink)
-- Neutral: `zinc-*` scale
-- Success: `green-*`
-- Warning: `yellow-*`
-- Danger: `red-*`
-
-**Card Styling (from design-tokens.ts):**
-
-```
-Base: bg-black/30 backdrop-blur-xl rounded-2xl border border-white/15 shadow-lg shadow-black/25
-Padding: p-4 (sm), p-5 (md), p-6 (lg)
-Hover: hover:border-white/30 hover:bg-black/40
-Selected: bg-black/40 border-cyan-500/50 ring-1 ring-cyan-500/30
-```
-
-**Typography (from design-tokens.ts):**
-
-```
-Label: text-xs text-white/40 -tracking-[0.01em]
-Value: text-2xl font-bold text-white/90 -tracking-[0.02em]
-Heading: text-lg font-semibold text-white -tracking-[0.01em]
-Muted: text-xs text-white/60 -tracking-[0.01em]
-```
-
-### Path Aliases
-
-`@/*` maps to project root (configured in `tsconfig.json`)
-
-## Key Dependencies
-
-- **Next.js 16**: React framework with App Router
-- **React 19**: UI library
-- **Tailwind CSS 4**: Utility-first CSS
-- **Framer Motion**: Animation library
-- **lucide-react**: Icon library
-- **recharts**: Charting library
-- **openmeteo**: Weather data API client
-- **class-variance-authority** + **clsx** + **tailwind-merge**: Component variant utilities
-- **shadcn/ui**: Base UI components
-- **dockerode** (future): Docker API client
-
-## TypeScript Configuration
-
-- Target: ES2017
-- Strict mode enabled
-- JSX: react-jsx (Next.js 16 App Router)
-- Module resolution: bundler
-- Path aliases: `@/*` → project root
 
 ## Platform Compatibility
 
 ### Production Platform: Debian LTS
 
-**Primary Target**: Debian LTS (Long Term Support) - All system commands and operations are designed for Debian-based systems.
+**Primary Target**: Debian LTS - All system commands and operations are designed for Debian-based systems.
 
-Homeio is optimized for deployment on **Debian LTS** servers, ensuring:
-
-- Long-term stability and security updates
-- Wide Docker compatibility
-- Standard Linux tooling
-- Predictable system command behavior
-
-### Platform Support
-
-**✅ Debian LTS (Primary)**
-
-- Full production support
-- Optimized system commands
-- Tested and recommended platform
-
-**🔧 Development Support**
-
+- **Debian LTS**: Full production support
 - **macOS**: Development environment support
 - **Ubuntu/Debian variants**: Should work with minimal changes
-- **Other Linux**: May require command adaptations
-
-**❌ Not Supported**
-
 - **Windows**: Not supported (consider WSL2 for development only)
 
-### System Commands for Debian LTS
-
-**IMPORTANT**: All system monitoring and operations use Debian-compatible commands:
-
-```bash
-# CPU Information
-cat /proc/cpuinfo                 # CPU details
-top -bn1 | grep "Cpu(s)"         # CPU usage
-mpstat 1 1                       # Detailed CPU stats (requires sysstat)
-
-# Memory Information
-free -m                          # Memory usage in MB
-cat /proc/meminfo                # Detailed memory info
-
-# Disk Usage
-df -h                            # Human-readable disk usage
-du -sh /path                     # Directory size
-
-# Temperature (requires lm-sensors)
-sensors                          # Hardware temperatures
-cat /sys/class/thermal/thermal_zone*/temp  # Thermal zones
-
-# Network
-ifconfig                         # Network interfaces (net-tools)
-ip addr                          # Network interfaces (iproute2)
-ss -tuln                         # Network connections
-iftop                            # Real-time bandwidth (requires iftop)
-
-# System Info
-uname -a                         # Kernel info
-lsb_release -a                   # Debian version
-uptime                           # System uptime
-hostnamectl                      # System hostname info
-
-# Docker
-docker ps                        # Running containers
-docker stats --no-stream         # Container resource usage
-docker compose up -d             # Start services
-```
+System monitoring primarily uses the `systeminformation` Node.js library (cross-platform) with fallback to Debian-compatible shell commands where needed.
 
 ### Required System Packages (Debian)
 
-For full functionality, install these packages:
-
 ```bash
-# Core monitoring tools
 sudo apt update
 sudo apt install -y \
   sysstat \           # mpstat, iostat, sar
   lm-sensors \        # Temperature monitoring
   net-tools \         # ifconfig, netstat
   iproute2 \          # ip command
-  iftop \             # Network bandwidth
-  htop \              # Interactive process viewer
   docker.io \         # Docker engine
   docker-compose      # Docker Compose
 ```
 
-## Features Inspired by UmbrelOS & CasaOS
+## Testing
 
-### From UmbrelOS
-
-- Clean, modern app store interface
-- App manifest format (appfile.json)
-- Docker-based app installation
-- SHA256-pinned images for security
-- App dependency management
-- Standardized environment variables
-
-### From CasaOS
-
-- Intuitive dashboard layout
-- Real-time system monitoring
-- Simple app management
-- File browser integration (future)
-- One-click app installation
+- **Framework**: Vitest
+- **Run**: `npm run test:unit`
+- **Test files**: Co-located with source (e.g., `widget-data-utils.test.ts`)
+- Also test interactively: responsive design, dark mode, Docker operations, memory leaks
 
 ## File Manager Module
 
-### Current Status
-
-The file manager (`components/file-manager/`) provides comprehensive file browsing with ~85% feature parity to CasaOS.
-
-**Implemented Features:**
+### Features
 
 - File browsing with history/breadcrumbs, grid/list views
 - Create, rename, delete (soft), move, copy operations
@@ -859,149 +533,58 @@ The file manager (`components/file-manager/`) provides comprehensive file browsi
 - Compression (tar.gz) and decompression (8 formats)
 - SMB/NFS network storage mounting and SMB sharing
 - Favorites, search, keyboard shortcuts (Cmd+X/C/V)
-- File preview (images), download via API routes
+- File upload with drag-and-drop
+- File preview: images, video, audio, PDF
 - Path traversal protection, permission display
-
-### Missing Features Roadmap
-
-| Feature                     | Priority    | Status                                           |
-| --------------------------- | ----------- | ------------------------------------------------ |
-| **File Upload**             | 🔴 Critical | Not implemented - drag-drop or file input        |
-| **Multi-select**            | 🔴 Critical | Can't select multiple files for batch operations |
-| **Drag-and-Drop**           | 🟠 High     | No file reordering or inter-folder dragging      |
-| **Empty Trash**             | 🟠 High     | Soft delete works, but no permanent delete       |
-| **Recents**                 | 🟡 Medium   | Sidebar stub exists but not functional           |
-| **Video/Audio/PDF Preview** | 🟡 Medium   | Components exist but not fully integrated        |
-| **Right-click Empty Space** | 🟡 Medium   | Context menu only works on files                 |
-| **File Properties Dialog**  | 🟢 Low      | No detailed stats (owner, permissions UI)        |
-| **Advanced Search**         | 🟢 Low      | No regex, size/date filters                      |
-
-### Architecture Issues
-
-| Issue                          | Location                           | Recommendation                                                                         |
-| ------------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------- |
-| **Mega-hook**                  | `use-files-dialog.ts` (650+ lines) | Split into `use-file-navigation.ts`, `use-file-operations.ts`, `use-file-selection.ts` |
-| **Partial viewer integration** | `file-viewer/*.tsx`                | Video/audio/PDF viewers exist but only images work in fullscreen                       |
-| **Stub feature**               | `files-sidebar.tsx:60-62`          | "Recents" button has no onClick handler                                                |
-
-### File Manager Performance Rules
-
-**CRITICAL: File operations can be slow on Raspberry Pi**
-
-#### Directory Listing
-
-```tsx
-// ✅ GOOD - Limit items displayed, paginate
-const visibleItems = items.slice(0, 50);
-
-// ✅ GOOD - Memoize sorted/filtered results
-const sortedItems = useMemo(
-  () => items.sort((a, b) => a.name.localeCompare(b.name)),
-  [items],
-);
-
-// ❌ BAD - Render thousands of items
-{
-  items.map((item) => <FileCard key={item.path} />);
-}
-```
-
-#### File Operations
-
-```tsx
-// ✅ GOOD - Show loading state during operations
-const [isOperating, setIsOperating] = useState(false);
-
-// ✅ GOOD - Debounce search input
-const debouncedSearch = useDebouncedValue(searchQuery, 300);
-
-// ❌ BAD - Search on every keystroke
-useEffect(() => {
-  searchFiles(query);
-}, [query]);
-```
-
-#### Large Files
-
-```tsx
-// ✅ GOOD - Stream large files, don't load into memory
-// API routes use streaming for downloads
-
-// ✅ GOOD - Limit text editor to 1MB
-if (file.size > 1024 * 1024) {
-  toast.error("File too large to edit");
-  return;
-}
-
-// ❌ BAD - Load entire large file into state
-const content = await readFileContent(hugePath);
-```
-
-#### Thumbnails & Icons
-
-```tsx
-// ✅ GOOD - Use static icons from public/icons/files/
-<img src={`/icons/files/${getFileIcon(type)}.svg`} />
-
-// ✅ GOOD - Lazy load image thumbnails
-<Image loading="lazy" src={thumbnailUrl} />
-
-// ❌ BAD - Generate thumbnails on-the-fly for every file
-const thumbnail = await generateThumbnail(path);
-```
-
-#### Performance Checklist (File Manager)
-
-| Check             | Rule                                          |
-| ----------------- | --------------------------------------------- |
-| Directory listing | Max 50-100 visible items, virtualize for more |
-| Search debounce   | ≥ 300ms delay                                 |
-| File size limits  | 1MB for text editor, streaming for downloads  |
-| Icon loading      | Static SVGs, no runtime generation            |
-| Operations        | Show loading states, abort on unmount         |
-| History array     | Max 50 navigation entries                     |
+- Download via API routes
 
 ### File Manager Structure
 
 ```
-components/file-manager/
-├── files-dialog.tsx            # Main orchestrator (304 lines)
-├── files-content.tsx           # Grid/list view (157 lines)
-├── files-toolbar.tsx           # Navigation bar (215 lines)
+src/components/file-manager/
+├── files-dialog.tsx            # Main orchestrator
+├── files-content.tsx           # Grid/list view
+├── files-toolbar.tsx           # Navigation bar
 ├── files-sidebar.tsx           # Sidebar nav
 ├── file-editor-modal.tsx       # Monaco text editor
 ├── file-creation-row.tsx       # Inline create input
-├── use-files-dialog.ts         # Main hook (⚠️ 650+ lines - needs split)
+├── file-upload-zone.tsx        # Drag-and-drop upload
+├── use-files-dialog.ts         # Main hook
+├── use-file-navigation.ts     # Navigation hook
+├── use-file-operations.ts     # File operations hook
+├── use-file-editor.ts         # Editor hook
 ├── context-menu/               # Right-click menu system
-│   ├── use-context-menu-actions.ts
-│   ├── file-clipboard-context.tsx
-│   └── constants.ts
 ├── file-viewer/                # Preview components
-│   ├── image-viewer.tsx        # ✅ Working
-│   ├── video-viewer.tsx        # ⚠️ Not integrated
-│   ├── audio-viewer.tsx        # ⚠️ Not integrated
-│   └── pdf-viewer.tsx          # ⚠️ Not integrated
-├── network-storage-dialog.tsx  # SMB/NFS discovery
-└── smb-share-dialog.tsx        # SMB sharing
+│   ├── file-viewer-dialog.tsx
+│   ├── file-viewer-header.tsx
+│   ├── file-viewer.tsx
+│   ├── file-utils.ts
+│   ├── image-viewer.tsx
+│   ├── video-viewer.tsx
+│   ├── audio-viewer.tsx
+│   └── pdf-viewer.tsx
+├── network-storage/            # Network storage management
+├── network-storage-dialog.tsx
+└── smb-share-dialog.tsx
 
-app/actions/filesystem/
-├── index.ts                    # Barrel export
-├── filesystem.ts               # Core operations
-├── network-storage.ts          # SMB/NFS mounting
-├── smb-share.ts                # Samba shares
-└── favorites.ts                # Favorites management
-
-app/api/files/
-├── download/route.ts           # File download endpoint
-└── view/route.ts               # File view endpoint
+src/app/actions/filesystem/     # Server actions
+src/app/api/files/              # download, view, upload, favorites
 ```
+
+### File Manager Performance Rules
+
+- Directory listing: Max 50-100 visible items, virtualize for more
+- Search debounce: >= 300ms delay
+- File size limits: 1MB for text editor, streaming for downloads
+- Icon loading: Static SVGs, no runtime generation
+- Operations: Show loading states, abort on unmount
 
 ## Code Quality Standards
 
 ### When Writing Code
 
 1. **Check component size** - Must be under 150 lines
-2. **Use design tokens** - Import from `components/ui/design-tokens.ts`
+2. **Use design tokens** - Import from `@/components/ui/design-tokens`
 3. **Apply SOLID principles** - Single responsibility per component
 4. **Keep it simple** - Prefer readability over cleverness
 5. **Write TypeScript** - No implicit `any` types
@@ -1009,53 +592,26 @@ app/api/files/
 7. **Component composition** - Prefer composition over props drilling
 8. **Error handling** - Always handle errors gracefully with user feedback
 9. **Performance first** - Memoize, debounce, limit arrays, cleanup effects
-10. **Optimize for Raspberry Pi** - Assume 1GB RAM, 4-core ARM CPU
+10. **Optimize for Raspberry Pi** - Assume limited RAM, 4-core ARM CPU
 
 ### When Detecting Issues
 
-**If component exceeds 150 lines**:
+**If component exceeds 150 lines**: Identify sub-components, extract into separate files, create `types.ts` and `utils.ts`.
 
-1. Identify logical sub-components
-2. Extract into separate files
-3. Create types.ts for shared types
-4. Create utils.ts for helper functions
+**If you detect design inconsistencies**: Replace hardcoded styles with design tokens. If no token exists, add one to `design-tokens.ts`.
 
-**If you detect design inconsistencies**:
+**If you detect SOLID violations**: Refactor and explain the fix.
 
-1. Check if a design token exists
-2. If yes, replace hardcoded styles with token
-3. If no, consider adding new token to design-tokens.ts
-4. Apply the fix immediately
-
-**If you detect SOLID violations**:
-
-1. Refactor the code to follow SOLID principles
-2. Explain the violation and how it was fixed
-
-**If you detect unnecessary complexity**:
-
-1. Simplify the code following KISS
-2. Remove unused abstractions
-
-## Testing Expectations
-
-- Test all interactive features manually during development
-- Ensure responsive design works on mobile/tablet/desktop
-- Test dark mode compatibility
-- Verify Docker operations don't break existing containers
-- Check for memory leaks with real-time polling
+**If you detect unnecessary complexity**: Simplify following KISS.
 
 ## Git Workflow
 
 - Main branch: `main`
-- Development branch: `develop`
 - Feature branches: `feature/feature-name`
 - Commit messages: Clear and descriptive
-- No force pushes to main/develop
+- No force pushes to main
 
 ## Quick Reference: Component Refactoring Checklist
-
-When creating or modifying components:
 
 - [ ] Component under 150 lines?
 - [ ] Using design tokens from `design-tokens.ts`?
@@ -1069,8 +625,8 @@ When creating or modifying components:
 
 **Best Examples of Micro-Component Architecture:**
 
-1. `components/system-monitor/` - Full dialog with 8+ micro-components
-2. `components/settings/tabs/` - 7 tab components, each focused
-3. `components/lock-screen/` - Simple 3-component structure
-4. `components/settings/metric-card.tsx` - Perfect 43-line reusable component
-5. `components/settings/info-row.tsx` - Minimal 13-line utility component
+1. `src/components/system-monitor/` - Full dialog with micro-components
+2. `src/components/settings/tabs/` - 7 tab components, each focused
+3. `src/components/lock-screen/` - Simple 3-component structure
+4. `src/components/widgets/shared/` - Reusable widget sub-components
+5. `src/components/file-manager/file-viewer/` - Viewer with clean separation

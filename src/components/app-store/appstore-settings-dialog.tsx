@@ -144,7 +144,7 @@ export function AppStoreSettingsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-lg overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.78)] p-0 text-white shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-3xl"
+        className="max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.78)] p-0 text-white shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-3xl sm:max-w-lg"
       >
         <div className="border-b border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent px-6 py-5">
           <DialogTitle className="sr-only">App Store Settings</DialogTitle>
