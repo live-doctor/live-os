@@ -282,6 +282,24 @@ set_hostname() {
     print_status "Hostname set to: $hostname_only (accessible as ${hostname_only}.local)"
 }
 
+# Restart Avahi/mDNS so the new .local hostname is advertised immediately
+restart_mdns() {
+    if [ "$DRY_RUN" -eq 1 ]; then
+        print_dry "Restart avahi-daemon to refresh mDNS hostname"
+        return
+    fi
+
+    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "^avahi-daemon"; then
+        print_status "Restarting avahi-daemon for mDNS refresh..."
+        systemctl restart avahi-daemon || print_error "avahi-daemon restart failed; mDNS might be stale"
+    elif command -v service >/dev/null 2>&1 && service avahi-daemon status >/dev/null 2>&1; then
+        print_status "Restarting avahi-daemon for mDNS refresh..."
+        service avahi-daemon restart || print_error "avahi-daemon restart failed; mDNS might be stale"
+    else
+        print_info "avahi-daemon not found; skipping mDNS restart"
+    fi
+}
+
 # Prompt for domain
 prompt_domain() {
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -318,6 +336,8 @@ prompt_domain() {
             # Set system hostname for mDNS
             set_hostname "$user_host"
 
+            restart_mdns
+
             print_status "Hostname set: $DOMAIN"
             echo ""
             echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -333,12 +353,15 @@ prompt_domain() {
             print_status "Using default hostname: homeio"
             DOMAIN="homeio.local"
             set_hostname "homeio"
+            restart_mdns
         fi
     else
         DOMAIN=$HOMEIO_DOMAIN
         hostname_only="${DOMAIN%.local}"
 
         set_hostname "$hostname_only"
+
+        restart_mdns
 
         print_status "Using domain from environment: $DOMAIN"
         echo ""

@@ -1,8 +1,8 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { hasUsersRaw } from "./lib/auth-utils";
-import { SESSION_COOKIE_NAME } from "./lib/config";
+import { hasUsersRaw } from "./src/lib/auth-utils";
+import { SESSION_COOKIE_NAME } from "./src/lib/config";
 
 const publicRoutes = ["/login", "/setup"];
 

@@ -16,7 +16,7 @@ const eslintConfig = defineConfig([
     "umbrel-apps-ref/**",
     "external-apps/**",
     "scripts/**",
-    "app/generated/**",
+    "src/app/generated/**",
   ]),
 ]);
 

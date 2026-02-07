@@ -26,7 +26,7 @@ app.prepare().then(() => {
 
   // Initialize WebSocket server for terminal (optional feature)
   // This will gracefully fail if node-pty is not available
-  import("./lib/terminal/websocket-server")
+  import("./src/lib/terminal/websocket-server")
     .then((module) => {
       module.initializeWebSocketServer(server);
       console.log("✓ Terminal WebSocket server initialized");
@@ -40,7 +40,7 @@ app.prepare().then(() => {
     });
 
   // Initialize WebSocket server for real-time system status
-  import("./lib/system-status/websocket-server")
+  import("./src/lib/system-status/websocket-server")
     .then((module) => {
       module.initializeSystemStatusWebSocket(server);
     })

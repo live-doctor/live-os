@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "App" ADD COLUMN "architectures" JSONB;
+ALTER TABLE "App" ADD COLUMN "changelog" JSONB;
+ALTER TABLE "App" ADD COLUMN "deprecated" BOOLEAN;
+ALTER TABLE "App" ADD COLUMN "monthlyPulls" INTEGER;
+ALTER TABLE "App" ADD COLUMN "releaseNotes" TEXT;
+ALTER TABLE "App" ADD COLUMN "stable" BOOLEAN;
+ALTER TABLE "App" ADD COLUMN "stars" INTEGER;

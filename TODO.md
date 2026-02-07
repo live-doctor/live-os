@@ -16,7 +16,7 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
 - [~] File manager with upload/download, permissions, and external drive visibility
 - [~] Settings for hostname/timezone/locale, networking, SSH toggle, backups, updates, notifications
 - [ ] Multi-user accounts, roles, 2FA, session management, and audit logs
-- [x] Idle lock/timeout, rate limiting, and remote logout/device approvals
+- [~] Idle lock/timeout, rate limiting, and remote logout/device approvals
 - [ ] Scheduled backups, restore, and OTA updates with changelog and rollback
 - [ ] Onboarding wizard with device checks, network setup, and storage selection
 - [ ] Remote access/sharing (reverse proxy/relay, LAN discovery, QR pairing)
@@ -29,10 +29,11 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
 ### 1. User Authentication & Security
 - [x] **Login System**
   - [x] Username/Pin authentication
-  - [x] Session management with JWT/cookies
+  - [x] Session management with cookies + DB sessions
   - [x] Login page UI
   - [x] Logout functionality
-  - [x] "Remember me" option
+  - [x] Long-lived session cookie (30 days)
+  - [ ] "Remember me" toggle (short vs long session)
   - **Priority:** CRITICAL
   - **Estimated effort:** 2-3 days
   - **Status:** COMPLETED
@@ -53,9 +54,9 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
   - **Priority:** HIGH
   - **Estimated effort:** 2 days
 
-- [ ] **Password Security**
-  - [ ] Password strength requirements
-  - [ ] Password hashing (bcrypt/argon2)
+- [~] **Password Security**
+  - [x] Password strength requirements (PIN length/format)
+  - [x] Password hashing (bcrypt)
   - [ ] Password reset flow
   - [ ] Email verification (optional)
   - **Priority:** CRITICAL
@@ -483,11 +484,11 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
   - **Priority:** MEDIUM
   - **Estimated effort:** 2 days
 
-- [ ] **Keyboard Shortcuts**
-  - [ ] Global shortcuts (search, settings)
-  - [ ] App shortcuts
+- [~] **Keyboard Shortcuts**
+  - [x] Global shortcuts (search, settings)
+  - [x] App shortcuts
   - [ ] Customizable shortcuts
-  - [ ] Shortcut help overlay
+  - [x] Shortcut help overlay
   - **Priority:** LOW
   - **Estimated effort:** 1-2 days
 
@@ -600,6 +601,7 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
 - [x] Customize install for store apps
 - [x] Status bar with WiFi, battery, date/time
 - [x] Lock screen with PIN
+- [x] Keyboard shortcuts overlay + global shortcuts
 
 ---
 

@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../src/app/generated/prisma"
 }
 
 datasource db {
@@ -74,6 +74,13 @@ model App {
   developer   String?
   screenshots Json?
   version     String?
+  releaseNotes String?
+  stable      Boolean?
+  deprecated  Boolean?
+  stars       Int?
+  monthlyPulls Int?
+  changelog   Json?
+  architectures Json?
   port        Int?
   path        String?
   website     String?
