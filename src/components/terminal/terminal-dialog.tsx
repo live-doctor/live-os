@@ -30,9 +30,6 @@ interface TerminalDialogProps {
 export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
   const { installedApps } = useSystemStatus({ fast: true });
   const terminalRef = useRef<HTMLDivElement>(null);
-  const xtermRef = useRef<Terminal | null>(null);
-  const fitAddonRef = useRef<FitAddon | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string>("host");
 
@@ -62,6 +59,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
   useEffect(() => {
     if (!open) return;
 
+    let disposed = false;
     let term: Terminal | null = null;
     let fitAddon: FitAddon | null = null;
     let webLinksAddon: WebLinksAddon | null = null;
@@ -71,42 +69,53 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
 
     // Dynamically import and initialize xterm to avoid SSR issues
     const initTerminal = async () => {
+      if (disposed) return;
       const container = terminalRef.current;
       if (!container) {
-        rafId = requestAnimationFrame(initTerminal);
+        if (!disposed) {
+          rafId = requestAnimationFrame(initTerminal);
+        }
         return;
       }
 
-      const { Terminal } = await import("xterm");
-      const { FitAddon } = await import("xterm-addon-fit");
-      const { WebLinksAddon } = await import("xterm-addon-web-links");
+      const [{ Terminal }, { FitAddon }, { WebLinksAddon }] = await Promise.all([
+        import("xterm"),
+        import("xterm-addon-fit"),
+        import("xterm-addon-web-links"),
+      ]);
+      if (disposed) return;
 
       // Initialize xterm.js
       term = new Terminal({
         cursorBlink: true,
-        fontSize: 14,
-        fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+        fontSize: 13,
+        fontFamily:
+          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+        fontWeight: 500,
+        allowTransparency: true,
+        letterSpacing: 0.2,
         theme: {
-          background: "#000000",
-          foreground: "#00ff00",
-          cursor: "#00ff00",
-          cursorAccent: "#000000",
-          black: "#000000",
-          red: "#ff5555",
-          green: "#50fa7b",
-          yellow: "#f1fa8c",
-          blue: "#bd93f9",
-          magenta: "#ff79c6",
-          cyan: "#8be9fd",
-          white: "#bfbfbf",
-          brightBlack: "#4d4d4d",
-          brightRed: "#ff6e67",
-          brightGreen: "#5af78e",
-          brightYellow: "#f4f99d",
-          brightBlue: "#caa9fa",
-          brightMagenta: "#ff92d0",
-          brightCyan: "#9aedfe",
-          brightWhite: "#e6e6e6",
+          background: "#00000000",
+          foreground: "#E6EAF2",
+          cursor: "#9FB3FF",
+          cursorAccent: "#11172A",
+          selectionBackground: "#7F90FF40",
+          black: "#151A2E",
+          red: "#FF6E7D",
+          green: "#7BE3A6",
+          yellow: "#F4CA78",
+          blue: "#87A9FF",
+          magenta: "#D39BFF",
+          cyan: "#82DBFF",
+          white: "#DFE6F6",
+          brightBlack: "#5A6785",
+          brightRed: "#FF8D98",
+          brightGreen: "#98F0BE",
+          brightYellow: "#FFD995",
+          brightBlue: "#A6BEFF",
+          brightMagenta: "#E0B6FF",
+          brightCyan: "#A2E6FF",
+          brightWhite: "#F4F7FF",
         },
         cols: 80,
         rows: 24,
@@ -125,27 +134,35 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
         fitAddon.fit();
       }
 
-      xtermRef.current = term;
-      fitAddonRef.current = fitAddon;
-
       // Connect to WebSocket
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${window.location.host}/api/terminal`);
-      wsRef.current = ws;
+      if (disposed) {
+        ws.close();
+        term.dispose();
+        return;
+      }
 
       ws.onopen = () => {
+        if (disposed) return;
         setStatusMessage(null);
         term?.writeln("\x1b[1;32mConnected to server terminal\x1b[0m");
         if (activeTarget?.id && activeTarget.id !== "host") {
           term?.writeln(
             `\x1b[1;34mAttaching to ${activeTarget.label} (docker exec -it ${activeTarget.id})\x1b[0m`,
           );
-          ws!.send(`docker exec -it ${activeTarget.id} /bin/sh\n`);
+          ws!.send(
+            JSON.stringify({
+              type: "attach",
+              target: activeTarget.id,
+            }),
+          );
         }
         term?.writeln("");
       };
 
       ws.onmessage = (event) => {
+        if (disposed) return;
         if (
           typeof event.data === "string" &&
           event.data.includes("Terminal unavailable")
@@ -156,6 +173,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       };
 
       ws.onerror = () => {
+        if (disposed) return;
         setStatusMessage(
           "Connection error. Ensure node-pty is installed on the server.",
         );
@@ -163,6 +181,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       };
 
       ws.onclose = () => {
+        if (disposed) return;
         setStatusMessage(
           (prev) =>
             prev ||
@@ -181,6 +200,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
 
       // Handle window resize
       const handleResize = () => {
+        if (disposed) return;
         fitAddon?.fit();
         if (ws?.readyState === WebSocket.OPEN && term) {
           ws.send(
@@ -206,6 +226,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
 
     // Cleanup on unmount
     return () => {
+      disposed = true;
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
@@ -222,7 +243,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="h-10 rounded-full border border-white/15 bg-white/10 px-3 text-white/80 hover:bg-white/15 hover:text-white"
+          className="h-10 rounded-[10px] border border-white/8 bg-white/8 px-3 text-white/75 hover:border-white/12 hover:bg-white/12 hover:text-white"
         >
           <div className="flex items-center gap-2">
             {activeTarget?.icon}
@@ -235,7 +256,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="min-w-[220px] border-white/10 bg-white/10 text-white backdrop-blur-xl"
+        className="min-w-[220px] rounded-[12px] border-white/8 bg-[rgba(35,40,54,0.88)] text-white backdrop-blur-xl"
       >
         <DropdownMenuLabel className="text-white/80">Connect to</DropdownMenuLabel>
         <DropdownMenuItem
@@ -297,28 +318,26 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
         >
           <X className="h-4 w-4" />
         </Button>
-        <div className="flex min-w-0 items-start justify-between gap-3 pl-3 pr-14 pt-4 md:pl-[28px] md:pr-[84px] md:pt-7 xl:pl-[40px] xl:pr-[96px]">
+        <div className="flex min-w-0 items-start pl-3 pr-14 pt-4 md:pl-[28px] md:pr-[84px] md:pt-7 xl:pl-[40px] xl:pr-[96px]">
           <div className="flex min-w-0 flex-col gap-0.5 px-1">
             <h2 className="text-[20px] font-bold leading-none tracking-[-0.03em] text-white/80 md:text-[32px]">
               Terminal
             </h2>
           </div>
-          <div className="hidden shrink-0 md:block">
-            {targetSelector}
-          </div>
         </div>
-        <div className="px-3 pb-3 md:hidden">{targetSelector}</div>
-
         {/* Terminal Container */}
         <div className="flex min-h-0 flex-1 px-3 pb-3 md:px-[28px] md:pb-5 xl:px-[40px]">
           <div
             ref={terminalRef}
-            className="w-full min-h-0 flex-1 rounded-[12px] border border-white/10 bg-black/70 p-3 backdrop-blur-xl scrollbar-hide terminal-scrollbar-hide md:p-4"
+            className="w-full min-h-0 flex-1 rounded-[14px] border border-white/15 bg-[linear-gradient(160deg,rgba(15,20,36,0.92),rgba(10,14,28,0.9))] p-3 backdrop-blur-xl scrollbar-hide terminal-scrollbar-hide md:p-4"
             style={{ overflow: "hidden" }}
           />
         </div>
+        <div className="absolute bottom-3 right-3 z-20 md:bottom-5 md:right-[28px] xl:right-[40px]">
+          {targetSelector}
+        </div>
         {statusMessage && (
-          <div className="mx-3 mb-3 rounded-md border border-amber-700/40 bg-amber-950/40 px-3 py-2 text-xs text-amber-300 md:mx-[28px] xl:mx-[40px]">
+          <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[min(420px,calc(100%-24px))] rounded-md border border-amber-700/40 bg-amber-950/80 px-3 py-2 text-xs text-amber-200 shadow-lg backdrop-blur-md md:bottom-5 md:left-[28px] xl:left-[40px]">
             {statusMessage}
           </div>
         )}
