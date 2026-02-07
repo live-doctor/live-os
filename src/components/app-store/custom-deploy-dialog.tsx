@@ -177,10 +177,10 @@ export function CustomDeployDialog({
         />
 
         <ScrollArea
-          className="h-[calc(92vh-160px)] w-full"
-          viewportClassName="homeio-scrollarea-fit h-full w-full"
+          className="h-[calc(92vh-160px)] w-full min-w-0"
+          viewportClassName="homeio-scrollarea-fit h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0 [&>div]:!max-w-full [&>div]:!overflow-x-hidden"
         >
-          <div className="space-y-5 px-3 pb-6 pt-4 md:px-6 md:pt-5">
+          <div className="min-w-0 max-w-full space-y-5 overflow-hidden px-3 pb-6 pt-4 md:px-6 md:pt-5">
             {/* App Name */}
             <div className="space-y-2">
               <Label htmlFor="app-name" className="text-white/85">

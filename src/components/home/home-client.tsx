@@ -179,7 +179,9 @@ export function HomeClient({ initialWallpaper }: HomeClientProps) {
             </button>
           )}
         </div>
-        <InstalledAppsGrid />
+        <div className="flex w-full flex-1 items-center justify-center">
+          <InstalledAppsGrid />
+        </div>
         <div className="pointer-events-none fixed right-0 bottom-0 left-0 z-50 mb-4 flex justify-center">
           <div className="pointer-events-auto relative">
             <button

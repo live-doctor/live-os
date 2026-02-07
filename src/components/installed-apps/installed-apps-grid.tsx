@@ -12,9 +12,12 @@ import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { motion } from "framer-motion";
 import { ArrowUp, Box } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppContextMenu } from "./app-context-menu";
+
+const iconFrameClass =
+  "border border-slate-100/10 bg-white/10 shadow-inner shadow-black/25";
 
 export function InstalledAppsGrid() {
   const {
@@ -23,6 +26,8 @@ export function InstalledAppsGrid() {
     connected,
   } = useSystemStatus();
   const [appIcons, setAppIcons] = useState<Record<string, string>>({});
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Convert WebSocket app format to component format
   const apps: InstalledApp[] = wsApps.map((wsApp: WSInstalledApp) => ({
@@ -55,6 +60,36 @@ export function InstalledAppsGrid() {
     });
   }, [apps]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateItemsPerPage = () => {
+      const width = window.innerWidth;
+      if (width >= 1024) {
+        setItemsPerPage(10);
+      } else if (width >= 640) {
+        setItemsPerPage(8);
+      } else {
+        setItemsPerPage(6);
+      }
+    };
+
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(apps.length / itemsPerPage));
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages - 1));
+  }, [totalPages]);
+
+  const pagedApps = useMemo(() => {
+    const start = currentPage * itemsPerPage;
+    return apps.slice(start, start + itemsPerPage);
+  }, [apps, currentPage, itemsPerPage]);
+
   // Show loading state if not connected yet
   if (!connected && apps.length === 0 && otherContainers.length === 0) {
     return (
@@ -77,9 +112,9 @@ export function InstalledAppsGrid() {
   }
 
   return (
-    <div className="w-full max-w-5xl px-4 space-y-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col items-center px-4">
       {apps.length > 0 && (
-        <div>
+        <div className="w-full">
           <motion.div
             variants={{
               hidden: { opacity: 0 },
@@ -90,9 +125,9 @@ export function InstalledAppsGrid() {
             }}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 sm:gap-5"
+            className="mx-auto grid w-full grid-cols-3 justify-items-center gap-4 sm:grid-cols-4 sm:gap-5 md:grid-cols-5"
           >
-            {apps.map((app) => (
+            {pagedApps.map((app) => (
               <AppCard
                 key={app.id}
                 app={app}
@@ -106,11 +141,28 @@ export function InstalledAppsGrid() {
               />
             ))}
           </motion.div>
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              {Array.from({ length: totalPages }).map((_, pageIndex) => (
+                <button
+                  key={`apps-page-${pageIndex}`}
+                  type="button"
+                  onClick={() => setCurrentPage(pageIndex)}
+                  className={`h-2.5 rounded-full transition-all ${
+                    pageIndex === currentPage
+                      ? "w-5 bg-white/80"
+                      : "w-2.5 bg-white/30 hover:bg-white/45"
+                  }`}
+                  aria-label={`Go to apps page ${pageIndex + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {otherContainers.length > 0 && (
-        <div>
+        <div className="mt-6 w-full">
           <h3
             className={`mb-3 text-xs uppercase tracking-wider ${surface.labelMuted}`}
           >
@@ -161,9 +213,9 @@ function AppCard({
           transition={{ type: "spring", stiffness: 380, damping: 18 }}
           className="relative"
         >
-          <div className="mx-auto flex  w-14 flex-col items-center sm:w-16">
+          <div className="mx-auto flex w-14 flex-col items-center text-center sm:w-16">
             <div
-              className={`relative h-14 w-14 cursor-pointer overflow-hidden rounded-2xl ring-1 ring-white/20 sm:h-16 sm:w-16 ${surface.panel}`}
+              className={`relative h-14 w-14 cursor-pointer overflow-hidden rounded-[10px] sm:h-16 sm:w-16 ${iconFrameClass}`}
               onClick={async () => {
                 try {
                   const url = await getAppWebUI(app.appId);
@@ -206,7 +258,7 @@ function AppCard({
               )}
             </div>
             <span
-              className={`mt-2 block w-full text-center text-xs leading-tight sm:text-sm ${surface.label}`}
+              className={`mt-2 block w-full text-center text-[11px] leading-tight sm:text-xs ${surface.label}`}
             >
               {app.name}
             </span>
@@ -245,7 +297,7 @@ function OtherContainerCard({ container }: { container: OtherContainer }) {
       >
         <div className="mx-auto flex w-12 flex-col items-center sm:w-14">
           <div
-            className={`relative flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ring-white/20 sm:h-14 sm:w-14 ${surface.panel}`}
+            className={`relative flex h-12 w-12 items-center justify-center rounded-[10px] sm:h-14 sm:w-14 ${iconFrameClass}`}
           >
             <Box className="h-6 w-6 text-white/55" />
             <span

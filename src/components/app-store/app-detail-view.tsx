@@ -102,8 +102,8 @@ export function AppDetailView({
           <X className="h-4 w-4" />
         </Button>
 
-        <ScrollArea className="h-[92vh] w-full" viewportClassName="homeio-scrollarea-fit h-full w-full">
-          <div className="flex min-w-0 flex-col gap-5 px-3 pb-8 pt-6 md:px-[40px] md:pt-12 xl:px-[70px]">
+        <ScrollArea className="h-[92vh] w-full min-w-0" viewportClassName="homeio-scrollarea-fit h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0 [&>div]:!max-w-full [&>div]:!overflow-x-hidden">
+          <div className="flex min-w-0 max-w-full flex-col gap-5 overflow-hidden px-3 pb-8 pt-6 md:px-[40px] md:pt-12 xl:px-[70px]">
             <div className="flex flex-col gap-8">
               <div className="space-y-5">
                 <button

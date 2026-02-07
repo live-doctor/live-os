@@ -32,10 +32,11 @@ export function CommandPaletteDialog({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const hasQuery = query.trim().length > 0;
 
   const filteredActions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return actions;
+    if (!q) return [];
     return actions.filter((action) => {
       const haystack =
         `${action.title} ${action.subtitle ?? ""} ${action.searchText ?? ""}`.toLowerCase();
@@ -48,10 +49,10 @@ export function CommandPaletteDialog({
     Math.max(filteredActions.length - 1, 0),
   );
 
-  const visibleFrequentActions = useMemo(() => {
-    if (query.trim().length > 0) return [];
+  const visibleFrequentActions = useMemo<CommandPaletteAction[]>(() => {
+    if (hasQuery) return [];
     return frequentActions;
-  }, [frequentActions, query]);
+  }, [frequentActions, hasQuery]);
 
   useEffect(() => {
     if (!open) {
@@ -160,7 +161,13 @@ export function CommandPaletteDialog({
             )}
 
             <div className="flex flex-col gap-0.5" role="listbox" aria-label="Suggestions">
-              {filteredActions.length === 0 ? (
+              {!hasQuery ? (
+                visibleFrequentActions.length === 0 ? (
+                  <div className="px-3 py-10 text-center text-sm text-white/45">
+                    Start typing to search apps, settings, or actions
+                  </div>
+                ) : null
+              ) : filteredActions.length === 0 ? (
                 <div className="px-3 py-10 text-center text-sm text-white/45">
                   No results
                 </div>
