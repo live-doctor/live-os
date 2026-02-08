@@ -41,7 +41,10 @@ export function AppInstallDialog({
   const [customizeDialogOpen, setCustomizeDialogOpen] = useState(false);
   const [customizeData, setCustomizeData] = useState<CustomDeployInitialData | null>(null);
   const [loadingCompose, setLoadingCompose] = useState(false);
-  const { installProgress, pushInstallProgress } = useSystemStatus({ fast: true });
+  const { installProgress, pushInstallProgress } = useSystemStatus({
+    fast: true,
+    enabled: open,
+  });
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activeProgress = installProgress.find((p) => p.appId === app.id);
   const progressValue =

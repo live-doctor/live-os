@@ -5,6 +5,7 @@ import { getFavorites } from "@/app/actions/filesystem/favorites";
 import {
   AVAILABLE_WIDGETS,
   DEFAULT_WIDGET_IDS,
+  FAVORITES_WIDGET_MAX_FOLDERS,
   MAX_WIDGETS,
   WIDGET_COLORS,
 } from "@/components/widgets/constants";
@@ -44,7 +45,7 @@ const THERMALS_MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
 type ThermalsRecord = { value: number; ts: number } | null;
 
 function toFavoriteFolders(paths: string[]): FileItem[] {
-  return paths.map((favPath) => {
+  return paths.slice(0, FAVORITES_WIDGET_MAX_FOLDERS).map((favPath) => {
     const segments = favPath.split("/").filter(Boolean);
     return {
       id: favPath,
@@ -413,6 +414,16 @@ export function useWidgets(): UseWidgetsReturn {
           label: "Storage",
           value: formatBytes(storageUsedBytes, 2),
           color: WIDGET_COLORS.storage,
+        },
+        {
+          label: "Network",
+          value:
+            networkStats &&
+            Number.isFinite(networkStats.downloadMbps) &&
+            networkStats.downloadMbps > 0
+              ? `${networkStats.downloadMbps.toFixed(1)} Mbps`
+              : "Offline",
+          color: WIDGET_COLORS.network,
         },
       ],
     };

@@ -8,7 +8,7 @@ import {
   type WifiNetwork,
   type WifiRadioState,
 } from "@/app/actions/network";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -115,6 +115,10 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[760px] p-0">
+        <DialogTitle className="sr-only">Wi-Fi</DialogTitle>
+        <DialogDescription className="sr-only">
+          Connect to and manage available Wi-Fi networks.
+        </DialogDescription>
         <ScrollArea className="max-h-[78vh]">
           <div className="space-y-6 px-5 py-6">
             <WifiDialogHeader

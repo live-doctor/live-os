@@ -32,7 +32,7 @@ export function SystemMonitorDialog({
   onOpenChange,
 }: SystemMonitorDialogProps) {
   const { systemStats, storageStats, networkStats, runningApps, connected } =
-    useSystemStatus({ fast: true });
+    useSystemStatus({ fast: true, enabled: open });
 
   const [selectedMetric, setSelectedMetric] = useState<SelectedMetric>(null);
   const [cpuHistory, setCpuHistory] = useState<ChartDataPoint[]>([]);

@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { MapPin, Store } from "lucide-react";
 import type { ReactNode } from "react";
 
 type PostSetupProps = {
@@ -9,6 +10,11 @@ type PostSetupProps = {
   locationError: string | null;
   isLocating: boolean;
   onUseLocation: () => void;
+  includeLinuxServerStore: boolean;
+  onIncludeLinuxServerStoreChange: (checked: boolean) => void;
+  linuxServerStatus: string;
+  linuxServerError: string | null;
+  isFinishing: boolean;
   version: string;
   onFinish: () => void;
 };
@@ -18,6 +24,11 @@ export function PostSetup({
   locationError,
   isLocating,
   onUseLocation,
+  includeLinuxServerStore,
+  onIncludeLinuxServerStoreChange,
+  linuxServerStatus,
+  linuxServerError,
+  isFinishing,
   version,
   onFinish,
 }: PostSetupProps) {
@@ -45,13 +56,36 @@ export function PostSetup({
         )}
       </div>
 
+      <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-inner shadow-black/25 space-y-3">
+        <CardHeader
+          title="LinuxServer.io catalog (optional)"
+          description="Import LinuxServer.io apps during setup."
+          icon={<Store className="h-5 w-5 text-white" />}
+        />
+        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+          <p className="text-sm text-white/85">Include LinuxServer.io apps</p>
+          <Switch
+            checked={includeLinuxServerStore}
+            onCheckedChange={onIncludeLinuxServerStoreChange}
+            disabled={isFinishing}
+          />
+        </div>
+        {linuxServerStatus && (
+          <p className="text-xs text-white/60">{linuxServerStatus}</p>
+        )}
+        {linuxServerError && (
+          <p className="text-xs text-red-400">{linuxServerError}</p>
+        )}
+      </div>
+
       <div className="flex items-center justify-between text-sm text-white/60 mt-4">
         <span>Version {version}</span>
         <Button
           onClick={onFinish}
+          disabled={isFinishing}
           className="bg-white/10 text-white hover:bg-white/20 border border-white/15"
         >
-          Go to login
+          {isFinishing ? "Finishing setup…" : "Go to login"}
         </Button>
       </div>
     </>

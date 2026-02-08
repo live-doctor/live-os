@@ -68,7 +68,7 @@ export async function registerUser(
       data: { username, pin: hashedPin, role: "ADMIN" },
     });
 
-    // Bootstrap default LinuxServer catalog in background
+    // Bootstrap default Umbrel catalog in background
     ensureDefaultStoresInstalled();
 
     const session = await createSession(user.id);
@@ -242,7 +242,7 @@ export async function login(
         path: "/",
       });
 
-      // Refresh default LinuxServer catalog on every login.
+      // Refresh default Umbrel catalog on every login.
       void ensureDefaultStoresInstalled();
 
       return {

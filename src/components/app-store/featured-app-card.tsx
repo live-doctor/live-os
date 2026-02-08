@@ -19,6 +19,7 @@ export function FeaturedAppCard({
   const [imageSrc, setImageSrc] = useState(
     app.thumbnail || app.screenshots?.[0] || "",
   );
+  const storeBadge = app.storeName?.trim() || app.storeSlug?.trim() || null;
 
   const gradient = useMemo(() => {
     const hash = app.id
@@ -57,6 +58,11 @@ export function FeaturedAppCard({
           {app.tagline || app.overview}
         </p>
       </div>
+      {storeBadge ? (
+        <span className="pointer-events-none absolute bottom-3 right-3 max-w-[140px] truncate rounded-md bg-black/45 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] text-white/65 md:bottom-4 md:right-4 md:text-[9px]">
+          {storeBadge}
+        </span>
+      ) : null}
     </motion.button>
   );
 }

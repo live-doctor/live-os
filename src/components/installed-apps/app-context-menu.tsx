@@ -14,6 +14,7 @@ import {
 } from "@/components/app-store/custom-deploy-dialog";
 import type { InstalledApp } from "@/components/app-store/types";
 import { Button } from "@/components/ui/button";
+import { HOMEIO_CONTEXT_MENU_SURFACE_CLASS } from "@/components/ui/dialog-chrome";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,8 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
   const [customLoading, setCustomLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const lastOpenedViaContext = useRef(false);
+  const itemClassName =
+    "rounded-md px-2.5 py-1.5 text-[14px] font-medium leading-tight tracking-[-0.015em] text-white transition-colors hover:bg-white/6 focus:bg-white/6 focus:text-white";
 
   const handleOpen = async () => {
     try {
@@ -193,30 +196,29 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
           {children}
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="min-w-[240px] rounded-2xl border border-white/10 bg-gradient-to-b from-[#0b0b0f]/95 via-[#0f111a]/95 to-[#0b0f1a]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-xl ring-1 ring-white/5 py-2"
+          className={`min-w-[168px] p-1 ${HOMEIO_CONTEXT_MENU_SURFACE_CLASS}`}
           align="start"
         >
-          <div className="px-3 pb-2 flex items-center gap-2">
+          <div className="flex items-center gap-2 px-2.5 pb-1 pt-0.5">
             <div
-              className="h-2 w-2 rounded-full"
+              className="h-1.5 w-1.5 rounded-full"
               style={{
                 backgroundColor:
                   app.status === "running" ? "#34d399" : "#fbbf24",
               }}
             />
-            <div className="text-sm font-semibold truncate">{app.name}</div>
-            <span className="ml-auto text-[11px] px-2 py-[2px] rounded-full border border-white/15 bg-white/5 text-white/70 uppercase tracking-[0.12em]">
-              {app.status === "running" ? "Running" : "Stopped"}
-            </span>
+            <div className="truncate text-[13px] font-semibold text-white/90">
+              {app.name}
+            </div>
           </div>
-          <DropdownMenuSeparator className="bg-white/10" />
+          <DropdownMenuSeparator className="mx-0.5 my-1 h-px bg-white/10" />
 
           <DropdownMenuItem
             onClick={handleOpen}
             disabled={loading}
-            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+            className={itemClassName}
           >
-            <ExternalLink className="mr-2 h-4 w-4" />
+            <ExternalLink className="mr-2 h-3.5 w-3.5" />
             Open
           </DropdownMenuItem>
 
@@ -224,12 +226,12 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
             <DropdownMenuItem
               onClick={handleStop}
               disabled={loading}
-              className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+              className={itemClassName}
             >
               {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Square className="mr-2 h-4 w-4" />
+                <Square className="mr-2 h-3.5 w-3.5" />
               )}
               Stop
             </DropdownMenuItem>
@@ -237,12 +239,12 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
             <DropdownMenuItem
               onClick={handleStart}
               disabled={loading}
-              className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+              className={itemClassName}
             >
               {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Play className="mr-2 h-4 w-4" />
+                <Play className="mr-2 h-3.5 w-3.5" />
               )}
               Start
             </DropdownMenuItem>
@@ -251,12 +253,12 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
           <DropdownMenuItem
             onClick={handleRestart}
             disabled={loading}
-            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+            className={itemClassName}
           >
             {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
             ) : (
-              <RotateCw className="mr-2 h-4 w-4" />
+              <RotateCw className="mr-2 h-3.5 w-3.5" />
             )}
             Restart
           </DropdownMenuItem>
@@ -264,33 +266,33 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
           <DropdownMenuItem
             onClick={() => setShowLogs(true)}
             disabled={loading}
-            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+            className={itemClassName}
           >
-            <FileText className="mr-2 h-4 w-4" />
+            <FileText className="mr-2 h-3.5 w-3.5" />
             View Logs
           </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={handleEditDeploy}
             disabled={loading || customLoading}
-            className="text-white/90 focus:bg-white/10 focus:text-white hover:bg-white/10"
+            className={itemClassName}
           >
             {customLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
             ) : (
-              <FileText className="mr-2 h-4 w-4" />
+              <FileText className="mr-2 h-3.5 w-3.5" />
             )}
             Edit / Redeploy
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="bg-white/10" />
+          <DropdownMenuSeparator className="mx-0.5 my-1 h-px bg-white/10" />
 
           <DropdownMenuItem
             onClick={() => setShowUninstallConfirm(true)}
             disabled={loading}
-            className="text-red-400 focus:bg-red-500/10 hover:bg-red-500/10"
+            className="rounded-md px-2.5 py-1.5 text-[14px] font-medium leading-tight tracking-[-0.015em] text-red-400 transition-colors hover:bg-white/6 focus:bg-white/6 focus:text-red-300"
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className="mr-2 h-3.5 w-3.5" />
             Uninstall
           </DropdownMenuItem>
         </DropdownMenuContent>

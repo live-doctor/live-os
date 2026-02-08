@@ -52,7 +52,7 @@ export interface ThreeStatsData {
 }
 
 export interface SystemPillsData {
-  stats: [StatItem, StatItem, StatItem];
+  stats: [StatItem, StatItem, StatItem, StatItem];
 }
 
 export interface FourStatsData {

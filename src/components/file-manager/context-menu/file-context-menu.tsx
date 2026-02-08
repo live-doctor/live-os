@@ -3,6 +3,7 @@
 import type { FileSystemItem } from "@/app/actions/filesystem";
 import { type RefObject, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { HOMEIO_CONTEXT_MENU_SURFACE_CLASS } from "@/components/ui/dialog-chrome";
 import { menuSections } from "./constants";
 import { ContextMenuItem } from "./context-menu-item";
 import { ContextMenuSeparator } from "./context-menu-separator";
@@ -105,23 +106,40 @@ export function FilesContextMenu({
     handleAction(actionId, item);
   };
 
-  // Portal into the Radix Dialog portal container (not document.body)
-  // to avoid being marked `inert` by Radix's focus trap.
-  const target =
-    portalContainer?.closest("[data-radix-portal]") ??
-    portalContainer ??
-    document.body;
+  // Keep the menu in the dialog content container so pointer coordinates can be
+  // clamped relative to the visible files window (Finder-like behavior).
+  const target = portalContainer ?? document.body;
+  const isBodyTarget = target === document.body;
+  const containerRect = isBodyTarget
+    ? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }
+    : target.getBoundingClientRect();
+  const menuWidth = 176;
+  const menuHeight = 420;
+  const relativeLeft = contextMenu.x - containerRect.left;
+  const relativeTop = contextMenu.y - containerRect.top;
+  const left = Math.min(
+    Math.max(relativeLeft, 8),
+    Math.max(containerRect.width - menuWidth - 8, 8),
+  );
+  const top = Math.min(
+    Math.max(relativeTop, 8),
+    Math.max(containerRect.height - menuHeight - 8, 8),
+  );
 
   return createPortal(
     <>
       <div
         ref={menuRef}
-        className="fixed z-[150] min-w-[188px] overflow-hidden rounded-[10px] border border-white/12 bg-[#151429f2] text-white shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl"
-        style={{ top: contextMenu.y, left: contextMenu.x }}
+        className={`z-[150] min-w-[168px] ${HOMEIO_CONTEXT_MENU_SURFACE_CLASS}`}
+        style={{
+          position: isBodyTarget ? "fixed" : "absolute",
+          top,
+          left,
+        }}
         onClick={(event) => event.stopPropagation()}
         onContextMenu={(event) => event.preventDefault()}
       >
-        <div className="p-1.5">
+        <div className="p-1">
           {visibleSections.map((section, sectionIndex) => (
             <div key={section.id}>
               {sectionIndex > 0 && <ContextMenuSeparator />}

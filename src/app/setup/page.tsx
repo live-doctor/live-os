@@ -1,6 +1,7 @@
 "use client";
 
 import { hasUsers, registerUser } from "@/app/actions/auth";
+import { importAppStore } from "@/app/actions/appstore";
 import { updateSettings } from "@/app/actions/auth/settings";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OrbitLoader } from "@/components/auth/orbit-loader";
@@ -13,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 export default function SetupPage() {
+  const LINUXSERVER_STORE_URL = "https://api.linuxserver.io/api/v1/images?include_config=true&include_deprecated=true";
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [pin, setPin] = useState("");
@@ -24,6 +26,10 @@ export default function SetupPage() {
   const [locationStatus, setLocationStatus] = useState("");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
+  const [includeLinuxServerStore, setIncludeLinuxServerStore] = useState(false);
+  const [linuxServerStatus, setLinuxServerStatus] = useState("");
+  const [linuxServerError, setLinuxServerError] = useState<string | null>(null);
+  const [finishing, setFinishing] = useState(false);
 
   useEffect(() => {
     hasUsers().then((exists) => {
@@ -145,7 +151,39 @@ export default function SetupPage() {
     );
   }, []);
 
-  const handleFinish = () => router.push("/login");
+  const handleFinish = useCallback(async () => {
+    if (finishing) return;
+    setFinishing(true);
+    setLinuxServerError(null);
+    setLinuxServerStatus("");
+
+    if (includeLinuxServerStore) {
+      setLinuxServerStatus("Importing LinuxServer.io catalog…");
+      try {
+        const result = await importAppStore(LINUXSERVER_STORE_URL, {
+          name: "LinuxServer.io Catalog",
+          description: "LinuxServer.io app catalog imported during setup",
+        });
+        if (!result.success) {
+          setLinuxServerError(
+            result.error || "Failed to import LinuxServer.io catalog.",
+          );
+          setFinishing(false);
+          return;
+        }
+        setLinuxServerStatus("LinuxServer.io catalog imported.");
+      } catch (error) {
+        setLinuxServerError(
+          (error as Error)?.message ||
+            "Failed to import LinuxServer.io catalog.",
+        );
+        setFinishing(false);
+        return;
+      }
+    }
+
+    router.push("/login");
+  }, [finishing, includeLinuxServerStore, router, LINUXSERVER_STORE_URL]);
 
   if (checkingUsers) {
     return (
@@ -176,6 +214,11 @@ export default function SetupPage() {
           locationError={locationError}
           isLocating={locating}
           onUseLocation={handleUseLocation}
+          includeLinuxServerStore={includeLinuxServerStore}
+          onIncludeLinuxServerStoreChange={setIncludeLinuxServerStore}
+          linuxServerStatus={linuxServerStatus}
+          linuxServerError={linuxServerError}
+          isFinishing={finishing}
           version={VERSION}
           onFinish={handleFinish}
         />

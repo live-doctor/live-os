@@ -1,7 +1,12 @@
 "use client";
 
 import { getCurrentUser, verifyPin, type AuthUser } from "@/app/actions/auth";
-import { card } from "@/components/ui/design-tokens";
+import {
+  HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+  HOMEIO_GLASS_HEADER_CLASS,
+  HOMEIO_GLASS_PANEL_CLASS,
+} from "@/components/ui/dialog-chrome";
+import { cn } from "@/lib/utils";
 import { PIN_LENGTH } from "@/lib/config";
 import { useEffect, useState } from "react";
 import { PinInputForm } from "./pin-input-form";
@@ -76,19 +81,21 @@ export function LockScreen({ open, onUnlock }: LockScreenProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/60 backdrop-blur-xl px-4">
-      <div
-        className={`w-full max-w-lg space-y-8 rounded-3xl ${card.base} p-10`}
-      >
-        <UserHeader username={friendlyName} loading={loadingUser} />
-        <PinInputForm
-          pin={pin}
-          onPinChange={setPin}
-          error={error}
-          submitting={submitting}
-          username={friendlyName}
-          onSubmit={handleSubmit}
-        />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 backdrop-blur-md">
+      <div className={cn("w-full max-w-xl", HOMEIO_GLASS_PANEL_CLASS)}>
+        <div className={cn("py-4 md:py-5", HOMEIO_GLASS_HEADER_CLASS, HOMEIO_DIALOG_CONTENT_GUTTER_CLASS)}>
+          <UserHeader username={friendlyName} loading={loadingUser} />
+        </div>
+        <div className={cn("py-6 md:py-7", HOMEIO_DIALOG_CONTENT_GUTTER_CLASS)}>
+          <PinInputForm
+            pin={pin}
+            onPinChange={setPin}
+            error={error}
+            submitting={submitting}
+            username={friendlyName}
+            onSubmit={handleSubmit}
+          />
+        </div>
       </div>
     </div>
   );

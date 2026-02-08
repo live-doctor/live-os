@@ -33,6 +33,9 @@ export function CommandPaletteDialog({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const hasQuery = query.trim().length > 0;
+  const resultsHeightClass = hasQuery
+    ? "max-h-[460px] min-h-[320px]"
+    : "max-h-[420px] min-h-[260px]";
 
   const filteredActions = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -109,27 +112,32 @@ export function CommandPaletteDialog({
         }}
       >
         <div className="h-full w-full overflow-hidden flex flex-col gap-3 md:gap-5">
-          <div className="flex items-center pr-2">
+          <div className="flex items-center rounded-[12px] border border-white/10 bg-white/[0.04] px-2">
             <input
               ref={inputRef}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search for apps, settings, or actions"
-              className={`flex w-full rounded-md bg-transparent p-2 text-[15px] tracking-[-0.02em] outline-none placeholder:text-white/25 disabled:cursor-not-allowed disabled:opacity-50 ${surface.label}`}
+              className={`h-9 w-full rounded-md bg-transparent px-1.5 text-[14px] tracking-[-0.02em] outline-none placeholder:text-white/25 disabled:cursor-not-allowed disabled:opacity-50 ${surface.label}`}
             />
             <button
               type="button"
               onClick={() => handleDialogOpenChange(false)}
-              className="rounded-full opacity-30 outline-none ring-white/60 transition-opacity hover:opacity-40 focus-visible:opacity-40 focus-visible:ring-2"
+              className="flex h-7 w-7 items-center justify-center rounded-full opacity-40 outline-none ring-white/60 transition-opacity hover:opacity-60 focus-visible:opacity-60 focus-visible:ring-2"
               aria-label="Close search"
             >
-              <X className="h-[18px] w-[18px] md:h-5 md:w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
           <div className="h-[1px] w-full shrink-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          <div className="overflow-y-auto overflow-x-hidden max-h-[370px] scrollbar-hide">
+          <div
+            className={cn(
+              "overflow-y-auto overflow-x-hidden scrollbar-hide transition-[max-height,min-height] duration-300 ease-out",
+              resultsHeightClass,
+            )}
+          >
             {visibleFrequentActions.length > 0 && (
               <div className="mb-3 flex flex-col gap-3 md:mb-5 md:gap-5">
                 <div>
@@ -179,7 +187,7 @@ export function CommandPaletteDialog({
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => runSelected(index)}
                     className={cn(
-                      `group relative flex cursor-default select-none items-center gap-3 rounded-[8px] p-2 text-[13px] tracking-[-0.02em] text-left outline-none md:text-[15px] ${surface.label}`,
+                      `group relative flex cursor-default select-none items-start gap-3 rounded-[8px] p-2 text-left outline-none`,
                       index === normalizedActiveIndex
                         ? "bg-white/[0.04]"
                         : "hover:bg-white/[0.03]",
@@ -190,15 +198,19 @@ export function CommandPaletteDialog({
                     <div className="flex h-6 w-6 min-h-6 min-w-6 items-center justify-center rounded-[6px] border border-slate-100/10 bg-white/10 sm:rounded-[8px]">
                       {action.icon}
                     </div>
-                    <span>
-                      {action.title}
+                    <div className="min-w-0 flex-1">
+                      <div className={cn("truncate text-[13px] md:text-[15px]", surface.label)}>
+                        {action.title}
+                      </div>
                       {action.subtitle ? (
-                        <span className="opacity-50"> {action.subtitle}</span>
+                        <div className="mt-0.5 truncate text-[11px] leading-tight text-white/45">
+                          {action.subtitle}
+                        </div>
                       ) : null}
-                    </span>
+                    </div>
                     <span
                       className={cn(
-                        "ml-auto mr-1 text-xs tracking-widest text-white/30",
+                        "ml-auto mt-1 mr-1 text-xs tracking-widest text-white/30",
                         index === normalizedActiveIndex ? "block" : "hidden",
                       )}
                     >

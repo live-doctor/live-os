@@ -29,7 +29,7 @@ export function AppStoreHeader({
 }: AppStoreHeaderProps) {
   return (
     <div className="flex min-w-0 flex-col gap-3 md:gap-5">
-      <div className="flex min-w-0 flex-col gap-x-4 gap-y-3 px-1 md:flex-row md:items-center md:px-0">
+      <div className="flex min-w-0 flex-col gap-x-4 gap-y-3 px-1 pr-12 md:flex-row md:items-center md:px-0 md:pr-14">
         <h2
           className={`flex-1 whitespace-nowrap capitalize ${HOMEIO_DIALOG_TITLE_CLASS}`}
         >

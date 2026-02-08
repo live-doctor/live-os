@@ -1,6 +1,13 @@
 "use client";
 
 import { WallpaperLayout } from "@/components/layout/wallpaper-layout";
+import {
+  HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+  HOMEIO_DIALOG_SUBTITLE_CLASS,
+  HOMEIO_DIALOG_TITLE_CLASS,
+  HOMEIO_GLASS_HEADER_CLASS,
+  HOMEIO_GLASS_PANEL_CLASS,
+} from "@/components/ui/dialog-chrome";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -25,14 +32,22 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <WallpaperLayout>
-      <div className="min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(142,117,190,0.18),transparent_55%)]" />
         <div
           className={cn(
-            "w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl shadow-black/50",
+            "relative w-full max-h-[92vh]",
+            HOMEIO_GLASS_PANEL_CLASS,
             widthClass,
           )}
         >
-          <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-gradient-to-r from-white/10 via-white/5 to-transparent">
+          <div
+            className={cn(
+              "flex items-center justify-between py-4 md:py-5",
+              HOMEIO_GLASS_HEADER_CLASS,
+              HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+            )}
+          >
             <div className="flex items-center gap-4">
               <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/70">
                 {badge}
@@ -40,21 +55,28 @@ export function AuthShell({
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
                   {icon}
-                  <h1 className="text-2xl font-semibold text-white drop-shadow-sm">
+                  <h1 className={cn(HOMEIO_DIALOG_TITLE_CLASS, "text-white/85")}>
                     {title}
                   </h1>
                 </div>
                 {subtitle && (
-                  <p className="text-sm text-white/60">{subtitle}</p>
+                  <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>{subtitle}</p>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="p-8">{children}</div>
+          <div className={cn("py-6 md:py-7", HOMEIO_DIALOG_CONTENT_GUTTER_CLASS)}>
+            {children}
+          </div>
 
           {footer && (
-            <div className="border-t border-white/5 bg-white/5 px-8 py-5">
+            <div
+              className={cn(
+                "border-t border-white/10 bg-white/5 py-4",
+                HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+              )}
+            >
               {footer}
             </div>
           )}

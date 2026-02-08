@@ -58,26 +58,55 @@ function StorageGlyph() {
   );
 }
 
-const GLYPHS = [CpuGlyph, MemoryGlyph, StorageGlyph] as const;
+function NetworkGlyph() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden>
+      <path
+        d="M3 7.5C4.7 5.7 7.2 4.75 10 4.75C12.8 4.75 15.3 5.7 17 7.5"
+        stroke="white"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeOpacity="0.9"
+      />
+      <path
+        d="M5.75 10.25C6.8 9.2 8.3 8.65 10 8.65C11.7 8.65 13.2 9.2 14.25 10.25"
+        stroke="white"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeOpacity="0.9"
+      />
+      <path
+        d="M8.5 13C8.9 12.6 9.43 12.4 10 12.4C10.57 12.4 11.1 12.6 11.5 13"
+        stroke="white"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeOpacity="0.9"
+      />
+      <circle cx="10" cy="15.75" r="1.25" fill="white" fillOpacity="0.9" />
+    </svg>
+  );
+}
+
+const GLYPHS = [CpuGlyph, MemoryGlyph, StorageGlyph, NetworkGlyph] as const;
 
 export function SystemPillsWidget({ data }: SystemPillsWidgetProps) {
   return (
-    <div className="flex h-full items-stretch justify-stretch gap-1.5 p-1.5 sm:flex-row sm:gap-2 sm:px-4 sm:py-3">
+    <div className="grid h-full grid-cols-2 grid-rows-2 gap-2 p-2">
       {data.stats.map((stat, index) => {
         const Glyph = GLYPHS[index] ?? CpuGlyph;
         return (
           <div
             key={`${stat.label}-${index}`}
-            className="flex min-w-0 flex-1 items-center overflow-hidden rounded-[6px] bg-white/5 px-1 text-left max-sm:gap-1 max-sm:px-1 sm:flex-col sm:justify-center sm:rounded-full"
+            className="flex min-w-0 items-center overflow-hidden rounded-[10px] bg-white/5 px-2 py-1.5 text-left sm:flex-col sm:justify-center sm:rounded-[999px]"
           >
-            <div className="h-5 w-5 text-white/90 sm:mb-4">
+            <div className="h-5 w-5 text-white/90 sm:mb-2">
               <Glyph />
             </div>
             <div className="flex w-full flex-row justify-between sm:flex-col sm:text-center">
               <p
                 className={cn(
                   text.label,
-                  "max-w-full truncate text-[11px] leading-snug sm:text-[13px]",
+                  "max-w-full truncate text-[11px] leading-snug sm:text-[12px]",
                 )}
               >
                 {stat.label}
@@ -85,7 +114,7 @@ export function SystemPillsWidget({ data }: SystemPillsWidgetProps) {
               <p
                 className={cn(
                   text.valueSmall,
-                  "max-w-full truncate text-[11px] font-semibold leading-snug tracking-[-0.02em] text-white/90 sm:text-[13px]",
+                  "max-w-full truncate text-[11px] font-semibold leading-snug tracking-[-0.02em] text-white/90 sm:text-[12px]",
                 )}
               >
                 {stat.value}

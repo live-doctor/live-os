@@ -47,7 +47,10 @@ export function FilesSidebar({
       path: favPath,
       isFavorite: true,
     }));
-  const locations = [...baseLocations, ...extraFavorites];
+  const appDataPath = getShortcutPath("AppData");
+  const locations = [...baseLocations, ...extraFavorites].filter(
+    (shortcut) => shortcut.path !== appDataPath,
+  );
   const navItemBase =
     "w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[12px] font-medium text-white/65 transition-colors hover:bg-white/8 hover:text-white";
   const navItemActive =

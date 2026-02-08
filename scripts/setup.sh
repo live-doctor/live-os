@@ -230,11 +230,11 @@ install_avahi() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install Avahi (mDNS)"; return; fi
   if ! command -v avahi-daemon >/dev/null 2>&1; then
     if [ -x "$(command -v apt-get)" ]; then
-      apt-get update && apt-get install -y avahi-daemon avahi-utils
+      apt-get update && apt-get install -y avahi-daemon avahi-utils libnss-mdns
     elif [ -x "$(command -v dnf)" ]; then
-      dnf install -y avahi avahi-tools
+      dnf install -y avahi avahi-tools nss-mdns || dnf install -y avahi avahi-tools
     elif [ -x "$(command -v yum)" ]; then
-      yum install -y avahi avahi-tools
+      yum install -y avahi avahi-tools nss-mdns || yum install -y avahi avahi-tools
     else
       print_error "Unsupported package manager for Avahi"; return
     fi
@@ -243,6 +243,53 @@ install_avahi() {
     systemctl enable avahi-daemon 2>/dev/null || true
     systemctl start avahi-daemon 2>/dev/null || true
   }
+}
+
+ensure_nsswitch_mdns() {
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Ensure /etc/nsswitch.conf hosts includes mDNS resolver"; return; fi
+
+  local conf="/etc/nsswitch.conf"
+  if [ ! -f "$conf" ]; then
+    print_info "Skipping nsswitch mDNS configuration: $conf not found"
+    return
+  fi
+
+  if grep -Eq '^[[:space:]]*hosts:.*(mdns4_minimal|mdns4|mdns)' "$conf"; then
+    print_status "nsswitch hosts already includes mDNS lookup"
+    return
+  fi
+
+  local tmp_file
+  tmp_file="$(mktemp)" || {
+    print_error "Failed to create temporary file for nsswitch update"
+    return
+  }
+
+  awk '
+    BEGIN { updated = 0 }
+    /^[[:space:]]*hosts:/ && updated == 0 {
+      line = $0
+      if (line ~ /[[:space:]]dns([[:space:]]|$)/) {
+        sub(/[[:space:]]dns([[:space:]]|$)/, " mdns4_minimal [NOTFOUND=return] dns mdns4 ", line)
+      } else {
+        line = line " mdns4_minimal [NOTFOUND=return] mdns4"
+      }
+      gsub(/[[:space:]]+$/, "", line)
+      print line
+      updated = 1
+      next
+    }
+    { print }
+    END {
+      if (updated == 0) {
+        print "hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4"
+      }
+    }
+  ' "$conf" > "$tmp_file"
+
+  cat "$tmp_file" > "$conf"
+  rm -f "$tmp_file"
+  print_status "Configured nsswitch hosts for mDNS resolution"
 }
 
 install_nmcli() {
@@ -503,6 +550,7 @@ install_nodejs
 install_docker
 ensure_docker_permissions
 install_avahi
+ensure_nsswitch_mdns
 install_nmcli
 ensure_nm_manages_wifi
 install_bluez

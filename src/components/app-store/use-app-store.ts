@@ -24,7 +24,10 @@ export function useAppStore(open: boolean) {
   const [communityStoreOpen, setCommunityStoreOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedApp, setSelectedApp] = useState<App | null>(null);
-  const { installedApps, installProgress } = useSystemStatus({ fast: true });
+  const { installedApps, installProgress } = useSystemStatus({
+    fast: true,
+    enabled: open,
+  });
 
   const storeMap = useMemo(() => {
     const map = new Map<string, string>();

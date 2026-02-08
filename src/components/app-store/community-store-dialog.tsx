@@ -105,7 +105,7 @@ export function CommunityStoreDialog({
     try {
       const removed = await removeImportedStore(slug);
       if (!removed) {
-        setError("Default LinuxServer store cannot be removed.");
+        setError("Default Umbrel store cannot be removed.");
         return;
       }
       const imported = await getImportedStoreDetails();
@@ -134,7 +134,7 @@ export function CommunityStoreDialog({
               <Input
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
-                placeholder="https://api.linuxserver.io/api/v1/images?include_config=true&include_deprecated=true"
+                placeholder="https://github.com/getumbrel/umbrel-apps/archive/refs/heads/master.zip"
                 className="bg-white/10 border-white/20 text-white placeholder:text-zinc-400"
               />
               <div className="flex gap-2">

@@ -7,6 +7,7 @@ import type { AvailableWidget, WidgetSectionData } from "./types";
 
 // Maximum number of widgets that can be selected
 export const MAX_WIDGETS = 4;
+export const FAVORITES_WIDGET_MAX_FOLDERS = 4;
 
 // Refresh intervals (in ms)
 export const REFRESH_INTERVALS = {
@@ -62,7 +63,7 @@ export const AVAILABLE_WIDGETS: AvailableWidget[] = [
     appName: "Homeio",
     appIcon: HOMEIO_ICON,
     name: "System Pills",
-    description: "CPU, Memory, and Storage in compact rounded tiles",
+    description: "CPU, Memory, Storage, and Network in compact tiles",
   },
   {
     id: "homeio:cpu-memory",

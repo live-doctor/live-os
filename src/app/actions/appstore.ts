@@ -11,17 +11,22 @@ import os from "os";
 import path from "path";
 import YAML from "yaml";
 import { logAction, withActionLogging } from "./maintenance/logger";
+import type { CommunityStore } from "./store/types";
 import {
-  getLinuxServerCommunityStores,
   isLinuxServerApiUrl,
-  LINUXSERVER_IMAGES_API,
   parseLinuxServerStore,
 } from "./store/linuxserver-store";
 import { parseUmbrelStore } from "./store/umbrel-store";
 import { resolveAsset } from "./store/utils";
 
 const STORE_ROOT = path.join(process.cwd(), "external-apps");
-const DEFAULT_LINUXSERVER_STORE_SLUG = slugify(LINUXSERVER_IMAGES_API);
+const DEFAULT_UMBREL_STORE_URL =
+  "https://github.com/getumbrel/umbrel-apps/archive/refs/heads/master.zip";
+const DEFAULT_UMBREL_STORE_SLUG = slugify(DEFAULT_UMBREL_STORE_URL);
+const DEFAULT_UMBREL_STORE_NAME = "Umbrel App Store";
+const LEGACY_LINUXSERVER_DEFAULT_URL =
+  "https://api.linuxserver.io/api/v1/images?include_config=true&include_deprecated=true";
+const LEGACY_LINUXSERVER_DEFAULT_SLUG = slugify(LEGACY_LINUXSERVER_DEFAULT_URL);
 
 type StoreFormat = "umbrel" | "linuxserver";
 
@@ -103,9 +108,9 @@ export async function getAppStoreApps(): Promise<App[]> {
         include: { store: true },
       });
 
-      // If DB is empty, ensure the default LinuxServer catalog is installed, then retry once.
+      // Ensure default Umbrel store exists, then retry once.
       if (records.length === 0) {
-        await ensureDefaultLinuxServerStoreInstalled();
+        await ensureDefaultUmbrelStoreInstalled();
         records = await prisma.app.findMany({
           orderBy: [{ title: "asc" }],
           include: { store: true },
@@ -114,16 +119,8 @@ export async function getAppStoreApps(): Promise<App[]> {
         const hasDefaultStoreApps = records.some((record) =>
           isProtectedStore(record.store),
         );
-        const hasDefaultStoreMetadata = records.some(
-          (record) =>
-            isProtectedStore(record.store) &&
-            (record.stable !== null ||
-              record.stars !== null ||
-              record.releaseNotes !== null),
-        );
-
-        if (hasDefaultStoreApps && !hasDefaultStoreMetadata) {
-          await ensureDefaultLinuxServerStoreInstalled();
+        if (!hasDefaultStoreApps) {
+          await ensureDefaultUmbrelStoreInstalled();
           records = await prisma.app.findMany({
             orderBy: [{ title: "asc" }],
             include: { store: true },
@@ -549,27 +546,28 @@ async function persistStoreApps(options: {
 }
 
 /**
- * Best-effort bootstrap of the default LinuxServer catalog.
+ * Best-effort bootstrap of the default Umbrel catalog.
  */
-export async function ensureDefaultLinuxServerStoreInstalled(): Promise<{
+export async function ensureDefaultUmbrelStoreInstalled(): Promise<{
   success: boolean;
   skipped?: boolean;
   error?: string;
 }> {
   try {
     await fs.mkdir(STORE_ROOT, { recursive: true });
+    await removeLegacyLinuxServerDefaultStore();
 
-    await logAction("appstore:bootstrap:linuxserver:start");
-    const result = await importAppStore(LINUXSERVER_IMAGES_API, {
-      name: "LinuxServer.io Catalog",
-      description: "Official LinuxServer.io image catalog",
+    await logAction("appstore:bootstrap:umbrel:start");
+    const result = await importAppStore(DEFAULT_UMBREL_STORE_URL, {
+      name: DEFAULT_UMBREL_STORE_NAME,
+      description: "Official Umbrel app store",
     });
 
     return result.success
       ? { success: true, skipped: false }
       : { success: false, error: result.error };
   } catch (error: any) {
-    await logAction("appstore:bootstrap:linuxserver:error", {
+    await logAction("appstore:bootstrap:umbrel:error", {
       error: error?.message || "unknown",
     });
     return { success: false, error: error?.message || "Unknown error" };
@@ -577,18 +575,18 @@ export async function ensureDefaultLinuxServerStoreInstalled(): Promise<{
 }
 
 /**
- * Bootstrap default store (LinuxServer.io).
+ * Bootstrap default store (Umbrel).
  */
 export async function ensureDefaultStoresInstalled(): Promise<void> {
-  await ensureDefaultLinuxServerStoreInstalled().catch((error) =>
+  await ensureDefaultUmbrelStoreInstalled().catch((error) =>
     console.error(
-      "[AppStore] Failed to bootstrap LinuxServer.io catalog:",
+      "[AppStore] Failed to bootstrap Umbrel catalog:",
       error,
     ),
   );
 }
 
-export const getCommunityStores = getLinuxServerCommunityStores;
+export const getCommunityStores = async (): Promise<CommunityStore[]> => [];
 
 async function extractZipBuffer(
   buffer: Buffer,
@@ -662,9 +660,33 @@ function isProtectedStore(
 ): boolean {
   if (!store) return false;
   return (
-    store.slug === DEFAULT_LINUXSERVER_STORE_SLUG ||
-    store.url === LINUXSERVER_IMAGES_API
+    store.slug === DEFAULT_UMBREL_STORE_SLUG ||
+    store.url === DEFAULT_UMBREL_STORE_URL
   );
+}
+
+async function removeLegacyLinuxServerDefaultStore(): Promise<void> {
+  const legacyStore = await prisma.store.findFirst({
+    where: {
+      OR: [
+        { slug: LEGACY_LINUXSERVER_DEFAULT_SLUG },
+        { url: LEGACY_LINUXSERVER_DEFAULT_URL },
+      ],
+    },
+    select: { id: true, slug: true },
+  });
+
+  if (!legacyStore) return;
+
+  await prisma.app.deleteMany({ where: { storeId: legacyStore.id } });
+  await prisma.store.delete({ where: { id: legacyStore.id } });
+  await fs.rm(path.join(STORE_ROOT, legacyStore.slug), {
+    recursive: true,
+    force: true,
+  });
+  await logAction("appstore:bootstrap:legacy-linuxserver:removed", {
+    slug: legacyStore.slug,
+  });
 }
 
 async function deriveStoreName(

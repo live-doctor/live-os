@@ -1,0 +1,120 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - img "Homeio Background" [ref=e5]
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "Wi-Fi settings" [ref=e8]:
+          - generic "WiFi \"<redacted>\" (72%)" [ref=e9]:
+            - img [ref=e10]
+        - generic "Battery 100% (Plugged in)" [ref=e13]:
+          - img [ref=e14]
+          - generic [ref=e16]: 100%
+        - generic [ref=e17]:
+          - generic [ref=e18]: Sun, Feb 8
+          - generic [ref=e19]: 12:38 AM
+      - button [ref=e20]:
+        - img [ref=e21]
+    - main [ref=e24]:
+      - generic [ref=e26]:
+        - generic [ref=e28]:
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - img [ref=e35]
+              - generic [ref=e38]:
+                - paragraph [ref=e39]: CPU
+                - paragraph [ref=e40]: 33%
+            - generic [ref=e41]:
+              - img [ref=e43]
+              - generic [ref=e58]:
+                - paragraph [ref=e59]: Memory
+                - paragraph [ref=e60]: 12.01 GB
+            - generic [ref=e61]:
+              - img [ref=e63]
+              - generic [ref=e65]:
+                - paragraph [ref=e66]: Storage
+                - paragraph [ref=e67]: 11.4 GB
+            - generic [ref=e68]:
+              - img [ref=e70]
+              - generic [ref=e75]:
+                - paragraph [ref=e76]: Network
+                - paragraph [ref=e77]: 0.4 Mbps
+          - generic [ref=e85]:
+            - generic [ref=e86]:
+              - generic [ref=e87]:
+                - img [ref=e89]
+                - generic [ref=e91]:
+                  - paragraph [ref=e92]: Thermals
+                  - generic [ref=e93]:
+                    - generic [ref=e94]: "0"
+                    - generic [ref=e95]: °C
+                  - paragraph [ref=e96]: CPU temp
+              - generic [ref=e97]:
+                - paragraph [ref=e98]: Max
+                - paragraph [ref=e99]: 0°C
+            - generic [ref=e100]:
+              - generic [ref=e102]:
+                - img [ref=e103]
+                - generic [ref=e105]:
+                  - generic [ref=e106]: Cores
+                  - generic [ref=e107]: —
+              - generic [ref=e109]:
+                - img [ref=e110]
+                - generic [ref=e112]:
+                  - generic [ref=e113]: Socket
+                  - generic [ref=e114]: —
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - img [ref=e127]
+              - generic [ref=e129]:
+                - generic [ref=e130]: Weather
+                - generic [ref=e131]:
+                  - generic [ref=e132]: 9°C
+                  - generic [ref=e133]: Overcast
+                - generic [ref=e134]: Marseille, FR
+            - generic [ref=e136]:
+              - generic [ref=e137]:
+                - paragraph [ref=e138]: Feels like
+                - paragraph [ref=e139]: 6°
+              - generic [ref=e140]:
+                - paragraph [ref=e141]: Humidity
+                - paragraph [ref=e142]: 76%
+          - generic [ref=e146]:
+            - heading "Favorites" [level=3] [ref=e147]
+            - generic [ref=e149] [cursor=pointer]:
+              - img [ref=e151]
+              - generic [ref=e160]: rere
+        - button "Edit widgets" [ref=e161]:
+          - img [ref=e162]
+      - generic [ref=e168]:
+        - generic [ref=e175] [cursor=pointer]:
+          - img "adguardhome-sync" [ref=e177]
+          - generic [ref=e178]: adguardhome-sync
+        - generic [ref=e179]:
+          - heading "Other Containers" [level=3] [ref=e180]
+          - generic [ref=e184] [cursor=pointer]:
+            - generic [ref=e185]:
+              - img [ref=e186]
+              - generic "stopped"
+            - generic [ref=e189]: Umbrel Dev
+      - generic [ref=e190]:
+        - button "Search apps" [ref=e191]:
+          - generic [ref=e192]: Search
+          - generic [ref=e193]: ⌘K
+        - generic [ref=e195]:
+          - generic "Finder" [ref=e196] [cursor=pointer]:
+            - img "Finder" [ref=e197]
+          - generic "Terminal" [ref=e199] [cursor=pointer]:
+            - img "Terminal" [ref=e200]
+          - generic "Monitor" [ref=e201] [cursor=pointer]:
+            - img "Monitor" [ref=e202]
+          - generic "Store" [ref=e203] [cursor=pointer]:
+            - img "Store" [ref=e204]
+          - generic "Settings" [ref=e205] [cursor=pointer]:
+            - img "Settings" [ref=e206]
+    - generic [ref=e208]: Homeio - v1.2.42
+  - region "Notifications alt+T"
+  - alert [ref=e209]
+```

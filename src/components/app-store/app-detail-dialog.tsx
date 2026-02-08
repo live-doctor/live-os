@@ -47,7 +47,7 @@ export function AppDetailDialog({
     app.screenshots ?? [],
   );
   const [loadingMedia, setLoadingMedia] = useState(false);
-  const { pushInstallProgress } = useSystemStatus({ fast: true });
+  const { pushInstallProgress } = useSystemStatus({ fast: true, enabled: open });
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInstalled = Boolean(installedApp);
   const activeProgress =

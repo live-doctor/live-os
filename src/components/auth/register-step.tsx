@@ -34,7 +34,7 @@ export function RegisterStep({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-100">
+      <div className="rounded-xl border border-white/12 bg-white/[0.07] p-4 text-sm text-white/75">
         This account has full system access. Choose a memorable username and a{" "}
         {PIN_LENGTH}-digit PIN.
       </div>

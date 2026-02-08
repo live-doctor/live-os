@@ -49,6 +49,7 @@ done
 # Default configuration
 HTTP_PORT=${HOMEIO_HTTP_PORT:-80}
 DOMAIN=${HOMEIO_DOMAIN:-""}
+HOSTNAME_ONLY="homeio"
 
 # Installation directory
 INSTALL_DIR="/opt/homeio"
@@ -256,6 +257,8 @@ set_hostname() {
         return
     fi
 
+    HOSTNAME_ONLY="$hostname_only"
+
     print_status "Setting system hostname to: $hostname_only"
 
     # Set hostname using hostnamectl (modern method)
@@ -291,12 +294,49 @@ restart_mdns() {
 
     if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "^avahi-daemon"; then
         print_status "Restarting avahi-daemon for mDNS refresh..."
-        systemctl restart avahi-daemon || print_error "avahi-daemon restart failed; mDNS might be stale"
+        local attempt
+        for attempt in 1 2 3; do
+            if systemctl restart avahi-daemon; then
+                break
+            fi
+            sleep 1
+        done
+        if ! systemctl is-active --quiet avahi-daemon; then
+            print_error "avahi-daemon restart failed; mDNS might be stale"
+        fi
     elif command -v service >/dev/null 2>&1 && service avahi-daemon status >/dev/null 2>&1; then
         print_status "Restarting avahi-daemon for mDNS refresh..."
         service avahi-daemon restart || print_error "avahi-daemon restart failed; mDNS might be stale"
     else
         print_info "avahi-daemon not found; skipping mDNS restart"
+    fi
+}
+
+verify_mdns_hostname() {
+    if [ "$DRY_RUN" -eq 1 ]; then
+        print_dry "Verify mDNS resolves ${HOSTNAME_ONLY}.local"
+        return
+    fi
+
+    local hostname_only="${1%.local}"
+    [ -z "$hostname_only" ] && return
+    local fqdn="${hostname_only}.local"
+    local attempt
+
+    if command -v avahi-resolve-host-name >/dev/null 2>&1; then
+        for attempt in 1 2 3 4 5; do
+            if avahi-resolve-host-name -n "$fqdn" >/dev/null 2>&1; then
+                print_status "mDNS resolution verified for ${fqdn}"
+                return
+            fi
+            sleep 1
+        done
+        print_error "Could not verify mDNS for ${fqdn}. If discovery fails, run: sudo systemctl restart avahi-daemon"
+        return
+    fi
+
+    if command -v getent >/dev/null 2>&1 && getent hosts "$fqdn" >/dev/null 2>&1; then
+        print_status "Name resolution verified for ${fqdn}"
     fi
 }
 
@@ -643,6 +683,11 @@ if [ "$NO_DEP" -eq 0 ]; then
         print_error "setup.sh not found or not executable. Please ensure scripts/setup.sh is present."
         exit 1
     fi
+fi
+
+if [ "$DRY_RUN" -eq 0 ]; then
+    restart_mdns
+    verify_mdns_hostname "${HOSTNAME_ONLY:-${DOMAIN%.local}}"
 fi
 
 # Step 3: Create .env and run database migrations (requires Node.js from setup.sh)

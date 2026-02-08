@@ -11,3 +11,12 @@ export const HOMEIO_DIALOG_TITLE_CLASS =
   "text-[20px] font-bold leading-none tracking-[-0.03em] text-white/80 md:text-[32px]";
 
 export const HOMEIO_DIALOG_SUBTITLE_CLASS = "text-[13px] text-white/55";
+
+export const HOMEIO_GLASS_PANEL_CLASS =
+  "overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl";
+
+export const HOMEIO_GLASS_HEADER_CLASS =
+  "border-b border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent backdrop-blur";
+
+export const HOMEIO_CONTEXT_MENU_SURFACE_CLASS =
+  "overflow-hidden rounded-[10px] border border-white/12 bg-[rgba(47,51,57,0.86)] text-white shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-3xl";

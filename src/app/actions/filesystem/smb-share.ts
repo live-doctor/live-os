@@ -9,8 +9,10 @@ import { getHomeRoot } from "./filesystem";
 const SHARES_FILE = ".smb-shares.json";
 const SAMBA_CONFIG_DIR = "/etc/samba";
 const SAMBA_SHARES_DIR = `${SAMBA_CONFIG_DIR}/shares.d`;
+const SAMBA_MAIN_CONFIG = `${SAMBA_CONFIG_DIR}/smb.conf`;
 const SAMBA_SERVICE = "smbd";
 const DISCOVERY_SERVICES = ["nmbd", "wsdd2", "wsdd"];
+const SAMBA_INCLUDE_DIRECTIVE = "include = /etc/samba/shares.d/*.conf";
 
 export interface SmbShare {
   id: string;
@@ -101,6 +103,34 @@ async function ensureSambaRunning(): Promise<{
     running: false,
     error: "Samba service is not running",
   };
+}
+
+async function applySambaChange(
+  operation: string,
+  mutateConfig: () => Promise<void>,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const sambaStatus = await checkSambaStatus();
+  if (!sambaStatus.installed || !sambaStatus.running) {
+    return {
+      success: false,
+      error:
+        sambaStatus.error ||
+        "Samba is required to share folders over network.",
+    };
+  }
+
+  try {
+    await mutateConfig();
+    await execAsync("sudo systemctl reload smbd");
+    return { success: true };
+  } catch (error) {
+    const reason =
+      error instanceof Error ? error.message : "Unknown Samba error";
+    return {
+      success: false,
+      error: `Failed to ${operation}: ${reason}`,
+    };
+  }
 }
 
 function generateShareId(): string {
@@ -228,16 +258,11 @@ export async function createSmbShare(
       createdAt: Date.now(),
     };
 
-    // Try to create actual Samba config
-    const sambaStatus = await checkSambaStatus();
-    if (sambaStatus.installed && sambaStatus.running) {
-      try {
-        await createSambaConfig(newShare);
-        await execAsync("sudo systemctl reload smbd");
-      } catch (error) {
-        console.error("Failed to create Samba config:", error);
-        // Continue anyway - store in our file
-      }
+    const sambaResult = await applySambaChange("create SMB share", async () => {
+      await createSambaConfig(newShare);
+    });
+    if (!sambaResult.success) {
+      return { success: false, error: sambaResult.error };
     }
 
     data.shares.push(newShare);
@@ -282,13 +307,11 @@ export async function removeSmbShare(
 
     const share = data.shares[shareIndex];
 
-    // Try to remove Samba config
-    try {
+    const sambaResult = await applySambaChange("remove SMB share", async () => {
       await removeSambaConfig(share.name);
-      await execAsync("sudo systemctl reload smbd");
-    } catch (error) {
-      console.error("Failed to remove Samba config:", error);
-      // Continue anyway
+    });
+    if (!sambaResult.success) {
+      return { success: false, error: sambaResult.error };
     }
 
     data.shares.splice(shareIndex, 1);
@@ -332,23 +355,24 @@ async function createSambaConfig(share: SmbShare): Promise<void> {
   try {
     await fs.writeFile(configPath, config, "utf-8");
   } catch {
-    // Try with sudo
     await execAsync(
-      `echo '${config.replace(/'/g, "'\\''")}' | sudo tee ${configPath}`,
+      `echo '${config.replace(/'/g, "'\\''")}' | sudo tee ${configPath} > /dev/null`,
     );
   }
 
-  // Include shares.d in main smb.conf if not already
+  let smbConf = "";
   try {
-    const smbConf = await fs.readFile(`${SAMBA_CONFIG_DIR}/smb.conf`, "utf-8");
-    if (!smbConf.includes("include = /etc/samba/shares.d/")) {
-      const includeDirective = "\ninclude = /etc/samba/shares.d/*.conf\n";
-      await execAsync(
-        `echo '${includeDirective}' | sudo tee -a ${SAMBA_CONFIG_DIR}/smb.conf`,
-      );
-    }
+    smbConf = await fs.readFile(SAMBA_MAIN_CONFIG, "utf-8");
   } catch {
-    // Ignore errors checking smb.conf
+    const { stdout } = await execAsync(`sudo cat ${SAMBA_MAIN_CONFIG}`);
+    smbConf = stdout;
+  }
+
+  if (!smbConf.includes(SAMBA_INCLUDE_DIRECTIVE)) {
+    const includeDirective = `\n${SAMBA_INCLUDE_DIRECTIVE}\n`;
+    await execAsync(
+      `echo '${includeDirective}' | sudo tee -a ${SAMBA_MAIN_CONFIG} > /dev/null`,
+    );
   }
 }
 

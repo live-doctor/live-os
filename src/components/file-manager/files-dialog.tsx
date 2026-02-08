@@ -286,7 +286,7 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
         >
           <X className="h-4 w-4" />
         </Button>
-        <div ref={portalAnchorRef} className="h-[92vh] w-full">
+        <div ref={portalAnchorRef} className="relative h-[92vh] w-full">
           <div className="flex h-full flex-col gap-2 pb-3 pl-3 pr-12 pt-4 md:gap-3 md:pb-4 md:pl-6 md:pr-14 md:pt-5">
             <FilesToolbar
               breadcrumbs={breadcrumbs}

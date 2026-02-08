@@ -35,7 +35,7 @@ interface TerminalDialogProps {
 }
 
 export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
-  const { installedApps } = useSystemStatus({ fast: true });
+  const { installedApps } = useSystemStatus({ fast: true, enabled: open });
   const terminalRef = useRef<HTMLDivElement>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string>("host");

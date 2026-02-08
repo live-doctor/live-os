@@ -27,6 +27,7 @@ export function AppListItem({
   const [iconSrc, setIconSrc] = useState(app.icon);
   const isInstalled = Boolean(installedApp);
   const isCompact = variant === "compact";
+  const storeBadge = app.storeName?.trim() || app.storeSlug?.trim() || null;
 
   const handleOpen = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -46,8 +47,8 @@ export function AppListItem({
       onClick={onClick}
       className={
         isCompact
-          ? "group flex w-full cursor-pointer items-start gap-2.5 rounded-[14px] px-1 py-1.5 outline-none transition-colors hover:bg-white/4"
-          : "group flex w-full cursor-pointer items-start gap-2.5 rounded-[20px] p-2.5 outline-none transition-colors hover:bg-white/4"
+          ? "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-[14px] px-1 py-1.5 outline-none transition-colors hover:bg-white/4"
+          : "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-[20px] p-2.5 outline-none transition-colors hover:bg-white/4"
       }
     >
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[10px] border border-slate-100/10 bg-white/10">
@@ -89,6 +90,11 @@ export function AppListItem({
           </Button>
         </div>
       )}
+      {storeBadge ? (
+        <span className="pointer-events-none absolute bottom-1 right-1 max-w-[120px] truncate rounded-md bg-black/45 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] text-white/60">
+          {storeBadge}
+        </span>
+      ) : null}
     </motion.div>
   );
 }
