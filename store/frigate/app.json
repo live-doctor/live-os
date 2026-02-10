@@ -1,0 +1,23 @@
+{
+  "id": "frigate",
+  "title": "Frigate",
+  "name": "Frigate",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/frigate/icon.svg",
+  "tagline": "A complete and local NVR",
+  "overview": "A complete and local NVR designed for Home Assistant with AI object detection.  Uses OpenCV and Tensorflow to perform realtime object detection locally for IP cameras.\n\n🛠️ SET-UP\n\n- You can configure your cameras directly within the Frigate app, there is no need to manually edit the configuration files.\n\n- Your RTSP password (if needed) is the \"default app password\" that is displayed on Frigate's page in the app store (shown after install).",
+  "category": [
+    "automation"
+  ],
+  "developer": "Blake Blackshear",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/frigate/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/frigate/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/frigate/3.jpg"
+  ],
+  "version": "0.16.4",
+  "releaseNotes": "⚠️ As usual, Frigate will attempt to update its configuration automatically. It is still recommended to back up your current config and database before upgrading.\n\n🚨 This release includes a critical security fix for authenticated users:\n  - Fixed a vulnerability that could allow authenticated remote command execution and container escape\n\n\nOther improvements in this update include:\n  - Updated documentation for Reolink, Wyze, Hikvision, and other camera models\n  - Fixed OpenVINO D-FINE configuration defaults\n  - Improved go2rtc port checking\n\n\nFull release notes are available at https://github.com/blakeblackshear/frigate/releases",
+  "port": 5004,
+  "path": "",
+  "website": "https://frigate.video/",
+  "repo": "https://github.com/blakeblackshear/frigate"
+}

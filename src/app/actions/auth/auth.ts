@@ -68,7 +68,7 @@ export async function registerUser(
       data: { username, pin: hashedPin, role: "ADMIN" },
     });
 
-    // Bootstrap default Umbrel catalog in background
+    // Bootstrap default store in background
     ensureDefaultStoresInstalled();
 
     const session = await createSession(user.id);
@@ -83,6 +83,9 @@ export async function registerUser(
     });
 
     if (options?.skipRedirect) {
+      // Refresh default store on every login.
+      void ensureDefaultStoresInstalled();
+
       return {
         success: true,
         user: {
@@ -241,9 +244,6 @@ export async function login(
         maxAge: SESSION_DURATION / 1000,
         path: "/",
       });
-
-      // Refresh default Umbrel catalog on every login.
-      void ensureDefaultStoresInstalled();
 
       return {
         success: true,

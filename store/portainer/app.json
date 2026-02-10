@@ -1,0 +1,23 @@
+{
+  "id": "portainer",
+  "title": "Portainer",
+  "name": "Portainer",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/portainer/icon.svg",
+  "tagline": "Run custom Docker containers on your Umbrel",
+  "overview": "⚠️ Make sure to only use named Docker volumes for your stacks and containers. Data in bind-mounted volumes will be lost when the Portainer app is restarted or updated.\n\n⚠️ Watch out for port conflicts between your custom Docker containers and your umbrelOS apps.\n\nPortainer is the ultimate Docker management solution that simplifies running Docker containers and Docker Compose setups on your Umbrel, putting comprehensive control at your fingertips.\n\nPortainer provides seamless container management, allowing you to efficiently monitor, start, stop, and modify containers, networks, volumes, and images. You can also deploy multi-container applications using Docker Compose with ease.\n\n🛠️ Portainer on Umbrel is for power users, follow these best practices to avoid issues:\n\n1. Data persistence: Make sure to only used named Docker volumes for your stacks and containers. Data in bind-mounted volumes will be lost when the Portainer app is restarted or updated.\n\n2. Port management: Watch out for potential port conflicts between your custom containers and umbrelOS' service containers, apps you have installed from the Umbrel App Store or Community App Stores, and any apps you go to install in the future.\n\n3. Container restart policy: Set your containers to \"unless-stopped\" or \"always\" restart policies. This will allow your containers to restart automatically when the Portainer app is restarted or updated.\n\n4. Web access to containers: Access your custom containers in your browser at umbrel.local:PORT_NUMBER. For example, for a container with a web UI running on port 4545, navigate to umbrel.local:4545 to access it.",
+  "category": [
+    "developer"
+  ],
+  "developer": "Portainer",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/portainer/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/portainer/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/portainer/3.jpg"
+  ],
+  "version": "2.33.7",
+  "releaseNotes": "This update includes several improvements and fixes:\n  - Fixed an issue where clicking the Update stack button would do nothing\n  - Fixed an issue that would cause the Containers page to not load\n  - Fixed an error when updating Edge Stacks\n  - Fixed a panic in Edge Group creation\n  - Fixed a deadlock in the auto onboarding\n  - Fixed a problem in Edge Stacks and GitOps when the entry file name was not at the repository root\n  - Upgraded compose to v2.40.3 to fix a nil pointer error\n  - Resolved multiple security vulnerabilities\n\n\nFull release notes are found at https://github.com/portainer/portainer/releases.",
+  "port": 9000,
+  "path": "",
+  "website": "https://portainer.io",
+  "repo": "https://github.com/portainer/portainer"
+}

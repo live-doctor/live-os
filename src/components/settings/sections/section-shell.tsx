@@ -25,7 +25,7 @@ type SettingsSectionShellProps = {
 export function SettingsSectionShell({
   title,
   subtitle,
-  icon: _icon,
+  icon,
   actions,
   children,
   className,
@@ -48,6 +48,7 @@ export function SettingsSectionShell({
       <div className="flex items-center justify-between gap-x-4 gap-y-2.5">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex items-center gap-2">
+              {icon && <span className="text-white/70">{icon}</span>}
               <h4 className={`text-[14px] font-medium leading-none tracking-[-0.02em] ${surface.label}`}>
                 {title}
               </h4>

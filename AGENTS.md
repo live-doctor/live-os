@@ -10,7 +10,7 @@
 - `npm install` to bootstrap. `npm run dev` starts the app at `http://localhost:3000` (override with `PORT` or `HOMEIO_HTTP_PORT`).
 - `npm run build` produces the production bundle; `npm start` serves it via the custom server.
 - `npm run lint` / `npm run lint:fix` run ESLint (Next core-web-vitals config).
-- `npm run update-apps` or `npm run update-apps:auto` refresh bundled apps; `npm run test-apps` runs the app-store sanity script.
+- `npm run test-apps` runs the app-store sanity script.
 - `npm run db:init` applies Prisma migrations to SQLite; set `DATABASE_URL` to use a different file.
 
 ## Coding Style & Naming Conventions

@@ -25,6 +25,8 @@ export interface CustomDeployInitialData {
   storeId?: string;
   /** Preserve container metadata on redeploy */
   containerMeta?: Record<string, unknown>;
+  /** Stored Web UI port from previous deploy */
+  webUIPort?: string;
 }
 
 interface CustomDeployDialogProps {
@@ -55,13 +57,18 @@ export function CustomDeployDialog({
     setAppName(initialData?.appName ?? "");
     setIconUrl(initialData?.appIcon ?? "");
     setDockerCompose(initialData?.dockerCompose ?? "");
+    // Pre-fill stored port so user sees the current value
+    if (initialData?.webUIPort) {
+      setUiPort(initialData.webUIPort);
+    }
   }, [open, initialData]);
 
   // Auto-detect web UI port and network mode from compose
+  // Skip auto-detection if a stored port was provided (user can still change it)
   useEffect(() => {
     if (!dockerCompose.trim()) {
       setNetworkMode("");
-      setUiPort("");
+      if (!initialData?.webUIPort) setUiPort("");
       return;
     }
     try {
@@ -70,18 +77,23 @@ export function CustomDeployDialog({
       const firstServiceName = services ? Object.keys(services)[0] : null;
       if (!firstServiceName) return;
       const service = services[firstServiceName];
-      const firstPort = Array.isArray(service?.ports) ? service.ports[0] : null;
-      if (typeof firstPort === "string") {
-        const [host] = firstPort.split(":");
-        setUiPort(host || "");
-      } else if (firstPort && typeof firstPort === "object") {
-        setUiPort(String(firstPort.published ?? ""));
+      // Only auto-detect port if no stored value was provided
+      if (!initialData?.webUIPort) {
+        const firstPort = Array.isArray(service?.ports)
+          ? service.ports[0]
+          : null;
+        if (typeof firstPort === "string") {
+          const [host] = firstPort.split(":");
+          setUiPort(host || "");
+        } else if (firstPort && typeof firstPort === "object") {
+          setUiPort(String(firstPort.published ?? ""));
+        }
       }
       setNetworkMode(service?.network_mode ?? "");
     } catch {
       /* ignore parse errors */
     }
-  }, [dockerCompose]);
+  }, [dockerCompose, initialData?.webUIPort]);
 
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -214,6 +226,26 @@ export function CustomDeployDialog({
               />
               <p className="text-xs text-white/50">
                 Supports absolute http(s) URLs and local paths like /icons/my-app.png
+              </p>
+            </div>
+
+            {/* Web UI Port */}
+            <div className="space-y-2">
+              <Label htmlFor="webui-port" className="text-white/85">
+                Web UI Port
+              </Label>
+              <Input
+                id="webui-port"
+                type="number"
+                placeholder="e.g. 8096"
+                value={uiPort}
+                onChange={(e) => setUiPort(e.target.value)}
+                className="border-white/20 bg-white/8 text-white placeholder:text-white/40"
+                disabled={loading}
+              />
+              <p className="text-xs text-white/50">
+                Port used to access the web interface. Auto-detected from
+                compose, but you can override it here.
               </p>
             </div>
 

@@ -1,0 +1,23 @@
+{
+  "id": "ntfy",
+  "title": "ntfy",
+  "name": "ntfy",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/ntfy/icon.svg",
+  "tagline": "Send notifications to your phone or desktop via scripts from any computer, and/or using a REST API",
+  "overview": "ntfy (pronounced notify) is a simple HTTP-based pub-sub notification service. It allows you to send notifications to your phone or desktop via scripts from any computer, and/or using a REST API.\n\nℹ️ iOS Notifications\nApple's restrictions require a publicly reachable server for instant notifications on iOS. We use https://ntfy.sh for poll requests by default. This doesn't send your notifications through this service, but instead only prompts your iOS device to download the notification from your local ntfy instance. Advanced users can remove the \"NTFY_UPSTREAM_BASE_URL\" environment variable from the Docker compose file if desired; however, this will disable instant notifications on iOS devices.\n\n🔔 Send push notifications from your app or script\nPublishing messages can be done via PUT or POST. Topics are created on the fly by subscribing or publishing to them. If you use ntfy without sign-up, the topic is essentially a password, so pick something that's not easily guessable.\n\n📱 Receive notifications on your phone\nSubscribe to a topic and receive notifications, with different priorities, attachments, action buttons, tags & emojis, and even for automation.\n\n💻 Get notified on your computer\nYou can use the web app to subscribe to topics as well. If you do, notifications will pop up as desktop notifications. Simply type in the topic name and click the Subscribe button. The browser will keep a connection open and listen for incoming notifications.\n\n⚙️ Integrate with your favorite tools\nPublishing messages is just a HTTP request, so pretty much everything under the sun can integrate with ntfy. Hundreds of integrations, projects or scripts already support ntfy.",
+  "category": [
+    "automation"
+  ],
+  "developer": "ntfy LLC",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/ntfy/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/ntfy/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/ntfy/3.jpg"
+  ],
+  "version": "2.17.0",
+  "releaseNotes": "This release adds support for templating in the priority field, a new copy action button, a red notification dot on the favicon for unread messages, and an admin-only version endpoint.\n\nKey highlights:\n  - Support templating in the priority field\n  - Copy action button to copy values to the clipboard\n  - Red notification dot on favicon when there are unread messages\n  - Admin-only version endpoint returning server version and build information\n  - Several crash fixes and web app improvements\n\n\nFull release notes can be found at https://github.com/binwiederhier/ntfy/releases",
+  "port": 13119,
+  "path": "",
+  "website": "https://ntfy.sh/",
+  "repo": "https://github.com/binwiederhier/ntfy"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "eufy-security-ws",
+  "title": "Eufy Security WS",
+  "name": "Eufy Security WS",
+  "icon": "https://github.com/bropat/eufy-security-ws/raw/master/docs/_media/eufy-security-ws.png",
+  "tagline": "WebSocket server for Eufy Security devices",
+  "overview": "Small server wrapper around the eufy-security-client library to access it via a WebSocket.",
+  "category": ["security"],
+  "developer": "bropat",
+  "screenshots": [],
+  "version": "latest",
+  "port": 3000,
+  "path": "",
+  "website": "https://github.com/bropat/eufy-security-ws",
+  "repo": "https://github.com/bropat/eufy-security-ws"
+}

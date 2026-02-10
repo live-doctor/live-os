@@ -7,7 +7,7 @@ interface FolderIconProps extends SVGProps<SVGSVGElement> {
 export function FolderIcon({ variant = "default", className, ...props }: FolderIconProps) {
   const isEmpty = variant === "empty";
 
-  // Use the actual Umbrel folder icon structure
+  // Use the actual folder icon structure
   return (
     <svg
       width="57"

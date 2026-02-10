@@ -114,10 +114,75 @@ function sanitizeSsid(value: string): string {
     .trim();
 }
 
+function splitNmcliFields(line: string): string[] {
+  const fields: string[] = [];
+  let current = "";
+  let escaped = false;
+
+  for (const char of line) {
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (char === ":") {
+      fields.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  fields.push(current);
+  return fields;
+}
+
+function parseNmcliActive(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized === "yes" || normalized === "1" || normalized === "true" || normalized === "*";
+}
+
+async function getActiveWifiSsids(): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync(
+      "nmcli",
+      ["-t", "-f", "TYPE,NAME", "connection", "show", "--active"],
+      { timeout: EXEC_TIMEOUT },
+    );
+
+    return stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => splitNmcliFields(line))
+      .filter(([type]) => (type || "").toLowerCase() === "wifi")
+      .map(([, name]) => sanitizeSsid(name || ""))
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 export async function listWifiNetworks(): Promise<WifiListResult> {
   await logNet("network:wifi:list:start");
   const errors: string[] = [];
   const connectedSsids = new Set<string>();
+  const finish = async (source: string, result: WifiListResult) => {
+    await logNet("network:wifi:list:result", {
+      source,
+      count: result.networks.length,
+      warning: result.warning,
+      error: result.error,
+    });
+    return result;
+  };
   await logNet("network:wifi:list:debug", {
     message: "Scanning for networks...",
   });
@@ -134,6 +199,9 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     // Ignore connection detection failures
   }
 
+  const activeNmcliSsids = await getActiveWifiSsids();
+  activeNmcliSsids.forEach((ssid) => connectedSsids.add(ssid));
+
   // Try systeminformation first with timeout
   try {
     const timeoutPromise = new Promise<never>((_, reject) =>
@@ -147,7 +215,7 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       await logNet("network:wifi:list:systeminformation", {
         count: wifiNetworks.length,
       });
-      return {
+      return finish("systeminformation", {
         networks: dedupeNetworks(
           wifiNetworks
             .map((network) => ({
@@ -160,7 +228,7 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
             }))
             .filter((n) => n.ssid),
         ),
-      };
+      });
     }
   } catch (error) {
     const msg = (error as Error)?.message || "Unknown error";
@@ -199,9 +267,8 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       .filter(Boolean)
       .map((line) => {
         const [active = "", ssid = "", security = "", signal = "0"] =
-          line.split(":");
-        const isActive =
-          active.toLowerCase() === "yes" || active === "1" || active === "true";
+          splitNmcliFields(line);
+        const isActive = parseNmcliActive(active);
         const cleanSsid = sanitizeSsid(ssid);
         if (isActive && cleanSsid) connectedSsids.add(cleanSsid);
         return {
@@ -214,15 +281,28 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       .filter((n) => n.ssid)
       .sort((a, b) => b.signal - a.signal);
 
+    if (networks.length === 0 && connectedSsids.size > 0) {
+      const connectedOnly = Array.from(connectedSsids).map((ssid) => ({
+        ssid,
+        security: "",
+        signal: 100,
+        connected: true,
+      }));
+      return finish("nmcli-connected-fallback", {
+        networks: dedupeNetworks(connectedOnly),
+        warning: "WiFi scan returned no nearby networks. Showing current connection(s) only.",
+      });
+    }
+
     if (networks.length === 0) {
-      return {
+      return finish("nmcli-empty", {
         networks: [],
         warning:
           "No WiFi networks found. This could mean:\n• No WiFi adapter detected\n• WiFi is disabled\n• No networks in range",
-      };
+      });
     }
 
-    return { networks: dedupeNetworks(networks) };
+    return finish("nmcli", { networks: dedupeNetworks(networks) });
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     await logNet(
@@ -237,10 +317,10 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     if (err.code === "ENOENT") {
       errors.push("nmcli: command not found (NetworkManager not installed)");
     } else if (err.message?.includes("No Wi-Fi device found")) {
-      return {
+      return finish("nmcli-no-adapter", {
         networks: [],
         error: "No WiFi adapter found on this system.",
-      };
+      });
     } else if (err.message?.includes("not running")) {
       errors.push("nmcli: NetworkManager is not running");
     } else if (err.message?.toLowerCase?.().includes("scanning not allowed")) {
@@ -263,10 +343,10 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
     },
     "error",
   );
-  return {
+  return finish("failed", {
     networks: [],
     error: `Failed to scan WiFi networks.\n${errors.join("\n")}`,
-  };
+  });
 }
 
 export async function connectToWifi(

@@ -194,7 +194,7 @@ export function AppInstallDialog({
       } else {
         toast.error(result.error || 'Failed to load compose file');
       }
-    } catch (error) {
+    } catch {
       // Error handled by toast
       toast.error('Failed to load compose file');
     } finally {

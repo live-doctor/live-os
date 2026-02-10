@@ -1,0 +1,23 @@
+{
+  "id": "matter-server",
+  "title": "Matter Server",
+  "name": "Matter Server",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/matter-server/icon.svg",
+  "tagline": "A Matter Controller Server over WebSockets",
+  "overview": "🛜 This project implements a Matter Controller Server over WebSockets using the official Matter (formerly CHIP) SDK as a base and provides both a server and client implementation.\n\n🏠 The goal of this project is primarily to have Matter support in Home Assistant but its universal approach makes it suitable to be used in other projects too.",
+  "category": [
+    "automation"
+  ],
+  "developer": "Home Assistant",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/matter-server/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/matter-server/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/matter-server/3.jpg"
+  ],
+  "version": "8.1.2",
+  "releaseNotes": "This release includes several improvements and bug fixes.\n\nKey updates:\n  - Dashboard now includes fallback for unknown endpoint device types\n  - Fixed motion sensitivity and attribute type handling\n  - Added low power mode support for Heiman devices\n  - Added siren and mute functionality for Heiman smoke alarms\n  - Improved handling of non-string label data\n  - Documentation updates for Docker image references\n\n\nFull release notes are available at https://github.com/home-assistant-libs/python-matter-server/releases",
+  "port": 5580,
+  "path": "",
+  "website": "https://home-assistant.io",
+  "repo": "https://github.com/matter-js/python-matter-server"
+}

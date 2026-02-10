@@ -54,7 +54,7 @@ model Store {
   description   String?
   localPath     String
   manifestHash  String?
-  format        String         @default("umbrel")
+  format        String         @default("linuxserver")
   apps          App[]
   installedApps InstalledApp[]
   createdAt     DateTime       @default(now())

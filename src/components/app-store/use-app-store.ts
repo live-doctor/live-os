@@ -57,6 +57,9 @@ export function useAppStore(open: boolean) {
   }, [open, loadApps]);
 
   const categories = useMemo(() => {
+    // Don't show any categories if there are no apps
+    if (apps.length === 0) return [];
+
     const catLabels = new Map<string, string>();
     apps.forEach((app) => {
       app.category?.forEach((cat) => {

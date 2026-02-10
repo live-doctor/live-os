@@ -57,7 +57,7 @@ Note: With Avahi/mDNS, .local domains work automatically
 Enter hostname (leave empty for default):
 ```
 
-**How Custom Domain Works (Like Umbrel!):**
+**How Custom Domain Works:**
 
 1. **During installation**, enter a hostname (e.g., `home`)
 2. **The installer**:
@@ -92,7 +92,7 @@ Some older Windows versions need Bonjour Print Services:
   192.168.1.100  home.local
   ```
 
-**How it works:** Avahi implements mDNS (Multicast DNS), the same technology Apple uses for Bonjour. When you access `home.local`, your device sends a multicast query, and the server responds with its IP address. This is exactly how Umbrel makes `umbrel.local` work!
+**How it works:** Avahi implements mDNS (Multicast DNS), the same technology Apple uses for Bonjour. When you access `home.local`, your device sends a multicast query, and the server responds with its IP address.
 
 ---
 
@@ -518,9 +518,8 @@ See [.env.example](./.env.example) for complete configuration options.
 After installation:
 
 1. ✅ Access Homeio via your domain
-2. ✅ Explore the App Store (298 apps available)
-3. ✅ Keep apps updated: `npm run update-apps`
-4. ✅ Monitor your system resources
-5. ✅ Install Docker apps (coming soon)
+2. ✅ Import a catalog in the App Store
+3. ✅ Monitor your system resources
+4. ✅ Install apps or use Custom Deploy
 
 Enjoy your self-hosted Homeio! 🎉

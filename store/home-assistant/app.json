@@ -1,0 +1,23 @@
+{
+  "id": "home-assistant",
+  "title": "Home Assistant",
+  "name": "Home Assistant",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/home-assistant/icon.svg",
+  "tagline": "Home automation that puts local control & privacy first",
+  "overview": "Open source home automation that puts local control and privacy first. Powered by a worldwide community of tinkerers and DIY enthusiasts. Once started, Home Assistant will automatically scan your network for known devices and allow you to easily set them up. Home Assistant integrates with over a thousand different devices and services.\n\nOnce you have integrated all your devices at home, you can unleash Home Assistant's advanced automation engine to make your home work for you. Do things like:\n- Turn on the light when the sun sets or when coming home\n- Get an alert when you leave your garage door open\n\nHome Assistant keeps your data local, no need for a cloud. Home Assistant communicates with your devices locally, and will fallback to pulling in data from the cloud if there is no other option. No data is stored in the cloud, and everything is processed locally.\n\nNote: The USB adapter discovery feature (e.g., for Zigbee dongles connected directly to the device running Umbrel) may not work reliably for Umbrel users on Raspberry Pi.",
+  "category": [
+    "automation"
+  ],
+  "developer": "Home Assistant",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/home-assistant/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/home-assistant/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/home-assistant/3.jpg"
+  ],
+  "version": "2026.2.1",
+  "releaseNotes": "This patch release includes bug fixes and improvements across multiple integrations:\n  - Fixed redundant off preset in Tuya climate\n  - Fixed device class of backup reserve sensor for Tesla Fleet\n  - Fixed multipart upload to use consistent part sizes for R2/S3\n  - Added mapping for stopped state to Denon AVR media player\n  - Fixed unicode escaping in MCP server tool response\n  - Fixed Shelly Linkedgo Thermostat status update\n  - Fixed conversion of data for Todoist actions\n  - Added missing config flow strings to SmartTub\n  - Removed entity id overwrite for Ambient Station\n  - Fixed invalid Yardian snapshots\n  - Made bad entity ID detection more lenient\n  - Updated various integration dependencies\n\n\nFull release notes are available at https://github.com/home-assistant/core/releases/",
+  "port": 8123,
+  "path": "",
+  "website": "https://home-assistant.io",
+  "repo": "https://github.com/home-assistant/core"
+}

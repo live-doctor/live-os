@@ -14,12 +14,7 @@ import YAML from "yaml";
 import { logAction } from "../maintenance/logger";
 import { getAppMeta, recordInstalledApp } from "./db";
 import { checkDependencies } from "./dependencies";
-import {
-  buildDefaultEnvVars,
-  buildUmbrelEnvVars,
-  detectStoreType,
-  type StoreType,
-} from "./env";
+import { buildDefaultEnvVars } from "./env";
 import {
   copyAppToInstalledApps,
   DEFAULT_APP_ICON,
@@ -51,6 +46,46 @@ export interface DeployOptions {
   storeId?: string;
   /** Original container metadata from store — preserved on redeploy */
   containerMeta?: Record<string, unknown>;
+}
+
+type DeployError = Error & {
+  stage?: string;
+  details?: Record<string, unknown>;
+  stdout?: unknown;
+  stderr?: unknown;
+  code?: unknown;
+  signal?: unknown;
+  cmd?: unknown;
+};
+
+function clipText(value: unknown, max = 2000): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, max)}…`;
+}
+
+function errorDetails(error: unknown): Record<string, unknown> {
+  const e = error as DeployError;
+  return {
+    cmd: clipText(e.cmd),
+    code: e.code,
+    signal: e.signal,
+    stdout: clipText(e.stdout),
+    stderr: clipText(e.stderr),
+  };
+}
+
+function stageError(
+  stage: string,
+  message: string,
+  details?: Record<string, unknown>,
+): DeployError {
+  const error = new Error(message) as DeployError;
+  error.stage = stage;
+  error.details = details;
+  return error;
 }
 
 /**
@@ -85,19 +120,38 @@ export async function deployApp(
         message,
       });
 
+    const fail = async (
+      stage: string,
+      message: string,
+      details: Record<string, unknown> = {},
+    ) => {
+      await logAction(
+        "deploy:failure",
+        {
+          appId,
+          stage,
+          message,
+          ...details,
+        },
+        "error",
+      );
+      emitProgress(1, message, "error");
+      return { success: false as const, error: message };
+    };
+
     emitProgress(0.05, "Preparing deployment", "starting");
 
     // Validate inputs
     if (!validateAppId(appId)) {
-      emitProgress(1, "Invalid app ID", "error");
-      return { success: false, error: "Invalid app ID" };
+      return fail("validation", "Invalid app ID");
     }
 
     if (config) {
       for (const port of config.ports) {
         if (!validatePort(port.published)) {
-          emitProgress(1, `Invalid port: ${port.published}`, "error");
-          return { success: false, error: `Invalid port: ${port.published}` };
+          return fail("validation", `Invalid port: ${port.published}`, {
+            port: port.published,
+          });
         }
       }
     }
@@ -106,26 +160,21 @@ export async function deployApp(
     const depCheck = await checkDependencies(appId);
     if (!depCheck.satisfied) {
       const missingList = depCheck.missing.join(", ");
-      emitProgress(1, `Missing dependencies: ${missingList}`, "error");
-      return { success: false, error: `Missing dependencies: ${missingList}` };
+      return fail("dependencies", `Missing dependencies: ${missingList}`, {
+        missing: depCheck.missing,
+      });
     }
 
     // Resolve compose file
     const resolved = await resolveCompose(options);
     if (!resolved) {
-      emitProgress(1, "Compose file not found", "error");
-      return {
-        success: false,
-        error:
-          "Compose file not found. Provide compose content or ensure the app is in a store.",
-      };
+      return fail(
+        "compose:resolve",
+        "Compose file not found. Provide compose content or ensure the app is in a store.",
+      );
     }
 
     const { appDir, composePath: resolvedComposePath } = resolved;
-
-    // Detect store type for proper environment variable handling
-    const storeType = await detectStoreType(options.storeId, resolvedComposePath);
-    console.log(`[Docker] deployApp: Detected store type "${storeType}" for "${appId}"`);
 
     // If this is an update/redeploy, tear down old containers first
     if (options.composeContent) {
@@ -133,18 +182,16 @@ export async function deployApp(
     }
 
     // Sanitize compose (temp file for docker, original path for DB)
-    // Pass store type for store-specific sanitization (e.g., Umbrel app_proxy)
     const { sanitizedPath, originalPath } =
-      await sanitizeComposeFile(resolvedComposePath, storeType);
+      await sanitizeComposeFile(resolvedComposePath);
 
     console.log(
       `[Docker] deployApp: Using compose at ${sanitizedPath} (original: ${originalPath})`,
     );
     emitProgress(0.15, "Configuring deployment");
 
-    // Build environment variables based on store type
-    // Umbrel and custom stores may expect different env vars
-    const envVars = await buildEnvVars(appId, storeType, config);
+    // Build environment variables for the deployment
+    const envVars = await buildEnvVars(appId, config);
 
     // Resolve container name
     const composeContainerName =
@@ -153,7 +200,7 @@ export async function deployApp(
     envVars.CONTAINER_NAME = containerName;
 
     // Pre-seed data files from store app directory to APP_DATA_DIR.
-    // Umbrel apps include files (entrypoint.sh, default-password, etc.)
+    // Some app catalogs include files (entrypoint.sh, default-password, etc.)
     // alongside the compose file, referenced via ${APP_DATA_DIR}/filename.
     // If those files don't exist at mount time, Docker creates directories
     // instead of files, causing "is a directory" errors.
@@ -164,37 +211,81 @@ export async function deployApp(
 
     // Pull images with progress streaming
     emitProgress(0.35, "Pulling images");
-    await streamComposePull(
-      appDir,
-      appId,
-      sanitizedPath,
-      envVars,
-      (progress, message) =>
-        emitProgress(progress, message ?? "Pulling images"),
-    );
+    try {
+      await streamComposePull(
+        appDir,
+        appId,
+        sanitizedPath,
+        envVars,
+        (progress, message) =>
+          emitProgress(progress, message ?? "Pulling images"),
+      );
+    } catch (error) {
+      throw stageError("compose:pull", "Failed to pull Docker images", {
+        ...errorDetails(error),
+      });
+    }
 
-    // Start services (--project-name ensures deterministic container naming like Umbrel)
+    // Start services (--project-name ensures deterministic container naming)
     emitProgress(0.85, "Starting services");
-    const { stdout, stderr } = await execAsync(
-      `cd "${appDir}" && docker compose --project-name "${appId}" -f "${sanitizedPath}" up -d`,
-      { env: envVars },
-    );
+    let stdout = "";
+    let stderr = "";
+    try {
+      const result = await execAsync(
+        `cd "${appDir}" && docker compose --project-name "${appId}" -f "${sanitizedPath}" up -d`,
+        { env: envVars },
+      );
+      stdout = result.stdout;
+      stderr = result.stderr;
+    } catch (error) {
+      throw stageError("compose:up", "Failed to start Docker services", {
+        ...errorDetails(error),
+      });
+    }
 
     if (stdout) {
       console.log(`[Docker] deployApp: stdout: ${stdout.substring(0, 200)}`);
     }
     if (stderr && !isComposeNoise(stderr)) {
       console.error("[Docker] deployApp: stderr:", stderr);
+      await logAction(
+        "deploy:compose:stderr",
+        {
+          appId,
+          stage: "compose:up",
+          stderr: clipText(stderr),
+        },
+        "warn",
+      );
     }
 
     emitProgress(0.9, "Finalizing deployment");
 
-    // Detect container names using project-name for reliable matching
-    const detectedContainer =
-      (await detectComposeContainerName(appDir, sanitizedPath, appId)) ||
-      containerName;
+    // Detect container names using project-name for reliable matching.
+    // Retry up to 3 times with a short delay — containers may not be
+    // fully registered immediately after `docker compose up -d`.
+    let detectedContainer: string | null = null;
+    let allContainers: string[] = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      detectedContainer = await detectComposeContainerName(
+        appDir,
+        sanitizedPath,
+        appId,
+      );
+      allContainers = await detectAllComposeContainerNames(appDir, appId);
+      if (detectedContainer) break;
+    }
 
-    const allContainers = await detectAllComposeContainerNames(appDir, appId);
+    if (!detectedContainer) {
+      // Final fallback: use the generated name
+      console.warn(
+        `[Docker] deployApp: Could not detect container name for "${appId}", using fallback`,
+      );
+      detectedContainer = containerName;
+    }
 
     // Extract web UI port and network mode from compose (best-effort)
     const composeMeta = await extractComposeMeta(sanitizedPath);
@@ -240,8 +331,21 @@ export async function deployApp(
     return { success: true };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const deployError = error as DeployError;
+    const stage = deployError.stage || "unknown";
+    const details = deployError.details ?? errorDetails(error);
     console.error(`[Docker] deployApp: Error deploying "${appId}":`, error);
-    await logAction("deploy:error", { appId, error: errorMessage }, "error");
+    await logAction(
+      "deploy:error",
+      {
+        appId,
+        stage,
+        error: errorMessage,
+        ...details,
+        stack: clipText(deployError.stack, 3000),
+      },
+      "error",
+    );
     sendInstallProgress({
       type: "install-progress",
       containerName: appId,
@@ -249,7 +353,10 @@ export async function deployApp(
       icon: meta.icon,
       progress: 1,
       status: "error",
-      message: "Deployment failed",
+      message:
+        stage && stage !== "unknown"
+          ? `Deployment failed at ${stage}`
+          : "Deployment failed",
     });
     return {
       success: false,
@@ -412,27 +519,16 @@ async function tearDownExisting(appDir: string, appId: string): Promise<void> {
 }
 
 /**
- * Build environment variables based on store type.
- *
- * Umbrel and custom stores may expect different environment variables.
- * This function dispatches to the appropriate builder based on the
- * detected store type.
+ * Build environment variables for deployments.
  */
 async function buildEnvVars(
   appId: string,
-  storeType: StoreType,
   config?: InstallConfig,
 ): Promise<NodeJS.ProcessEnv> {
-  switch (storeType) {
-    case "umbrel":
-      console.log(`[Docker] buildEnvVars: Using Umbrel env builder for "${appId}"`);
-      return buildUmbrelEnvVars(appId, config);
-
-    case "custom":
-    default:
-      console.log(`[Docker] buildEnvVars: Using default env builder for "${appId}"`);
-      return buildDefaultEnvVars(appId, config);
-  }
+  console.log(
+    `[Docker] buildEnvVars: Using default env builder for "${appId}"`,
+  );
+  return buildDefaultEnvVars(appId, config);
 }
 
 /**
@@ -501,6 +597,12 @@ function streamComposePull(
       cwd: appDir,
       env: envVars,
     });
+    const stdoutLines: string[] = [];
+    const stderrLines: string[] = [];
+    const pushLine = (target: string[], value: string) => {
+      target.push(value);
+      if (target.length > 40) target.shift();
+    };
 
     let events = 0;
     let lastEmit = Date.now();
@@ -525,6 +627,7 @@ function streamComposePull(
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
+        pushLine(stdoutLines, trimmed);
         if (
           /download/i.test(trimmed) ||
           /extract/i.test(trimmed) ||
@@ -541,17 +644,31 @@ function streamComposePull(
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
+        pushLine(stderrLines, trimmed);
         advance(trimmed);
       }
     });
 
-    pull.on("error", (err) => reject(err));
+    pull.on("error", (err) => {
+      const e = stageError("compose:pull", "docker compose pull failed to start", {
+        ...errorDetails(err),
+        stdout: clipText(stdoutLines.join("\n")),
+        stderr: clipText(stderrLines.join("\n")),
+      });
+      reject(e);
+    });
     pull.on("close", (code) => {
       if (code === 0) {
         onProgress(0.85, "Images pulled");
         resolve();
       } else {
-        reject(new Error(`docker compose pull exited with code ${code}`));
+        reject(
+          stageError("compose:pull", `docker compose pull exited with code ${code}`, {
+            code,
+            stdout: clipText(stdoutLines.join("\n")),
+            stderr: clipText(stderrLines.join("\n")),
+          }),
+        );
       }
     });
   });

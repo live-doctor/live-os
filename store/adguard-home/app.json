@@ -1,0 +1,24 @@
+{
+  "id": "adguard-home",
+  "title": "AdGuard Home",
+  "name": "AdGuard Home",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/adguard-home/icon.svg",
+  "tagline": "Network-wide software for blocking ads and tracking",
+  "overview": "⚠️ See below for important set-up instructions.\n\nAdGuard Home is a comprehensive solution designed to block ads and tracking across all devices in your home network. As the world increasingly embraces the Internet of Things, with a growing number of connected devices, maintaining control over your entire network is crucial. AdGuard Home empowers you to manage this with ease, ensuring a secure and clutter-free browsing experience for every device under your roof.\n\n🛠️ SET-UP INSTRUCTIONS\nIn the setup wizard, it is important to set the \"Port\" of the Admin Web Interface to 8095. This ensures that the app will not conflict with other apps from the Umbrel App Store, and that the app will be accessible when clicking on the app icon in the umbrelOS homescreen.",
+  "category": [
+    "networking"
+  ],
+  "developer": "Adguard",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/adguard-home/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/adguard-home/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/adguard-home/3.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/adguard-home/4.jpg"
+  ],
+  "version": "0.107.71",
+  "releaseNotes": "This release includes improvements and bug fixes.\n\nImprovements:\n  - Stale records in the optimistic DNS cache now have an upper age limit, configurable via `dns.cache_optimistic_max_age` (default 12 hours)\n  - The TTL for stale answers from optimistic DNS cache is now configurable via `dns.cache_optimistic_answer_ttl` (default 30 seconds)\n\n\nBug Fixes:\n  - Fixed an issue where the optimistic DNS cache was not working\n\n\nFull release notes can be found at https://github.com/AdguardTeam/AdGuardHome/releases",
+  "port": 8095,
+  "path": "",
+  "website": "https://adguard.com/fr/adguard-home/overview.html",
+  "repo": "https://github.com/AdguardTeam/AdGuardHome"
+}

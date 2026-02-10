@@ -1,15 +1,12 @@
 "use client";
 
 import type { FileSystemItem } from "@/app/actions/filesystem";
-import { FileIcon, Folder } from "lucide-react";
 
 interface ContextMenuHeaderProps {
   item: FileSystemItem;
 }
 
 export function ContextMenuHeader({ item }: ContextMenuHeaderProps) {
-  const Icon = item.type === "directory" ? Folder : FileIcon;
-
   return (
     <div className="px-4 py-3 border-b border-white/10 bg-white/5 backdrop-blur-sm">
       <div className="flex items-center gap-3">

@@ -45,7 +45,7 @@ Route (app)
 
 ### 3. Updated ESLint Configuration
 - **File:** `eslint.config.mjs`
-- **Added:** Ignore patterns for `umbrel-apps-ref/**` and `scripts/**`
+- **Added:** Ignore patterns for `scripts/**`
 - **Reason:** Third-party code should not be linted
 
 ---

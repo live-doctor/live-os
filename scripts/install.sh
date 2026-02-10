@@ -472,8 +472,6 @@ build_HOMEIO() {
 
     cd "$INSTALL_DIR"
 
-    print_info "Skipping Umbrel app store submodule: local store is no longer bundled."
-
     print_status "Installing dependencies (skipping Husky for production)..."
     # Install all dependencies but skip Husky setup scripts
     # Note: TypeScript is needed for build even in production

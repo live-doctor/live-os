@@ -1,0 +1,23 @@
+{
+  "id": "photoprism",
+  "title": "PhotoPrism",
+  "name": "PhotoPrism",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/photoprism/icon.svg",
+  "tagline": "Self-host your photo and video library",
+  "overview": "PhotoPrism® is a privately hosted app for browsing, organizing, and sharing your photo collection. It makes use of the latest technologies to tag and find pictures automatically without getting in your way. Say goodbye to solutions that force you to upload your visual memories to the cloud!\n\n- Our intuitive user interface makes browsing and organizing your photo collection as easy as it should be — whether it's on a phone, tablet, or desktop computer.\n\n- Index everything without worrying about duplicates or RAW to JPEG conversion.\n\n- Automatic image classification based on Google TensorFlow. In addition, our indexer detects colors, chroma, luminance, quality, panoramic projection, location type, and many other properties.\n\n- Includes four high-resolution world maps to see where you've been, and for rediscovering long-forgotten shots.\n\n- WebDAV clients, like Microsoft's Windows Explorer or Apple's Finder, may connect directly to PhotoPrism so that you to can open, edit, and delete files from your computer or phone as if they were local. You may easily sync your pictures with PhotoSync as well.\n\n- Because PhotoPrism is built as a progressive web app, it provides a native app-like experience, and you may install it on your home screen. There's also a community-maintained native app in development.",
+  "category": [
+    "files"
+  ],
+  "developer": "PhotoPrism",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/photoprism/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/photoprism/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/photoprism/3.jpg"
+  ],
+  "version": "251130-b3068414c",
+  "releaseNotes": "This major update introduces the long-awaited Batch Edit dialog for editing metadata of multiple pictures at once, along with an upgraded face recognition pipeline that delivers more and better matches. PhotoPrism now integrates directly with Ollama and OpenAI to generate captions and labels, with support for custom models and refined configuration options.\n\nKey features and improvements:\n  - Added Batch Edit dialog to edit multiple pictures at once\n  - Improved face detection and recognition with a new engine\n  - Direct Ollama integration for generating captions and labels\n  - OpenAI integration for generating captions and labels\n  - Support for custom image classification models\n  - Added menu to select a cover image for people\n  - Add pictures to multiple albums in one step\n  - Improved people name editing and focus management\n  - Enhanced window scroll position restoration when navigating\n  - Added scheduling options for running AI models in the background\n  - Improved memory and event management in Viewer and Places\n  - Fixed issues with video transcoding and playback\n  - Enhanced metadata handling and error logging\n\n\nFull release notes can be found at: https://github.com/photoprism/photoprism/releases/",
+  "port": 8087,
+  "path": "",
+  "website": "https://photoprism.app",
+  "repo": "https://github.com/photoprism/photoprism"
+}

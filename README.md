@@ -1,40 +1,35 @@
 # Homeio
 
-A self-hosted operating system dashboard for managing your home server infrastructure. Built with Next.js, Homeio combines the best ideas from [UmbrelOS](https://github.com/getumbrel/umbrel) and [CasaOS](https://github.com/IceWhaleTech/CasaOS) while filling in the gaps they leave behind.
+A self-hosted operating system dashboard for managing your home server infrastructure. Built with Next.js, Homeio combines the best ideas from popular self-hosted dashboards while filling in the gaps they leave behind.
 
 ![License](https://img.shields.io/github/license/doctor-io/homeio)
 ![GitHub release](https://img.shields.io/github/v/release/doctor-io/homeio)
 
 ## Why Homeio?
 
-UmbrelOS and CasaOS are great starting points, but each has limitations. Homeio was built to address the features they're missing:
+Homeio focuses on:
 
-| Feature                               | UmbrelOS    | CasaOS      | Homeio          |
-| ------------------------------------- | ----------- | ----------- | --------------- |
-| Firewall management (UFW)             | -           | -           | Yes             |
-| Web terminal (host + containers)      | -           | Host only   | Both            |
-| WiFi management UI                    | Yes         | -           | Yes             |
-| LAN device discovery                  | -           | -           | Yes             |
-| SMB file sharing (create shares)      | Yes         | -           | Yes             |
-| NFS/SMB network storage mounting      | Yes         | Yes         | Yes             |
-| System troubleshooting & diagnostics  | Yes         | -           | Yes             |
-| Live log streaming (journalctl)       | -           | -           | Yes             |
-| Custom docker-compose deploy          | -           | Yes         | Yes             |
-| Multi-store support (CasaOS + Umbrel) | Umbrel only | CasaOS only | Both            |
-| File manager with compression         | -           | Basic       | 8+ formats      |
-| Real-time system monitoring           | Basic       | Basic       | Detailed charts |
-| PIN-based authentication              | -           | -           | Yes             |
-| App backup before updates             | -           | -           | Yes             |
+- Firewall management (UFW)
+- Web terminal (host + containers)
+- WiFi management UI
+- LAN device discovery
+- SMB file sharing (create shares)
+- NFS/SMB network storage mounting
+- System troubleshooting & diagnostics
+- Live log streaming (journalctl)
+- Custom docker-compose deploy
+- File manager with compression (8+ formats)
+- Real-time system monitoring with detailed charts
+- PIN-based authentication
+- App backup before updates
 
 ## App Store
 
-Homeio uses the **CasaOS app store** as its default source. You can also add **CasaOS community stores** for more apps.
-
-Support for **UmbrelOS app store** format is planned for a future release, making Homeio the first dashboard to unify both ecosystems.
+Homeio imports app catalogs from supported API endpoints. The LinuxServer.io catalog is included by default and cannot be removed; add more from the App Store dialog as needed.
 
 ### Adding community stores
 
-From the App Store dialog, you can import additional CasaOS-compatible stores by URL. Community-maintained stores provide hundreds of additional self-hosted apps.
+From the App Store dialog, you can import additional API endpoints by URL. For sources that are not supported, use Custom Deploy with your own compose YAML.
 
 ## Installation
 

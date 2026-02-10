@@ -4,6 +4,7 @@
  */
 
 import type { InstallConfig } from "@/components/app-store/types";
+import fs from "fs";
 import os from "os";
 import path from "path";
 import { env } from "process";
@@ -54,8 +55,19 @@ export function buildDefaultEnvVars(
   envVars.AppID = envVars.AppID || appId;
 
   // Data directory
+  const dataRoot =
+    envVars.HOMEIO_HOME ||
+    envVars.HOMEIO_DATA ||
+    (() => {
+      try {
+        fs.accessSync("/DATA");
+        return "/DATA";
+      } catch {
+        return path.join(process.cwd(), "DATA");
+      }
+    })();
   envVars.APP_DATA_DIR =
-    envVars.APP_DATA_DIR || path.join("/DATA/AppData", appId);
+    envVars.APP_DATA_DIR || path.join(dataRoot, "AppData", appId);
 
   // Device info
   envVars.DEVICE_HOSTNAME = getDeviceHostname();

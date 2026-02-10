@@ -7,6 +7,8 @@ export interface DependencyCheckResult {
 
 /**
  * Check whether all dependencies for an app are installed.
+ * Dependencies are stored at the App root level (App.dependencies JSON field),
+ * then merged into App.container during store import.
  */
 export async function checkDependencies(
   appId: string,
@@ -18,6 +20,8 @@ export async function checkDependencies(
       select: { container: true },
     });
 
+    // Dependencies are stored inside the container JSON field
+    // (merged from App.dependencies during store import)
     const container = app?.container as
       | { dependencies?: string[] }
       | null

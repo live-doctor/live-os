@@ -104,7 +104,7 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
 
         <ScrollArea
           className="h-[92vh] w-full min-w-0"
-          viewportClassName="homeio-scrollarea-fit umbrel-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0 [&>div]:!max-w-full [&>div]:!overflow-x-hidden"
+          viewportClassName="homeio-scrollarea-fit homeio-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0 [&>div]:!max-w-full [&>div]:!overflow-x-hidden"
         >
           <div
             className={`flex min-w-0 max-w-full flex-col gap-4 overflow-hidden pb-6 pt-4 md:pt-7 ${HOMEIO_DIALOG_CONTENT_GUTTER_CLASS}`}
@@ -125,30 +125,6 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
             />
 
             <div className="min-w-0 space-y-8">
-              {!s.loading && !s.error && (
-                <div className="space-y-1 px-2.5">
-                  <h3 className={HOMEIO_DIALOG_TITLE_CLASS}>
-                    {s.isDiscoverView
-                      ? "Discover"
-                      : s.categoryLabel(s.selectedCategory)}
-                  </h3>
-                  {s.isDiscoverView ? (
-                    <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
-                      Curated highlights, popular picks, and the freshest
-                      arrivals.
-                    </p>
-                  ) : s.searchQuery ? (
-                    <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
-                      {s.filteredApps.length} results for &quot;{s.searchQuery}
-                      &quot;
-                    </p>
-                  ) : s.selectedCategory === "all" ? (
-                    <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
-                      {s.apps.length} total apps available
-                    </p>
-                  ) : null}
-                </div>
-              )}
               {s.loading && (
                 <div className="flex flex-col items-center justify-center gap-3 py-20">
                   <Loader2 className="h-8 w-8 animate-spin text-white/60" />
@@ -167,73 +143,104 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
                   </Button>
                 </div>
               )}
-              {!s.loading && !s.error && s.isDiscoverView && (
-                <>
-                  {s.featuredApps.length > 0 && (
-                    <FeaturedCardsRow>
-                      {s.featuredApps.map((app, index) => (
-                        <FeaturedAppCard
-                          key={app.id}
-                          app={app}
-                          index={index}
-                          onClick={() => s.setSelectedApp(app)}
-                        />
-                      ))}
-                    </FeaturedCardsRow>
-                  )}
-                  {s.popularApps.length > 0 && (
-                    <DiscoverSection
-                      label="MOST INSTALLS"
-                      title="In popular demand"
-                    >
-                      {renderGrid(s.popularApps)}
-                    </DiscoverSection>
-                  )}
-                  {s.newApps.length > 0 && (
-                    <DiscoverSection
-                      label="NEW APPS"
-                      title="Fresh from the oven"
-                    >
-                      {renderGrid(s.newApps)}
-                    </DiscoverSection>
-                  )}
-                </>
+              {!s.loading && !s.error && s.apps.length === 0 && (
+                <div className="flex flex-col items-center justify-center gap-3 py-16">
+                  <p className="text-zinc-400">No applications found</p>
+                </div>
               )}
-              {!s.loading && !s.error && !s.isDiscoverView && (
+              {!s.loading && !s.error && s.apps.length > 0 && (
                 <>
-                  {s.filteredApps.length === 0 && (
-                    <div className="flex flex-col items-center justify-center gap-3 py-16">
-                      <p className="text-zinc-400">No applications found</p>
-                      {s.searchQuery && (
-                        <button
-                          onClick={handleClearSearch}
-                          className="text-sm text-blue-400 hover:text-blue-300"
+                  <div className="space-y-1 px-2.5">
+                    <h3 className={HOMEIO_DIALOG_TITLE_CLASS}>
+                      {s.isDiscoverView
+                        ? "Discover"
+                        : s.categoryLabel(s.selectedCategory)}
+                    </h3>
+                    {s.isDiscoverView ? (
+                      <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
+                        Curated highlights, popular picks, and the freshest
+                        arrivals.
+                      </p>
+                    ) : s.searchQuery ? (
+                      <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
+                        {s.filteredApps.length} results for &quot;{s.searchQuery}
+                        &quot;
+                      </p>
+                    ) : s.selectedCategory === "all" ? (
+                      <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
+                        {s.apps.length} total apps available
+                      </p>
+                    ) : null}
+                  </div>
+                  {s.isDiscoverView && (
+                    <>
+                      {s.featuredApps.length > 0 && (
+                        <FeaturedCardsRow>
+                          {s.featuredApps.map((app, index) => (
+                            <FeaturedAppCard
+                              key={app.id}
+                              app={app}
+                              index={index}
+                              onClick={() => s.setSelectedApp(app)}
+                            />
+                          ))}
+                        </FeaturedCardsRow>
+                      )}
+                      {s.popularApps.length > 0 && (
+                        <DiscoverSection
+                          label="MOST INSTALLS"
+                          title="In popular demand"
                         >
-                          Clear search
-                        </button>
+                          {renderGrid(s.popularApps)}
+                        </DiscoverSection>
                       )}
-                    </div>
+                      {s.newApps.length > 0 && (
+                        <DiscoverSection
+                          label="NEW APPS"
+                          title="Fresh from the oven"
+                        >
+                          {renderGrid(s.newApps)}
+                        </DiscoverSection>
+                      )}
+                    </>
                   )}
-                  {s.filteredApps.length > 0 && (
-                    <motion.div
-                      variants={{
-                        hidden: { opacity: 0 },
-                        show: {
-                          opacity: 1,
-                          transition: { staggerChildren: 0.03 },
-                        },
-                      }}
-                      initial="hidden"
-                      animate="show"
-                    >
-                      {renderGrid(
-                        s.filteredApps,
-                        isAllAppsView
-                          ? "!grid-cols-1 md:!grid-cols-2 lg:!grid-cols-3"
-                          : undefined,
-                        isAllAppsView ? "compact" : "default",
+                  {!s.isDiscoverView && (
+                    <>
+                      {s.filteredApps.length === 0 && (
+                        <div className="flex flex-col items-center justify-center gap-3 py-16">
+                          <p className="text-zinc-400">No applications found</p>
+                          {s.searchQuery && (
+                            <button
+                              onClick={handleClearSearch}
+                              className="text-sm text-blue-400 hover:text-blue-300"
+                            >
+                              Clear search
+                            </button>
+                          )}
+                        </div>
                       )}
-                    </motion.div>
+                      {s.filteredApps.length > 0 && (
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0 },
+                            show: {
+                              opacity: 1,
+                              transition: { staggerChildren: 0.03 },
+                            },
+                          }}
+                          initial="hidden"
+                          animate="show"
+                        >
+                          {renderGrid(
+                            s.filteredApps,
+                            isAllAppsView
+                              ? "!grid-cols-1 md:!grid-cols-2 lg:!grid-cols-3"
+                              : undefined,
+                            isAllAppsView ? "compact" : "default",
+                          )}
+                        </motion.div>
+                      )}
+                    </>
                   )}
                 </>
               )}

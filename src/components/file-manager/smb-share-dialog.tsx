@@ -72,7 +72,7 @@ export function SmbShareDialog({
       if (!existing && targetName) {
         setShareName(targetName.replace(/[<>:"/\\|?*\s]/g, "_"));
       }
-    } catch (error) {
+    } catch {
       // Error handled by toast
       toast.error("Failed to load share information");
     } finally {
@@ -108,7 +108,7 @@ export function SmbShareDialog({
       } else {
         toast.error(result.error || "Failed to create share");
       }
-    } catch (error) {
+    } catch {
       // Error handled by toast
       toast.error("Failed to create share");
     } finally {
@@ -127,7 +127,7 @@ export function SmbShareDialog({
       } else {
         toast.error(result.error || "Failed to remove share");
       }
-    } catch (error) {
+    } catch {
       // Error handled by toast
       toast.error("Failed to remove share");
     }

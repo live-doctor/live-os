@@ -10,10 +10,7 @@ type SystemDetailsCardProps = {
   onOpenTabs: () => void;
 };
 
-export function SystemDetailsCard({
-  hardware: _hardware,
-  onOpenTabs,
-}: SystemDetailsCardProps) {
+export function SystemDetailsCard({ onOpenTabs }: SystemDetailsCardProps) {
   return (
     <SettingsSectionShell
       title="Device info"

@@ -80,20 +80,13 @@
   --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
   --sidebar-border: oklch(0.928 0.006 264.531);
   --sidebar-ring: oklch(0.707 0.022 261.325);
-  --surface-rgb: 24 24 27;
-  --surface-border-rgb: 255 255 255;
-  --surface-text-rgb: 255 255 255;
-  --surface-muted-rgb: 255 255 255;
-  --surface-bg-alpha: 0.7;
-  --surface-bg-hover-alpha: 0.8;
-  --surface-border-alpha: 0.2;
-}
-
-.light {
   --surface-rgb: 244 246 250;
   --surface-border-rgb: 30 41 59;
   --surface-text-rgb: 15 23 42;
   --surface-muted-rgb: 51 65 85;
+  --surface-bg-alpha: 0.85;
+  --surface-bg-hover-alpha: 0.9;
+  --surface-border-alpha: 0.15;
 }
 
 .dark {
@@ -132,6 +125,9 @@
   --surface-border-rgb: 255 255 255;
   --surface-text-rgb: 255 255 255;
   --surface-muted-rgb: 255 255 255;
+  --surface-bg-alpha: 0.7;
+  --surface-bg-hover-alpha: 0.8;
+  --surface-border-alpha: 0.2;
 }
 
 @layer base {
@@ -185,7 +181,7 @@
   letter-spacing: -0.01em;
 }
 
-.umbrel-fade-scroller-y {
+.homeio-fade-scroller-y {
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0,

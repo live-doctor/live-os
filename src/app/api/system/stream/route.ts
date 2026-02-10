@@ -131,7 +131,7 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
     const helperPatterns = [
       /-docker-\d+$/,      // Docker-in-Docker services (e.g., portainer-docker-1)
       /-dind-\d+$/,        // DinD services
-      /-tor-\d+$/,         // Tor services (Umbrel)
+      /-tor-\d+$/,         // Tor services
       /-proxy-\d+$/,       // Proxy services
       /-redis-\d+$/,       // Redis helper services
       /-db-\d+$/,          // Database helper services

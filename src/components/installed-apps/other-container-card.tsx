@@ -6,14 +6,13 @@ import { motion } from "framer-motion";
 import { Box } from "lucide-react";
 import { toast } from "sonner";
 
-const iconFrameClass =
-  "bg-white/10 shadow-inner shadow-black/25";
-
 export function OtherContainerCard({
   container,
 }: {
   container: OtherContainer;
 }) {
+  const isRunning = container.status === "running";
+
   const handleClick = () => {
     if (container.webUIPort) {
       const url = `${window.location.protocol}//${window.location.hostname}:${container.webUIPort}`;
@@ -31,26 +30,31 @@ export function OtherContainerCard({
       }}
     >
       <motion.div
-        whileHover={{ scale: 1.03 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 380, damping: 18 }}
-        className="relative cursor-pointer"
+        whileHover={{ scale: 1.06 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+        className="relative cursor-pointer p-2"
         onClick={handleClick}
       >
-        <div className="mx-auto flex w-16 flex-col items-center justify-start text-center">
+        <div className="flex flex-col items-center gap-2">
+          {/* Icon container with glass frame — grayscale when not running */}
           <div
-            className={`relative flex h-12 w-12 items-center justify-center rounded-[10px] sm:h-14 sm:w-14 ${iconFrameClass}`}
+            className={`relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
+              isRunning
+                ? "border-white/10 bg-white/5 shadow-black/20"
+                : "border-white/8 bg-white/5 shadow-black/10 grayscale opacity-50"
+            }`}
           >
-            <Box className="h-6 w-6 text-white/55" />
-            {container.status !== "running" ? (
-              <div
-                className="pointer-events-none absolute inset-0 rounded-[10px] bg-zinc-900/45"
-                title={container.status}
-              />
-            ) : null}
+            <Box
+              className={`h-7 w-7 sm:h-8 sm:w-8 ${
+                isRunning ? "text-white/40" : "text-white/25"
+              }`}
+            />
           </div>
+
+          {/* Container name */}
           <span
-            className={`mt-1.5 block w-full text-center text-[11px] leading-tight sm:text-xs ${surface.labelMuted}`}
+            className={`block w-20 text-center text-[11px] leading-tight sm:w-24 sm:text-xs ${surface.labelMuted}`}
           >
             {container.name}
           </span>

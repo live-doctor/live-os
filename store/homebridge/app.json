@@ -1,0 +1,23 @@
+{
+  "id": "homebridge",
+  "title": "Homebridge",
+  "name": "Homebridge",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/homebridge/icon.svg",
+  "tagline": "HomeKit support for the impatient",
+  "overview": "Bringing HomeKit support where there is none. Homebridge allows you to integrate with smart home devices that do not natively support HomeKit. There are over 2000 Homebridge plugins supporting thousands of different smart accessories.\n\nSome of the most popular plugins include:\n- Ring\n- Nest & Nest Cameras\n- TP-Link Kasa Smart Home\n- Hue / deCONZ (Zigbee)\n- Belkin Wemo\n- myQ\n- UniFi Protect",
+  "category": [
+    "automation"
+  ],
+  "developer": "Homebridge",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/homebridge/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/homebridge/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/homebridge/3.jpg"
+  ],
+  "version": "1.11.1-2025-12-12",
+  "releaseNotes": "This release includes several improvements and updates:\n  - Updated to Ubuntu 24.04\n  - Upgraded Homebridge APT Package to version 1.8.4\n  - Updated Node.js to version 24.12.0\n  - Updated Homebridge UI to version 5.11.2\n\n\nFull release notes can be found at https://github.com/homebridge/homebridge/releases",
+  "port": 8581,
+  "path": "",
+  "website": "https://homebridge.io/",
+  "repo": "https://github.com/homebridge/homebridge"
+}

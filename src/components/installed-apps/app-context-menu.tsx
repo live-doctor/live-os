@@ -46,10 +46,15 @@ import { LogsDialog } from "./logs-dialog";
 interface AppContextMenuProps {
   app: InstalledApp;
   children: React.ReactNode;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
-export function AppContextMenu({ app, children }: AppContextMenuProps) {
-  const [loading, setLoading] = useState(false);
+export function AppContextMenu({ app, children, onLoadingChange }: AppContextMenuProps) {
+  const [loading, _setLoading] = useState(false);
+  const setLoading = (v: boolean) => {
+    _setLoading(v);
+    onLoadingChange?.(v);
+  };
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [showCustomDeploy, setShowCustomDeploy] = useState(false);
@@ -141,8 +146,11 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
         appTitle: result.appTitle,
         storeId: result.storeId,
         containerMeta: result.container as Record<string, unknown> | undefined,
+        webUIPort: result.webUIPort,
       });
       setShowCustomDeploy(true);
+      // Show loading spinner on the card while deploy dialog is open
+      setLoading(true);
     } catch (error) {
       console.error("Failed to load app config for edit:", error);
       toast.error("Failed to load app config");
@@ -336,10 +344,17 @@ export function AppContextMenu({ app, children }: AppContextMenuProps) {
 
       <CustomDeployDialog
         open={showCustomDeploy}
-        onOpenChange={setShowCustomDeploy}
+        onOpenChange={(open) => {
+          setShowCustomDeploy(open);
+          // User cancelled the dialog — stop loading on the card
+          if (!open) setLoading(false);
+        }}
         initialData={customData || undefined}
         onDeploySuccess={() => {
           setShowCustomDeploy(false);
+          // Deploy finished — keep loading briefly so the card stays visible
+          // while Docker recreates the container and WebSocket catches up
+          setTimeout(() => setLoading(false), 5000);
         }}
       />
     </>

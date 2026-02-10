@@ -1,6 +1,7 @@
 "use server";
 
 import { execAsync } from "@/lib/exec";
+import { logAction } from "../maintenance/logger";
 
 export type FirewallStatus = {
   enabled: boolean;
@@ -54,7 +55,9 @@ export async function getFirewallStatus(): Promise<FirewallStatusResult> {
 
     // Parse status
     const statusLine = lines.find((l) => l.startsWith("Status:"));
-    const enabled = statusLine?.includes("active") ?? false;
+    const statusMatch = statusLine?.match(/Status:\s*(\w+)/i);
+    const statusValue = statusMatch?.[1]?.toLowerCase() ?? "unknown";
+    const enabled = statusValue === "active";
 
     // Parse defaults
     let defaultIncoming: FirewallStatus["defaultIncoming"] = "unknown";
@@ -72,6 +75,14 @@ export async function getFirewallStatus(): Promise<FirewallStatusResult> {
           match[2].toLowerCase() as FirewallStatus["defaultOutgoing"];
       }
     }
+
+    await logAction("network:firewall:status", {
+      statusLine,
+      statusValue,
+      enabled,
+      defaultIncoming,
+      defaultOutgoing,
+    });
 
     // Parse rules - find the line that starts with "To"
     const rules: FirewallRule[] = [];

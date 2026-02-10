@@ -1,0 +1,23 @@
+{
+  "id": "paperless",
+  "title": "Paperless-ngx",
+  "name": "Paperless-ngx",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/paperless/icon.svg",
+  "tagline": "Transform your physical documents into a searchable online archive",
+  "overview": "Paperless-ngx is a community-supported open-source document management system that transforms your physical documents into a searchable online archive so you can keep, well, less paper.\n- Organize and index your scanned documents with tags, correspondents, types, and more.\n- Your data is stored locally on your server and is never transmitted or shared in any way.\n- Performs OCR on your documents, adding searchable and selectable text, even to documents scanned with only images.\n- Utilizes the open-source Tesseract engine to recognize more than 100 languages.\n- Documents are saved as PDF/A format which is designed for long term storage, alongside the unaltered originals.\n- Uses machine-learning to automatically add tags, correspondents and document types to your documents.\n- Supports PDF documents, images, plain text files, Office documents (Word, Excel, Powerpoint, and LibreOffice equivalents)1 and more.\n- Paperless stores your documents plain on disk. Filenames and folders are managed by paperless and their format can be configured freely with different configurations assigned to different documents.",
+  "category": [
+    "files"
+  ],
+  "developer": "Paperless-ngx Community",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/paperless/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/paperless/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/paperless/3.jpg"
+  ],
+  "version": "2.20.6",
+  "releaseNotes": "⚠️ This release addresses two security issues and is recommended for all users.\n\nThis update includes bug fixes and improvements:\n  - Fixed extraction of all IDs for nested tags\n  - Prevented note deletion outside of documents\n  - Improved performance for treenode operations\n  - Changed date calculation for 'this year' to include future documents\n  - Fixed correct field ID usage for overrides\n\n\nFull release notes are found at https://github.com/paperless-ngx/paperless-ngx/releases",
+  "port": 2349,
+  "path": "",
+  "website": "https://docs.paperless-ngx.com/",
+  "repo": "https://github.com/paperless-ngx/paperless-ngx"
+}

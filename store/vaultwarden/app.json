@@ -1,0 +1,23 @@
+{
+  "id": "vaultwarden",
+  "title": "Vaultwarden",
+  "name": "Vaultwarden",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/vaultwarden/icon.svg",
+  "tagline": "Unofficial Bitwarden® compatible server",
+  "overview": "Vaultwarden is an alternative implementation of the Bitwarden® server API that is compatible with Bitwarden® clients*. Vaultwarden is perfect for self-hosting all of your passwords in an encrypted vault on your Umbrel. Vaultwarden is a full implementation of Bitwarden® API that includes:\n\n- Organizations support\n- Attachments\n- Vault API support\n- Serving the static files for Vault interface\n- Website icons API\n- Authenticator and U2F support\n- YubiKey and Duo support\n- Emergency Access\n\n🛠️ SET-UP INSTRUCTIONS\nVaultwarden's web interface is not accessible over http, meaning that to access it for initial set-up you need to use Tor. Here's how to do it:\n- Ensure your Umbrel is accessible over Tor by going to Settings in your dashboard and toggling \"Remote Tor access\" to enabled. You will need to restart your Umbrel if Remote Tor access was previously disabled.\n- Access your umbrel through a Tor browser using the .onion address shown in Settings under \"Remote Tor access\". \n- In your Tor browser, open the Vaultwaden app and create an account.\n- Once you've created an account, you can connect your Vaultwarden server from any Bitwarden app (mobile, desktop, browser, etc) by adding your server IP details.\n- For the most robust connection from anywhere, install Tailscale on your Umbrel and your devices, and use the Tailscale IP address to connect to your Vaultwarden server.\n\n*Please note that Vaultwarden is not associated with the Bitwarden® project nor 8bit Solutions LLC. When using this app, please report any bugs or suggestions to us directly, regardless of whatever clients you are using (mobile, desktop, browser, etc), and do not use Bitwarden®'s official support channels.",
+  "category": [
+    "files"
+  ],
+  "developer": "Daniel García",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/vaultwarden/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/vaultwarden/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/vaultwarden/3.jpg"
+  ],
+  "version": "1.34.3",
+  "releaseNotes": "This release includes:\n  - Fixed an issue with MySQL/MariaDB database connections when using Alpine images\n\n\nFull release notes are available at https://github.com/dani-garcia/vaultwarden/releases",
+  "port": 8089,
+  "path": "",
+  "website": "https://github.com/dani-garcia",
+  "repo": "https://github.com/dani-garcia/vaultwarden"
+}

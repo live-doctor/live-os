@@ -109,7 +109,7 @@ export function useContextMenuActions({
               }
             }
             onRefresh();
-          } catch (error) {
+          } catch {
             toast.error('Paste operation failed');
           }
           break;
@@ -128,9 +128,9 @@ export function useContextMenuActions({
             } else {
               toast.error(result.error || 'Failed to move item to trash');
             }
-          } catch (error) {
+          } catch {
             toast.error('Failed to move item to trash');
-                      }
+          }
           break;
 
         case 'compress':
@@ -142,9 +142,9 @@ export function useContextMenuActions({
             } else {
               toast.error(result.error || 'Failed to compress item');
             }
-          } catch (error) {
+          } catch {
             toast.error('Failed to compress item');
-                      }
+          }
           break;
 
         case 'uncompress':
@@ -156,9 +156,9 @@ export function useContextMenuActions({
             } else {
               toast.error(result.error || 'Failed to extract archive');
             }
-          } catch (error) {
+          } catch {
             toast.error('Failed to extract archive');
-                      }
+          }
           break;
 
         case 'shareNetwork':
@@ -175,9 +175,9 @@ export function useContextMenuActions({
             } else {
               toast.error(result.error || 'Failed to add to favorites');
             }
-          } catch (error) {
+          } catch {
             toast.error('Failed to add to favorites');
-                      }
+          }
           break;
 
         case 'removeFavorite':
@@ -190,9 +190,9 @@ export function useContextMenuActions({
             } else {
               toast.error(result.error || 'Failed to remove from favorites');
             }
-          } catch (error) {
+          } catch {
             toast.error('Failed to remove from favorites');
-                      }
+          }
           break;
       }
     },

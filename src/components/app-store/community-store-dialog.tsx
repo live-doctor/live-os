@@ -105,7 +105,7 @@ export function CommunityStoreDialog({
     try {
       const removed = await removeImportedStore(slug);
       if (!removed) {
-        setError("Default Umbrel store cannot be removed.");
+        setError("Default store cannot be removed.");
         return;
       }
       const imported = await getImportedStoreDetails();
@@ -129,12 +129,12 @@ export function CommunityStoreDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
-            <p className="text-sm text-zinc-200">Paste a custom store source URL (ZIP or API endpoint) to import.</p>
+            <p className="text-sm text-zinc-200">Paste a store API endpoint to import.</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
-                placeholder="https://github.com/getumbrel/umbrel-apps/archive/refs/heads/master.zip"
+                placeholder="https://api.linuxserver.io/api/v1/images?include_config=true&include_deprecated=true"
                 className="bg-white/10 border-white/20 text-white placeholder:text-zinc-400"
               />
               <div className="flex gap-2">

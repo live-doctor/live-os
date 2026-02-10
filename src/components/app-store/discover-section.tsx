@@ -41,7 +41,7 @@ export function DiscoverSection({
 
 export function FeaturedCardsRow({ children }: { children: ReactNode }) {
   return (
-    <div className="umbrel-hide-scrollbar flex min-w-0 max-w-full gap-3 overflow-x-auto py-1 pr-1 md:gap-5">
+    <div className="homeio-hide-scrollbar scrollbar-hide flex min-w-0 max-w-full gap-3 overflow-x-auto py-1 pr-1 md:gap-5">
       {children}
     </div>
   );

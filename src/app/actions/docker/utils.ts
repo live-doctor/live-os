@@ -75,8 +75,20 @@ export function guessComposeContainerName(composePath: string): string | null {
 }
 
 /**
+ * Helper patterns for services that should NOT be selected as primary container.
+ */
+const HELPER_NAME_PATTERNS = [
+  /[-_]db[-_]|[-_]database[-_]/i,
+  /[-_]redis[-_]/i,
+  /[-_]postgres[-_]|[-_]mysql[-_]|[-_]mariadb[-_]|[-_]mongodb[-_]/i,
+  /[-_]proxy[-_]|[-_]tor[-_]/i,
+  /[-_]dind[-_]|[-_]docker[-_]/i,
+];
+
+/**
  * Detect container name from running compose project.
- * Uses --project-name for reliable matching (Umbrel pattern).
+ * Uses --project-name for reliable matching.
+ * Prefers non-helper containers (skips db, redis, proxy, etc.)
  */
 export async function detectComposeContainerName(
   appDir: string,
@@ -92,7 +104,15 @@ export async function detectComposeContainerName(
       .split("\n")
       .map((n) => n.trim())
       .filter(Boolean);
-    return names[0] || null;
+
+    if (names.length === 0) return null;
+    if (names.length === 1) return names[0];
+
+    // Multiple containers: prefer the non-helper one
+    const mainContainer = names.find(
+      (name) => !HELPER_NAME_PATTERNS.some((p) => p.test(name)),
+    );
+    return mainContainer || names[0];
   } catch (error) {
     console.warn(
       "[Docker] detectComposeContainerName failed:",
@@ -133,12 +153,30 @@ export async function resolveHostPort(
       }
     }
 
-    // Fallback: first available mapping
-    const firstMapping = Object.values(ports).find(
+    // Fallback: prefer TCP ports sorted by lowest port number (most likely web UI)
+    const tcpEntries = Object.entries(ports)
+      .filter(
+        ([key, mappings]) =>
+          key.endsWith("/tcp") &&
+          Array.isArray(mappings) &&
+          mappings.length > 0,
+      )
+      .sort(([a], [b]) => {
+        const portA = parseInt(a.split("/")[0], 10);
+        const portB = parseInt(b.split("/")[0], 10);
+        return portA - portB;
+      });
+
+    if (tcpEntries.length > 0) {
+      return tcpEntries[0][1]![0].HostPort;
+    }
+
+    // Last resort: any available mapping
+    const anyMapping = Object.values(ports).find(
       (mappings) => Array.isArray(mappings) && mappings.length > 0,
     );
 
-    return firstMapping?.[0]?.HostPort ?? null;
+    return anyMapping?.[0]?.HostPort ?? null;
   } catch (error) {
     console.error(
       `[Docker] resolveHostPort: failed for ${containerName}:`,
@@ -220,7 +258,7 @@ export async function findComposeForApp(
 const HELPER_SERVICE_PATTERNS = [
   /^docker$/i,       // Docker-in-Docker
   /^dind$/i,         // DinD
-  /^tor$/i,          // Tor (Umbrel)
+  /^tor$/i,          // Tor
   /^proxy$/i,        // Proxy services
   /^redis$/i,        // Redis cache
   /^db$/i,           // Generic database
@@ -337,7 +375,7 @@ export function aggregateStatus(
 
 /**
  * Detect all container names from a compose project directory.
- * Uses --project-name for reliable matching (Umbrel pattern).
+ * Uses --project-name for reliable matching.
  */
 export async function detectAllComposeContainerNames(
   appDir: string,
@@ -358,31 +396,17 @@ export async function detectAllComposeContainerNames(
 }
 
 /**
- * Umbrel-specific services that should be removed during deployment.
- * These are internal Umbrel infrastructure services that don't have
- * standalone images and are handled by Umbrel's orchestration layer.
- */
-const UMBREL_INTERNAL_SERVICES = [
-  "app_proxy", // Umbrel's reverse proxy (no standalone image)
-  "tor",       // Umbrel's Tor integration (managed separately)
-];
-
-/**
  * Sanitize compose file by removing invalid or platform-specific services.
  * Returns both the sanitized path (for docker to run) and the original path (for DB storage).
  *
  * Handles:
- * - Umbrel's app_proxy service (internal proxy with no image)
  * - Services without image or build instructions
- * - Umbrel-specific infrastructure services
- * - Adds port mappings when removing app_proxy (extracts APP_PORT)
  *
  * The sanitized file is written as a dotfile in the same directory as the original
  * so that Docker Compose derives the correct project name from the parent folder.
  */
 export async function sanitizeComposeFile(
   composePath: string,
-  storeType?: "umbrel" | "custom",
 ): Promise<{ sanitizedPath: string; originalPath: string }> {
   try {
     const raw = await fs.readFile(composePath, "utf-8");
@@ -394,96 +418,13 @@ export async function sanitizeComposeFile(
       return { sanitizedPath: composePath, originalPath: composePath };
     }
 
-    // Extract port info from app_proxy before removing it
-    let appProxyPort: string | undefined;
-    let appProxyHost: string | undefined;
-    const appProxy = doc.services["app_proxy"] as {
-      environment?: Record<string, string> | string[];
-    } | undefined;
-
-    if (appProxy?.environment) {
-      const env = appProxy.environment;
-      if (Array.isArray(env)) {
-        // Format: ["APP_PORT=9000", "APP_HOST=service_name"]
-        for (const item of env) {
-          if (typeof item === "string") {
-            if (item.startsWith("APP_PORT=")) {
-              appProxyPort = item.split("=")[1];
-            } else if (item.startsWith("APP_HOST=")) {
-              appProxyHost = item.split("=")[1];
-            }
-          }
-        }
-      } else if (typeof env === "object") {
-        // Format: { APP_PORT: "9000", APP_HOST: "service_name" }
-        appProxyPort = env.APP_PORT;
-        appProxyHost = env.APP_HOST;
-      }
-    }
-
-    if (appProxyPort) {
-      console.log(`[Docker] sanitizeCompose: extracted APP_PORT=${appProxyPort} from app_proxy`);
-    }
-
     // Check each service for validity
     for (const [serviceName, service] of Object.entries(doc.services)) {
-      const svc = service as { image?: string; build?: unknown; ports?: unknown[] };
-      let shouldRemove = false;
-
-      // Remove services without image or build
+      const svc = service as { image?: string; build?: unknown };
       if (!svc.image && !svc.build) {
-        shouldRemove = true;
-      }
-
-      // For Umbrel apps, also remove known internal services
-      if (storeType === "umbrel" || UMBREL_INTERNAL_SERVICES.includes(serviceName)) {
-        if (UMBREL_INTERNAL_SERVICES.includes(serviceName)) {
-          shouldRemove = true;
-        }
-      }
-
-      if (shouldRemove) {
         delete doc.services[serviceName];
         removedServices.push(serviceName);
         needsSanitization = true;
-      }
-    }
-
-    // If we extracted a port from app_proxy, add it to the target service
-    if (appProxyPort && removedServices.includes("app_proxy")) {
-      // Find the target service - either by APP_HOST reference or the main service
-      const serviceNames = Object.keys(doc.services);
-      let targetService: string | undefined;
-
-      if (appProxyHost) {
-        // APP_HOST format is usually "projectname_servicename_1" or just "servicename"
-        // Try to match by service name
-        for (const svcName of serviceNames) {
-          if (appProxyHost.includes(svcName) || svcName === appProxyHost) {
-            targetService = svcName;
-            break;
-          }
-        }
-      }
-
-      // Fallback: use the first remaining service (usually the main app)
-      if (!targetService && serviceNames.length > 0) {
-        // Prefer a service that's not 'docker' or 'dind' (helper services)
-        targetService = serviceNames.find(
-          (n) => !["docker", "dind"].includes(n.toLowerCase())
-        ) || serviceNames[0];
-      }
-
-      if (targetService) {
-        const svc = doc.services[targetService] as { ports?: unknown[] };
-        // Only add port if not already defined
-        if (!svc.ports || svc.ports.length === 0) {
-          svc.ports = [`${appProxyPort}:${appProxyPort}`];
-          needsSanitization = true;
-          console.log(
-            `[Docker] sanitizeCompose: added port ${appProxyPort} to service "${targetService}"`,
-          );
-        }
       }
     }
 
@@ -577,18 +518,14 @@ export async function getContainerNameFromCompose(
     const service = doc.services[serviceName];
     if (!service) return null;
 
-    // Return container_name if explicitly set
+    // Return container_name if explicitly set in compose
     if (service.container_name) {
       return service.container_name;
     }
 
-    // Fallback: docker compose generates names as <project>-<service>-<replica>
-    // The project name comes from the `name` field or directory name
-    const projectName = doc.name?.toLowerCase();
-    if (projectName) {
-      return projectName;
-    }
-
+    // Don't guess — Docker Compose generates names as "{project}-{service}-1"
+    // which we can't predict reliably here. Let detectComposeContainerName()
+    // handle detection from the actual running containers instead.
     return null;
   } catch (error) {
     console.warn(
@@ -625,7 +562,6 @@ const STORE_META_FILES = new Set([
   "docker-compose.yml",
   "docker-compose.yaml",
   ".docker-compose.sanitized.yml",
-  "umbrel-app.yml",
   "appfile.json",
   "icon.png",
   "icon.svg",
@@ -636,7 +572,7 @@ const STORE_META_FILES = new Set([
 /**
  * Pre-seed data files from a store app directory to APP_DATA_DIR.
  *
- * Umbrel apps often include files (entrypoint.sh, default-password, torrc.template, etc.)
+ * Some app catalogs include files (entrypoint.sh, default-password, torrc.template, etc.)
  * alongside the compose file. The compose references them via ${APP_DATA_DIR}/filename.
  * If those files don't exist when Docker mounts them, Docker creates directories instead,
  * which causes "is a directory" errors.
@@ -689,7 +625,6 @@ const APP_INSTALL_FILES = [
   "docker-compose.yml",
   "docker-compose.yaml",
   "appfile.json",
-  "umbrel-app.yml",
   "icon.png",
   "icon.svg",
 ];

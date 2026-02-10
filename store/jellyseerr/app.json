@@ -1,0 +1,23 @@
+{
+  "id": "jellyseerr",
+  "title": "Jellyseerr",
+  "name": "Jellyseerr",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/jellyseerr/icon.svg",
+  "tagline": "Beautiful media discovery for Jellyfin users",
+  "overview": "Jellyseerr is a request management and media discovery tool built to work with your existing Jellyfin ecosystem.\nJellyseerr scans your Jellyfin libraries at regular intervals, so it knows which items are already available on your server. It also integrates with the popular DVR applications Radarr and Sonarr, and supports activity monitoring within Jellyseerr itself.\n🛠️ SET-UP INSTRUCTIONS\nDuring initial set-up, you will need to input your Umbrel device's IP address to connect to Jellyfin (and optional services such as Radarr and Sonarr). You can find your device's IP address by visiting your router's admin dashboard or by using an IP scanning tool like Angry IP Scanner.",
+  "category": [
+    "media"
+  ],
+  "developer": "Fallenbagel",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/jellyseerr/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/jellyseerr/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/jellyseerr/3.jpg"
+  ],
+  "version": "2.7.3",
+  "releaseNotes": "Key highlights in this release:\n\n  - Fixed an issue with API documentation for user settings\n  - Improved handling of username fields in UserSettings API schema\n  - Updated Plex Watchlist URL\n  - Enhanced blacklist keyword handling\n  - Improved media availability notifications\n  - Fixed issues with deleting media files and applying proxy settings\n\nFull release notes are available at https://github.com/fallenbagel/jellyseerr/releases",
+  "port": 5056,
+  "path": "",
+  "website": "https://github.com/Fallenbagel/jellyseerr",
+  "repo": "https://github.com/Fallenbagel/jellyseerr"
+}

@@ -1,0 +1,18 @@
+services:
+  eufy-security-ws:
+    image: bropat/eufy-security-ws:latest
+    container_name: eufy-security-ws
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data
+    environment:
+      - USERNAME=
+      - PASSWORD=
+      - COUNTRY=US
+      - LANGUAGE=en
+      - TRUSTED_DEVICE_NAME=eufyclient
+      - EVENT_DURATION_SECONDS=10
+      - P2P_CONNECTION_SETUP=0
+      - POLLING_INTERVAL_MINUTES=10

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Homeio is a self-hosted operating system dashboard for managing infrastructure, built with Next.js 16. It provides real-time system monitoring (CPU, RAM, storage), Docker container management, a web terminal, a widget-based dashboard, file management, and a multi-source app store.
 
-**Design Philosophy**: Clean, consistent, user-friendly interface following KISS (Keep It Simple, Stupid) principles with inspiration from UmbrelOS and CasaOS.
+**Design Philosophy**: Clean, consistent, user-friendly interface following KISS (Keep It Simple, Stupid) principles with inspiration from established self-hosted dashboards.
 
 ## Core Principles
 
@@ -194,8 +194,6 @@ npm run test:unit        # Run Vitest unit tests
 npm run db:init          # Run Prisma migrations
 
 # App Store
-npm run update-apps      # Update app store catalog
-npm run update-apps:auto # Auto-update app store (no prompts)
 npm run test-apps        # Test app store integration
 ```
 
@@ -254,8 +252,6 @@ homeio/
     │   │   ├── store/            # App store integrations
     │   │   │   ├── linuxserver-store.ts
     │   │   │   ├── linuxserver-helpers.ts
-    │   │   │   ├── umbrel-store.ts
-    │   │   │   ├── utils.ts
     │   │   │   └── types.ts
     │   │   ├── appstore.ts       # App store orchestrator
     │   │   └── internal-apps.ts  # Built-in apps
@@ -392,7 +388,7 @@ Server Actions (`'use server'`) are the primary API layer, organized into domain
 - **`auth/`**: Authentication, user settings
 - **`maintenance/`**: Logger, updates, troubleshooting
 - **`docker/`**: Docker container management (SOLID split into: `backup.ts`, `db.ts`, `dependencies.ts`, `deploy.ts`, `health.ts`, `lifecycle.ts`, `query.ts`, `utils.ts`, `env/`)
-- **`store/`**: Multi-source app store (LinuxServer.io, Umbrel)
+- **`store/`**: App store integrations (LinuxServer.io)
 - **`appstore.ts`**: App store orchestrator
 
 Import from barrel files (e.g. `@/app/actions/system`) or specific files.
@@ -425,13 +421,11 @@ PIN-based authentication system:
 - Server actions: `src/app/actions/auth/`
 - Password hashing: `bcryptjs`
 
-### App Store (Multi-Source)
+### App Store
 
-The app store supports multiple sources (not just Umbrel):
+The app store supports API-based catalogs:
 
-- **CasaOS** - Default store
 - **LinuxServer.io** - Community images
-- **Umbrel** - Umbrel app format
 
 Store integration code in `src/app/actions/store/`. Docker operations use CLI commands via `exec` (not dockerode).
 

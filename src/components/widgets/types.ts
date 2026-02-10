@@ -1,6 +1,6 @@
 /**
  * Widget System Types
- * Inspired by Umbrel OS widget layout
+ * Inspired by common OS widget layouts
  */
 
 // Widget type identifiers

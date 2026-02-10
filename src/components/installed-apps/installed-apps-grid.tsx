@@ -6,7 +6,7 @@ import { surface } from "@/components/ui/design-tokens";
 import type { InstalledApp as WSInstalledApp } from "@/hooks/system-status-types";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { InstalledAppCard } from "./installed-app-card";
 import { OtherContainerCard } from "./other-container-card";
 import {
@@ -25,7 +25,8 @@ function chunkIntoPages<T>(items: T[], pageSize: number): T[][] {
 }
 
 function resolveGridLayout(width: number, height: number) {
-  const columns = width >= 1024 ? 5 : width >= 640 ? 4 : 3;
+  const columns =
+    width >= 1280 ? 7 : width >= 1024 ? 6 : width >= 768 ? 5 : width >= 640 ? 4 : 3;
   const rows = height < 680 ? 1 : 2;
   return { columns, rows, itemsPerPage: columns * rows };
 }
@@ -36,7 +37,25 @@ export function InstalledAppsGrid() {
   const [columns, setColumns] = useState(5);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const apps: InstalledApp[] = wsApps.map((wsApp: WSInstalledApp) => ({
+  // Track apps currently being redeployed so they stay visible as ghost cards
+  const [deployingApps, setDeployingApps] = useState<Set<string>>(new Set());
+  const [lastSnapshot, setLastSnapshot] = useState<Map<string, InstalledApp>>(
+    new Map(),
+  );
+
+  const handleDeployStateChange = useCallback(
+    (appId: string, deploying: boolean) => {
+      setDeployingApps((prev) => {
+        const next = new Set(prev);
+        if (deploying) next.add(appId);
+        else next.delete(appId);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const liveApps: InstalledApp[] = wsApps.map((wsApp: WSInstalledApp) => ({
     id: wsApp.id,
     appId: wsApp.appId,
     name: wsApp.name,
@@ -50,6 +69,33 @@ export function InstalledAppsGrid() {
     availableVersion: wsApp.availableVersion,
     hasUpdate: wsApp.hasUpdate,
   }));
+
+  // Keep a snapshot of all known apps so deploying apps don't vanish
+  useEffect(() => {
+    setLastSnapshot((prev) => {
+      if (liveApps.length === 0) return prev;
+      const next = new Map(prev);
+      for (const app of liveApps) {
+        next.set(app.id, app);
+      }
+      return next;
+    });
+  }, [liveApps]);
+
+  // Merge live apps with ghost entries for deploying apps that temporarily disappeared
+  const apps = useMemo(() => {
+    const liveIds = new Set(liveApps.map((a) => a.id));
+    const ghosts: InstalledApp[] = [];
+    for (const appId of deployingApps) {
+      if (!liveIds.has(appId)) {
+        const snapshot = lastSnapshot.get(appId);
+        if (snapshot) {
+          ghosts.push({ ...snapshot, status: "stopped" });
+        }
+      }
+    }
+    return [...liveApps, ...ghosts];
+  }, [liveApps, deployingApps, lastSnapshot]);
 
   useEffect(() => {
     setAppIcons((prev) => {
@@ -111,7 +157,7 @@ export function InstalledAppsGrid() {
 
   if (!connected && apps.length === 0 && otherContainers.length === 0) {
     return (
-      <div className="w-full max-w-5xl px-4">
+      <div className="w-full max-w-6xl px-6 sm:px-8">
         <p className="text-center text-sm text-white/80">Connecting to server...</p>
       </div>
     );
@@ -119,7 +165,7 @@ export function InstalledAppsGrid() {
 
   if (apps.length === 0 && otherContainers.length === 0) {
     return (
-      <div className="w-full max-w-5xl px-4">
+      <div className="w-full max-w-6xl px-6 sm:px-8">
         <p className="text-center text-sm text-white/80">
           No apps installed yet. Install apps from the App Store in the dock!
         </p>
@@ -128,7 +174,7 @@ export function InstalledAppsGrid() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col items-center px-4">
+    <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 sm:px-8">
       {apps.length > 0 && (
         <div className="relative w-full">
           <div
@@ -150,7 +196,7 @@ export function InstalledAppsGrid() {
                   }}
                   initial="hidden"
                   animate="show"
-                  className="mx-auto grid w-full justify-items-center gap-4 sm:gap-5"
+                  className="mx-auto grid w-full justify-items-center gap-x-3 gap-y-5 sm:gap-x-4 sm:gap-y-6"
                   style={{
                     gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
                   }}
@@ -166,6 +212,7 @@ export function InstalledAppsGrid() {
                           [app.id]: "/default-application-icon.png",
                         }))
                       }
+                      onDeployStateChange={handleDeployStateChange}
                     />
                   ))}
                 </motion.div>
@@ -213,7 +260,7 @@ export function InstalledAppsGrid() {
                     }}
                     initial="hidden"
                     animate="show"
-                    className="mx-auto grid w-full justify-items-center gap-4 sm:gap-5"
+                    className="mx-auto grid w-full justify-items-center gap-x-3 gap-y-5 sm:gap-x-4 sm:gap-y-6"
                     style={{
                       gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
                     }}

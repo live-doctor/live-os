@@ -1,0 +1,23 @@
+{
+  "id": "umami",
+  "title": "Umami",
+  "name": "Umami",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/umami/icon.svg",
+  "tagline": "Simple, fast, privacy-focused alternative to Google Analytics",
+  "overview": "Empowering insights. Preserving privacy.\n\nUmami makes it easy to collect, analyze, and understand your web data — while maintaining visitor privacy and data ownership.\n\n⚠️ Note\nChange the default password by clicking on the avatar in the top right corner and then 'profile'.\nYou may need to expose Umami to the web in order to use the app in its intended way with websites.\nThe easiest way to do this is to use the 'Cloudflare Tunnel' app from the umbrel app store, and expose the Umami app using your own domain.\n\n😌 Easy to use\nUmami is easy to use and understand without needing to run complicated reports. All data is available at a glance.\n\n💾 Own your data\nData ownership is vitally important for maintinaing compliance with ever changing privacy laws. Rest assured knowing your data is in your control.\n\n🔒 Respect data privacy\nUmami lets you gather the data you need while respecting the privacy of your users. All data is anonymized and no personal data is ever collected. Cookie banners not required.",
+  "category": [
+    "developer"
+  ],
+  "developer": "Umami",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/umami/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/umami/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/umami/3.jpg"
+  ],
+  "version": "3.0.3",
+  "releaseNotes": "⚠️ This release addresses a critical Next.js security vulnerability and includes several bug fixes.\n\nFull release notes are found at https://github.com/umami-software/umami/releases",
+  "port": 25727,
+  "path": "/dashboard",
+  "website": "https://umami.is",
+  "repo": "https://github.com/umami-software/umami"
+}

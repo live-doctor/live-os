@@ -85,7 +85,7 @@ export function SettingsDialog({
 
         <ScrollArea
           className="h-[92vh] w-full"
-          viewportClassName="umbrel-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0"
+          viewportClassName="homeio-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0"
         >
           <div
             className={`flex flex-col gap-4 pt-4 md:pt-7 ${HOMEIO_DIALOG_CONTENT_GUTTER_CLASS}`}

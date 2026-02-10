@@ -1,0 +1,25 @@
+{
+  "id": "searxng",
+  "title": "SearXNG",
+  "name": "SearXNG",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/searxng/icon.svg",
+  "tagline": "A free internet metasearch engine",
+  "overview": "🔍 SearXNG is a metasearch engine that enables users to search the internet by combining results from multiple search providers into one comprehensive list. When a user submits a query, SearXNG sends that query simultaneously to a variety of external search engines and services. It then collects and merges the responses, presenting the user with a unified set of search results. This approach allows users to access a wider range of information from different sources without having to search each one individually.\n\nThe application emphasizes delivering diverse and balanced search outcomes by aggregating results from many different platforms. By pooling these various results, SearXNG helps reduce bias that might come from relying on a single search engine, offering users a more neutral and varied perspective on their search topics. The system is designed to handle many types of searches, from web pages to images, videos, news, and other categories, depending on which providers are queried.\n\nIn addition, SearXNG is built to respect user privacy by not storing search histories or personal data. This means that every search is treated independently, and no personal tracking or profiling takes place. The anonymity of searches helps users feel more secure when looking up information online. Overall, SearXNG functions as a powerful tool for searching by leveraging the strengths of multiple search engines while protecting user privacy and promoting an open, unbiased search experience.",
+  "category": [
+    "networking"
+  ],
+  "developer": "SearXNG",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/searxng/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/searxng/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/searxng/3.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/searxng/4.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/searxng/5.jpg"
+  ],
+  "version": "2025.12.9",
+  "releaseNotes": "This release includes various improvements and new features:\n  - Added new search engines including Grokipedia, Devicons, and Lucide Icons\n  - Improved Marginalia engine with new API version\n  - Added filter for AI-generated images in Pixiv engine\n  - Fixed multiple engine issues including Yandex, Qwant, Brave, Mojeek, and Presearch\n  - Fixed search input clearing behavior in themes\n  - Improved Recoll engine with HTML markup removal from snippets\n  - Enhanced client plugin system\n  - Fixed rate limiting issues and captcha handling\n  - Various bug fixes and performance improvements\n\n\nFull release notes can be found at https://github.com/searxng/searxng/releases",
+  "port": 8182,
+  "path": "",
+  "website": "https://docs.searxng.org/",
+  "repo": "https://github.com/searxng/searxng"
+}

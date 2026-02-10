@@ -110,7 +110,7 @@ export function AdvancedSettingsContent() {
       <div className="flex flex-col gap-y-3">
         <AdvancedRow
           title="Terminal"
-          description="Run custom commands in umbrelOS or within an app"
+          description="Run custom commands on the host or within an app"
           action={
             <button type="button" className={advancedActionClass}>
               Open
@@ -119,11 +119,11 @@ export function AdvancedSettingsContent() {
         />
 
         <AdvancedRow
-          title="umbrelOS Beta Program"
+          title="Beta Program"
           titleSuffix={
             <FlaskConical className="ml-1 inline-block h-[14px] w-[14px] opacity-50" />
           }
-          description="Opt in to receive umbrelOS beta updates, gain early access to new features, and help us refine them by providing your feedback. Beta updates might be unstable, and troubleshooting may require familiarity with terminal."
+          description="Opt in to receive beta updates, gain early access to new features, and help us refine them by providing your feedback. Beta updates might be unstable, and troubleshooting may require familiarity with terminal."
           action={
             <AdvancedToggle checked={betaEnabled} onChange={setBetaEnabled} />
           }
@@ -142,7 +142,7 @@ export function AdvancedSettingsContent() {
 
         <AdvancedRow
           title="Remote Tor access"
-          description="Access your Umbrel from anywhere using a Tor browser"
+          description="Access your server from anywhere using a Tor browser"
           action={
             <AdvancedToggle
               checked={remoteTorEnabled}
@@ -157,8 +157,7 @@ export function AdvancedSettingsContent() {
               Factory Reset
             </h3>
             <p className="text-[13px] leading-tight text-white opacity-45">
-              Erase all your data and apps, restoring umbrelOS to default
-              settings
+              Erase all your data and apps, restoring Homeio to default settings
             </p>
           </div>
           <button

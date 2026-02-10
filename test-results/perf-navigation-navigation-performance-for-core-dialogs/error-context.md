@@ -98,7 +98,7 @@
             - generic [ref=e185]:
               - img [ref=e186]
               - generic "stopped"
-            - generic [ref=e189]: Umbrel Dev
+            - generic [ref=e189]: Dev
       - generic [ref=e190]:
         - button "Search apps" [ref=e191]:
           - generic [ref=e192]: Search

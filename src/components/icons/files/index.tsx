@@ -172,7 +172,7 @@ const EXTENSION_MAP: Record<string, FileCategory> = {
   afphoto: "design",
 };
 
-// Category to SVG file mapping (using actual Umbrel icons)
+// Category to SVG file mapping (using the actual icon set)
 const CATEGORY_ICONS: Record<FileCategory, string> = {
   folder: "/icons/files/unknown.svg", // Folder uses separate component
   image: "/icons/files/image.svg",

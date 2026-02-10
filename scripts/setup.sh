@@ -245,6 +245,47 @@ install_avahi() {
   }
 }
 
+configure_mdns_stack() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    print_dry "Configure mDNS stack (disable mDNS/LLMNR in systemd-resolved, keep Avahi)"
+    return
+  fi
+
+  if ! command -v systemctl >/dev/null 2>&1; then
+    print_info "Skipping mDNS stack configuration: systemctl not available"
+    return
+  fi
+
+  if ! systemctl list-unit-files 2>/dev/null | grep -q '^systemd-resolved'; then
+    print_info "systemd-resolved not installed; skipping resolved mDNS override"
+    return
+  fi
+
+  local resolved_dropin_dir="/etc/systemd/resolved.conf.d"
+  local resolved_dropin_file="${resolved_dropin_dir}/90-homeio-mdns.conf"
+  mkdir -p "$resolved_dropin_dir"
+  cat > "$resolved_dropin_file" <<'EOF'
+[Resolve]
+MulticastDNS=no
+LLMNR=no
+EOF
+
+  if systemctl restart systemd-resolved 2>/dev/null; then
+    print_status "Configured systemd-resolved to disable mDNS/LLMNR"
+  else
+    print_error "Failed to restart systemd-resolved after mDNS override"
+  fi
+
+  if systemctl list-unit-files 2>/dev/null | grep -q '^avahi-daemon'; then
+    systemctl enable avahi-daemon 2>/dev/null || true
+    if systemctl restart avahi-daemon 2>/dev/null; then
+      print_status "Avahi restarted as the active mDNS responder"
+    else
+      print_error "Failed to restart avahi-daemon after mDNS override"
+    fi
+  fi
+}
+
 ensure_nsswitch_mdns() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Ensure /etc/nsswitch.conf hosts includes mDNS resolver"; return; fi
 
@@ -550,6 +591,7 @@ install_nodejs
 install_docker
 ensure_docker_permissions
 install_avahi
+configure_mdns_stack
 ensure_nsswitch_mdns
 install_nmcli
 ensure_nm_manages_wifi

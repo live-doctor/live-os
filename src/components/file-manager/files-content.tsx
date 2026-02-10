@@ -567,7 +567,7 @@ export function FilesContent({
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {viewMode === "list" && items.length > 0 && <ListHeader />}
         <ScrollArea className="flex-1">
-          <div className="umbrel-files-fade-scroller h-full w-full overflow-auto">
+          <div className="homeio-files-fade-scroller h-full w-full overflow-auto">
             <div className="p-0">
               {loading ? (
                 <div className="flex items-center justify-center py-12">

@@ -74,7 +74,11 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
       // Also check if any group container matches a DB record
       const anyRecord =
         record ||
-        groupContainers.map((c) => metaByContainer.get(c.name)).find(Boolean);
+        groupContainers.map((c) => metaByContainer.get(c.name)).find(Boolean) ||
+        // Fallback: match by compose project key → appId
+        // This handles cases where the DB containerName doesn't match
+        // the actual container name, but the compose project does match
+        metaByAppId.get(projectKey);
 
       const resolvedAppId = anyRecord?.appId || projectKey || rawId;
       const storeMetaCandidates = appMetaById.get(resolvedAppId) ?? [];
@@ -86,8 +90,14 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
       // Aggregate status across all containers in the group
       const status = aggregateStatus(groupContainers);
 
-      // Get first exposed port if available (try primary first)
-      const hostPort = await resolveHostPort(primaryContainer.name);
+      // Use stored webUIPort from DB if available, otherwise resolve from Docker
+      const storedWebUIPort = (
+        anyRecord?.installConfig as Record<string, unknown> | undefined
+      )?.webUIPort as string | number | undefined;
+      const hostPort = await resolveHostPort(
+        primaryContainer.name,
+        storedWebUIPort ?? null,
+      );
       const webUIPort = hostPort ? parseInt(hostPort, 10) : undefined;
 
       // Get containers list from DB record if available
@@ -135,7 +145,8 @@ export async function getAppById(appId: string): Promise<InstalledApp | null> {
 }
 
 /**
- * Get status of a specific app
+ * Get status of a specific app.
+ * Tries the recorded container name first, then the generated fallback.
  */
 export async function getAppStatus(
   appId: string,
@@ -145,15 +156,27 @@ export async function getAppStatus(
       return "error";
     }
 
-    const containerName = getContainerName(appId);
-    const { stdout } = await execAsync(
-      `docker inspect -f '{{.State.Status}}' ${containerName}`,
-    );
+    const recorded = await getRecordedContainerName(appId);
+    const candidates = [
+      recorded,
+      getContainerName(appId),
+    ].filter(Boolean) as string[];
 
-    const status = stdout.trim();
-    if (status === "running") return "running";
-    if (status === "exited") return "error";
-    return "stopped";
+    for (const name of candidates) {
+      try {
+        const { stdout } = await execAsync(
+          `docker inspect -f '{{.State.Status}}' ${name}`,
+        );
+        const status = stdout.trim();
+        if (status === "running") return "running";
+        if (status === "exited") return "error";
+        return "stopped";
+      } catch {
+        // Try next candidate
+      }
+    }
+
+    return "error";
   } catch {
     return "error";
   }
@@ -211,12 +234,19 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
       select: { port: true, path: true, storeId: true },
     });
 
+    // 2b) Check installConfig.webUIPort first — this is the user-configured port
+    const installConfig =
+      (installRecord?.installConfig as Record<string, unknown> | null) ??
+      (await getInstallConfig(appId));
+    const configWebUIPort = installConfig?.webUIPort as string | undefined;
+
     // 1) Prefer published host port from Docker (works for bridge mode)
-    //    Pass the known web UI port so we pick the right mapping
-    //    (e.g. Portainer exposes 8000, 9000, 9443 — we want 9000)
+    //    Pass configWebUIPort > appMeta.port as preferred so we pick the right mapping
+    //    (e.g. Jellyfin exposes 8096, 8920, 7359, 1900 — we want 8096)
+    const preferredPort = configWebUIPort || appMeta?.port || null;
     let hostPort: string | null = null;
     for (const name of containerCandidates) {
-      hostPort = await resolveHostPort(name, appMeta?.port);
+      hostPort = await resolveHostPort(name, preferredPort);
       if (hostPort) break;
     }
     const pathSuffix =
@@ -225,12 +255,6 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
           ? appMeta.path
           : `/${appMeta.path}`
         : "";
-
-    // 2b) Check installConfig.webUIPort for custom-deployed apps
-    const installConfig =
-      (installRecord?.installConfig as Record<string, unknown> | null) ??
-      (await getInstallConfig(appId));
-    const configWebUIPort = installConfig?.webUIPort as string | undefined;
 
     if (hostPort) {
       resolvedUrl = `${protocol}://${host}:${hostPort}${pathSuffix}`;
@@ -280,7 +304,8 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
 }
 
 /**
- * Get app logs
+ * Get app logs.
+ * Tries the recorded container name first, then the generated fallback.
  */
 export async function getAppLogs(
   appId: string,
@@ -296,21 +321,30 @@ export async function getAppLogs(
       return "Error: Invalid app ID";
     }
 
-    const containerName = getContainerName(appId);
-    const command = `docker logs --tail ${lines} ${containerName}`;
-    console.log(`[Docker] getAppLogs: Executing: ${command}`);
+    const recorded = await getRecordedContainerName(appId);
+    const candidates = [
+      recorded,
+      getContainerName(appId),
+    ].filter(Boolean) as string[];
 
-    const { stdout, stderr } = await execAsync(command);
-    const logs = stdout || stderr;
-    if (!logs) {
-      console.log(`[Docker] getAppLogs: No logs available for "${appId}"`);
-      return "No logs available";
+    for (const containerName of candidates) {
+      try {
+        const command = `docker logs --tail ${lines} ${containerName}`;
+        const { stdout, stderr } = await execAsync(command);
+        const logs = stdout || stderr;
+        if (!logs) continue;
+
+        console.log(
+          `[Docker] getAppLogs: Retrieved ${logs.split("\n").length} lines from "${containerName}"`,
+        );
+        return logs;
+      } catch {
+        // Try next candidate
+      }
     }
 
-    console.log(
-      `[Docker] getAppLogs: Retrieved ${logs.split("\n").length} lines of logs for "${appId}"`,
-    );
-    return logs;
+    console.log(`[Docker] getAppLogs: No logs available for "${appId}"`);
+    return "No logs available";
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(

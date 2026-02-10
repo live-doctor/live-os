@@ -22,28 +22,16 @@ export function BluetoothSection({
   powered,
   blocked,
   adapter,
-  devices,
-  firstDevice,
   available = true,
   onOpenDialog,
 }: BluetoothSectionProps) {
   const statusLabel = available ? (powered ? "On" : "Off") : "Unavailable";
-
-  const deviceLabel =
-    typeof devices === "number" && devices >= 0
-      ? `${devices} device${devices === 1 ? "" : "s"}`
-      : null;
 
   const adapterLabel = adapter
     ? `Adapter ${adapter}`
     : available
       ? "Detecting adapter..."
       : "No adapter detected";
-
-  const subtitleParts = [
-    deviceLabel,
-    firstDevice ? `First: ${firstDevice}` : null,
-  ].filter(Boolean);
 
   const badge = blocked ? (
     <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30">

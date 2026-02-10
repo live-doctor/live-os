@@ -3,32 +3,32 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { App } from "@/components/app-store/types";
-import { execAsync } from "@/lib/exec";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import fs from "fs/promises";
-import os from "os";
 import path from "path";
-import YAML from "yaml";
 import { logAction, withActionLogging } from "./maintenance/logger";
 import type { CommunityStore } from "./store/types";
 import {
   isLinuxServerApiUrl,
   parseLinuxServerStore,
 } from "./store/linuxserver-store";
-import { parseUmbrelStore } from "./store/umbrel-store";
-import { resolveAsset } from "./store/utils";
+import { parseLocalStore } from "./store/local-store";
 
 const STORE_ROOT = path.join(process.cwd(), "external-apps");
-const DEFAULT_UMBREL_STORE_URL =
-  "https://github.com/getumbrel/umbrel-apps/archive/refs/heads/master.zip";
-const DEFAULT_UMBREL_STORE_SLUG = slugify(DEFAULT_UMBREL_STORE_URL);
-const DEFAULT_UMBREL_STORE_NAME = "Umbrel App Store";
-const LEGACY_LINUXSERVER_DEFAULT_URL =
+const DEFAULT_LINUXSERVER_STORE_URL =
   "https://api.linuxserver.io/api/v1/images?include_config=true&include_deprecated=true";
-const LEGACY_LINUXSERVER_DEFAULT_SLUG = slugify(LEGACY_LINUXSERVER_DEFAULT_URL);
+const DEFAULT_LINUXSERVER_STORE_SLUG = slugify(DEFAULT_LINUXSERVER_STORE_URL);
+const DEFAULT_LINUXSERVER_STORE_NAME = "LinuxServer.io Catalog";
+const DEFAULT_LINUXSERVER_STORE_DESCRIPTION =
+  "Official LinuxServer.io image catalog";
+const LOCAL_STORE_DIR = path.join(process.cwd(), "store");
+const LOCAL_STORE_URL = "local://store";
+const LOCAL_STORE_SLUG = "local-store";
+const LOCAL_STORE_NAME = "Local Store";
+const LOCAL_STORE_DESCRIPTION = "Local app catalog from /store";
 
-type StoreFormat = "umbrel" | "linuxserver";
+type StoreFormat = "linuxserver" | "local";
 
 function parseStoredStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -74,6 +74,13 @@ export async function listImportedStores(): Promise<string[]> {
 export async function removeImportedStore(slug: string): Promise<boolean> {
   return withActionLogging("appstore:removeImported", async () => {
     if (!slug) return false;
+    if (slug === DEFAULT_LINUXSERVER_STORE_SLUG || slug === LOCAL_STORE_SLUG) {
+      await logAction("appstore:removeImported:blocked", {
+        slug,
+        reason: "protected-default-store",
+      });
+      return false;
+    }
     const store = await prisma.store.findUnique({ where: { slug } });
     if (isProtectedStore(store)) {
       await logAction("appstore:removeImported:blocked", {
@@ -108,24 +115,15 @@ export async function getAppStoreApps(): Promise<App[]> {
         include: { store: true },
       });
 
-      // Ensure default Umbrel store exists, then retry once.
-      if (records.length === 0) {
-        await ensureDefaultUmbrelStoreInstalled();
+      const hasDefaultStoreApps = records.some((record) =>
+        isProtectedStore(record.store),
+      );
+      if (records.length === 0 || !hasDefaultStoreApps) {
+        await ensureDefaultStoresInstalled();
         records = await prisma.app.findMany({
           orderBy: [{ title: "asc" }],
           include: { store: true },
         });
-      } else {
-        const hasDefaultStoreApps = records.some((record) =>
-          isProtectedStore(record.store),
-        );
-        if (!hasDefaultStoreApps) {
-          await ensureDefaultUmbrelStoreInstalled();
-          records = await prisma.app.findMany({
-            orderBy: [{ title: "asc" }],
-            include: { store: true },
-          });
-        }
       }
 
       const apps = records.map((record) => ({
@@ -180,7 +178,7 @@ export async function getAppStoreApps(): Promise<App[]> {
 }
 
 /**
- * Download and extract an Umbrel-compatible app store ZIP into external-apps/<slug>
+ * Import a supported app store source into external-apps/<slug>
  * and persist store/app metadata to the database.
  */
 export async function importAppStore(
@@ -201,108 +199,11 @@ export async function importAppStore(
     return importLinuxServerStore(url, meta);
   }
 
-  if (!url.endsWith(".zip")) {
-    return {
-      success: false,
-      error: "Store URL must point to a ZIP file or LinuxServer API endpoint.",
-    };
-  }
-
-  const storeSlug = slugify(url);
-  const targetDir = path.join(STORE_ROOT, storeSlug);
-  const urlNameFallback =
-    url
-      .split("/")
-      .pop()
-      ?.replace(/\.zip$/i, "") || storeSlug;
-  let resolvedStoreName = meta?.name ?? urlNameFallback ?? storeSlug;
-
-  try {
-    await logAction("appstore:import:start", { url, storeSlug });
-    await fs.mkdir(STORE_ROOT, { recursive: true });
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to download store: ${response.statusText}`);
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const zipHash = crypto.createHash("sha256").update(buffer).digest("hex");
-
-    const existingStore = await prisma.store.findUnique({
-      where: { slug: storeSlug },
-    });
-    const targetExists = await fs
-      .stat(targetDir)
-      .then(() => true)
-      .catch(() => false);
-
-    const manifestHash =
-      (existingStore as any)?.manifestHash?.toString() ?? undefined;
-
-    if (existingStore && manifestHash === zipHash && targetExists) {
-      const appsCount = await prisma.app.count({
-        where: { storeId: existingStore.id },
-      });
-      await logAction("appstore:import:skip-cache", {
-        url,
-        storeSlug,
-        apps: appsCount,
-      });
-      return {
-        success: true,
-        storeId: storeSlug,
-        apps: appsCount,
-        skipped: true,
-      };
-    }
-
-    await fs.rm(targetDir, { recursive: true, force: true });
-    await fs.mkdir(targetDir, { recursive: true });
-    await extractZipBuffer(buffer, targetDir);
-
-    // Try to derive a friendly name from the extracted folder if none was provided.
-    if (!meta?.name) {
-      resolvedStoreName =
-        (await deriveStoreName(targetDir, urlNameFallback, storeSlug)) ??
-        resolvedStoreName;
-    }
-
-    const parsedApps = await parseUmbrelStore(targetDir, storeSlug);
-
-    if (parsedApps.length === 0) {
-      throw new Error("No applications found in the downloaded store archive.");
-    }
-
-    const store = await persistStoreApps({
-      apps: parsedApps,
-      format: "umbrel",
-      localPath: targetDir,
-      manifestHash: zipHash,
-      name: resolvedStoreName,
-      slug: storeSlug,
-      url,
-      description: meta?.description,
-    });
-
-    await logAction("appstore:import:done", {
-      url,
-      storeSlug,
-      apps: parsedApps.length,
-    });
-
-    return {
-      success: true,
-      storeId: store.slug,
-      apps: parsedApps.length,
-    };
-  } catch (error: any) {
-    await logAction("appstore:import:error", {
-      url,
-      error: error?.message || "unknown",
-    });
-    return { success: false, error: error.message || "Failed to import store" };
-  }
+  return {
+    success: false,
+    error:
+      "Unsupported store format. Provide a LinuxServer.io API endpoint instead.",
+  };
 }
 
 async function importLinuxServerStore(
@@ -467,6 +368,15 @@ async function persistStoreApps(options: {
     },
   });
 
+  // Merge dependencies into the container JSON so they get persisted in the DB
+  const containerWithDeps = (app: App) => {
+    const base = app.container ?? {};
+    if (app.dependencies?.length) {
+      return { ...base, dependencies: app.dependencies };
+    }
+    return base || undefined;
+  };
+
   for (const app of options.apps) {
     const categories = app.category ?? [];
     const screenshots = app.screenshots ?? [];
@@ -500,7 +410,7 @@ async function persistStoreApps(options: {
         website: app.website,
         repo: app.repo,
         composePath: app.composePath || "",
-        container: (app.container ?? undefined) as never,
+        container: (containerWithDeps(app) ?? undefined) as never,
       },
       create: {
         storeId: store.id,
@@ -527,7 +437,7 @@ async function persistStoreApps(options: {
         website: app.website,
         repo: app.repo,
         composePath: app.composePath || "",
-        container: (app.container ?? undefined) as never,
+        container: (containerWithDeps(app) ?? undefined) as never,
       },
     });
   }
@@ -546,101 +456,94 @@ async function persistStoreApps(options: {
 }
 
 /**
- * Best-effort bootstrap of the default Umbrel catalog.
+ * Best-effort bootstrap of the default LinuxServer.io catalog.
  */
-export async function ensureDefaultUmbrelStoreInstalled(): Promise<{
+export async function ensureDefaultLinuxServerStoreInstalled(): Promise<{
   success: boolean;
   skipped?: boolean;
   error?: string;
 }> {
   try {
     await fs.mkdir(STORE_ROOT, { recursive: true });
-    await removeLegacyLinuxServerDefaultStore();
-
-    await logAction("appstore:bootstrap:umbrel:start");
-    const result = await importAppStore(DEFAULT_UMBREL_STORE_URL, {
-      name: DEFAULT_UMBREL_STORE_NAME,
-      description: "Official Umbrel app store",
+    await logAction("appstore:bootstrap:linuxserver:start");
+    const result = await importLinuxServerStore(DEFAULT_LINUXSERVER_STORE_URL, {
+      name: DEFAULT_LINUXSERVER_STORE_NAME,
+      description: DEFAULT_LINUXSERVER_STORE_DESCRIPTION,
     });
 
     return result.success
-      ? { success: true, skipped: false }
+      ? { success: true, skipped: result.skipped }
       : { success: false, error: result.error };
-  } catch (error: any) {
-    await logAction("appstore:bootstrap:umbrel:error", {
-      error: error?.message || "unknown",
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Unknown error";
+    await logAction("appstore:bootstrap:linuxserver:error", {
+      error: message,
     });
-    return { success: false, error: error?.message || "Unknown error" };
+    return { success: false, error: message };
+  }
+}
+
+async function importLocalStore(): Promise<{
+  success: boolean;
+  apps?: number;
+  skipped?: boolean;
+  error?: string;
+}> {
+  try {
+    const apps = await parseLocalStore(LOCAL_STORE_DIR);
+    if (apps.length === 0) {
+      return { success: true, apps: 0, skipped: true };
+    }
+
+    await persistStoreApps({
+      apps,
+      format: "local",
+      localPath: LOCAL_STORE_DIR,
+      manifestHash: "local",
+      name: LOCAL_STORE_NAME,
+      slug: LOCAL_STORE_SLUG,
+      url: LOCAL_STORE_URL,
+      description: LOCAL_STORE_DESCRIPTION,
+    });
+
+    return { success: true, apps: apps.length };
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to import local store";
+    return { success: false, error: message };
   }
 }
 
 /**
- * Bootstrap default store (Umbrel).
+ * Ensure the default store exists (LinuxServer.io).
  */
 export async function ensureDefaultStoresInstalled(): Promise<void> {
-  await ensureDefaultUmbrelStoreInstalled().catch((error) =>
-    console.error(
-      "[AppStore] Failed to bootstrap Umbrel catalog:",
-      error,
-    ),
+  const store = await prisma.store.findFirst({
+    where: {
+      OR: [
+        { slug: DEFAULT_LINUXSERVER_STORE_SLUG },
+        { url: DEFAULT_LINUXSERVER_STORE_URL },
+      ],
+    },
+    include: { _count: { select: { apps: true } } },
+  });
+
+  if (!store || store._count.apps === 0) {
+    await ensureDefaultLinuxServerStoreInstalled().catch((error) =>
+      console.error(
+        "[AppStore] Failed to bootstrap LinuxServer catalog:",
+        error,
+      ),
+    );
+  }
+
+  await importLocalStore().catch((error) =>
+    console.error("[AppStore] Failed to bootstrap local store:", error),
   );
 }
 
 export const getCommunityStores = async (): Promise<CommunityStore[]> => [];
-
-async function extractZipBuffer(
-  buffer: Buffer,
-  targetDir: string,
-): Promise<void> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "homeio-store-"));
-  const zipPath = path.join(tmpDir, "store.zip");
-  await fs.writeFile(zipPath, buffer);
-
-  const extractor = await findZipExtractor();
-  if (!extractor) {
-    throw new Error(
-      "Failed to extract store archive: unzip/bsdtar/tar not available on this system",
-    );
-  }
-
-  await fs.mkdir(targetDir, { recursive: true });
-  try {
-    await execAsync(extractor(zipPath, targetDir));
-  } catch (error: any) {
-    throw new Error(
-      `Failed to extract store archive: ${error?.message ?? "unknown error"}`,
-    );
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-}
-
-async function findZipExtractor(): Promise<
-  ((zip: string, dest: string) => string) | null
-> {
-  const candidates: {
-    tool: string;
-    build: (zip: string, dest: string) => string;
-  }[] = [
-    { tool: "unzip", build: (zip, dest) => `unzip -oq "${zip}" -d "${dest}"` },
-    {
-      tool: "bsdtar",
-      build: (zip, dest) => `bsdtar -xf "${zip}" -C "${dest}"`,
-    },
-    { tool: "tar", build: (zip, dest) => `tar -xf "${zip}" -C "${dest}"` },
-  ];
-
-  for (const candidate of candidates) {
-    try {
-      await execAsync(`command -v ${candidate.tool}`);
-      return candidate.build;
-    } catch {
-      // try next
-    }
-  }
-
-  return null;
-}
 
 function slugify(value: string): string {
   return value
@@ -660,57 +563,11 @@ function isProtectedStore(
 ): boolean {
   if (!store) return false;
   return (
-    store.slug === DEFAULT_UMBREL_STORE_SLUG ||
-    store.url === DEFAULT_UMBREL_STORE_URL
+    store.slug === DEFAULT_LINUXSERVER_STORE_SLUG ||
+    store.url === DEFAULT_LINUXSERVER_STORE_URL ||
+    store.slug === LOCAL_STORE_SLUG ||
+    store.url === LOCAL_STORE_URL
   );
-}
-
-async function removeLegacyLinuxServerDefaultStore(): Promise<void> {
-  const legacyStore = await prisma.store.findFirst({
-    where: {
-      OR: [
-        { slug: LEGACY_LINUXSERVER_DEFAULT_SLUG },
-        { url: LEGACY_LINUXSERVER_DEFAULT_URL },
-      ],
-    },
-    select: { id: true, slug: true },
-  });
-
-  if (!legacyStore) return;
-
-  await prisma.app.deleteMany({ where: { storeId: legacyStore.id } });
-  await prisma.store.delete({ where: { id: legacyStore.id } });
-  await fs.rm(path.join(STORE_ROOT, legacyStore.slug), {
-    recursive: true,
-    force: true,
-  });
-  await logAction("appstore:bootstrap:legacy-linuxserver:removed", {
-    slug: legacyStore.slug,
-  });
-}
-
-async function deriveStoreName(
-  targetDir: string,
-  fallback: string,
-  storeSlug: string,
-): Promise<string | null> {
-  try {
-    const entries = await fs.readdir(targetDir, { withFileTypes: true });
-    const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
-    if (dirs.length === 1) {
-      return dirs[0];
-    }
-    if (dirs.length > 1) {
-      // Prefer a folder that matches the slug or fallback
-      const matchSlug = dirs.find((d) => d.includes(storeSlug));
-      if (matchSlug) return matchSlug;
-      const matchFallback = dirs.find((d) => d.includes(fallback));
-      if (matchFallback) return matchFallback;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
 }
 
 /**
@@ -729,6 +586,7 @@ export async function getImportedStoreDetails(): Promise<
 > {
   return withActionLogging("appstore:getStoreDetails", async () => {
     try {
+      await ensureDefaultStoresInstalled();
       const stores = await prisma.store.findMany({
         include: { _count: { select: { apps: true } } },
       });
@@ -789,10 +647,13 @@ export async function refreshAllStores(): Promise<{
         }
 
         try {
-          const result = await importAppStore(store.url, {
-            name: store.name ?? undefined,
-            description: store.description ?? undefined,
-          });
+          const result =
+            store.url === LOCAL_STORE_URL
+              ? await importLocalStore()
+              : await importAppStore(store.url, {
+                  name: store.name ?? undefined,
+                  description: store.description ?? undefined,
+                });
 
           results.push({
             slug: store.slug,
@@ -868,6 +729,7 @@ export async function getComposeForApp(appId: string): Promise<{
   appTitle?: string;
   appIcon?: string;
   storeId?: string;
+  webUIPort?: string;
   container?: {
     image: string;
     ports: { container: string; published: string }[];
@@ -931,12 +793,17 @@ export async function getComposeForApp(appId: string): Promise<{
       };
     }
 
+    const webUIPort = config?.webUIPort
+      ? String(config.webUIPort)
+      : undefined;
+
     return {
       success: true,
       content,
       appTitle: installed.name || installed.appId,
       appIcon: installed.icon || undefined,
       storeId: installed.storeId || undefined,
+      webUIPort,
       container: (container as any) || undefined,
     };
   } catch (error) {
@@ -976,39 +843,13 @@ export async function getAppMedia(appId: string): Promise<{
       };
     }
 
-    const storeSlug = app.store?.slug || app.storeId;
     const baseScreens =
       Array.isArray(app.screenshots) && app.screenshots.length > 0
         ? (app.screenshots as string[])
         : [];
 
-    let screenshots = baseScreens;
-    let thumbnail: string | undefined;
-
-    // Try to get gallery from umbrel-app.yml if screenshots not in DB
-    if (!screenshots.length && app.composePath) {
-      const appDir = path.dirname(
-        path.isAbsolute(app.composePath)
-          ? app.composePath
-          : path.join(process.cwd(), app.composePath),
-      );
-      const umbrelManifestPath = path.join(appDir, "umbrel-app.yml");
-
-      try {
-        const manifestContent = await fs.readFile(umbrelManifestPath, "utf-8");
-        const manifest = YAML.parse(manifestContent) as {
-          gallery?: string[];
-        };
-
-        if (Array.isArray(manifest.gallery) && manifest.gallery.length > 0) {
-          screenshots = manifest.gallery
-            .map((item) => resolveAsset(item, storeSlug, appDir))
-            .filter(Boolean) as string[];
-        }
-      } catch {
-        // umbrel-app.yml not found or parse error, use empty screenshots
-      }
-    }
+    const screenshots = baseScreens;
+    const thumbnail: string | undefined = undefined;
 
     return {
       success: true,

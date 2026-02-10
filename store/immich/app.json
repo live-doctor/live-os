@@ -1,0 +1,23 @@
+{
+  "id": "immich",
+  "title": "Immich",
+  "name": "Immich",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/immich/icon.svg",
+  "tagline": "High-performance photo and video backup solution",
+  "overview": "An open-source and high-performance self-hosted backup solution for the videos and photos on your mobile device\n\n⚠️ Immich is under very active development. Expect bugs and changes. Do not use it as the only way to store your photos and videos!\n\nFeatures:\n- Upload and view videos and photos\n- Auto backup when the app is opened\n- Selective album(s) for backup\n- Download photos and videos to a local device\n- Multi-user support\n- Album and Shared albums\n- Scrubbable/draggable scrollbar\n- Support RAW (HEIC, HEIF, DNG, Apple ProRaw)\n- Metadata view (EXIF, map)\n- Search by metadata, objects and image tags\n- Administrative functions (user management)\n- Background backup\n- Virtual scroll\n- OAuth support\n- LivePhoto backup and playback\n- User-defined storage structure",
+  "category": [
+    "files"
+  ],
+  "developer": "Alex Tran",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/immich/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/immich/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/immich/3.jpg"
+  ],
+  "version": "v2.5.5",
+  "releaseNotes": "⚠️ As usual, please check that your mobile app is compatible with this release of Immich.\n\nThis release addresses more bugs and includes several improvements:\n  - Fixed timezone handling in timeline and date picker\n  - Fixed background task triggering on iOS\n  - Fixed issues with self-signed certificates and mTLS on mobile\n  - Fixed stacked asset deletion\n  - Fixed tag modal and shared link download behavior\n  - Fixed theme synchronization and dark mode text colors\n  - Fixed profile picture cropping to 1:1 ratio\n  - Fixed timeline refresh and asset navigation issues\n\n\nFull release notes are found at https://github.com/immich-app/immich/releases",
+  "port": 2283,
+  "path": "",
+  "website": "https://www.immich.app",
+  "repo": "https://github.com/immich-app/immich"
+}

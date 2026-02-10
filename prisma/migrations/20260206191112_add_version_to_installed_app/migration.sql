@@ -12,7 +12,7 @@ CREATE TABLE "new_Store" (
     "description" TEXT,
     "localPath" TEXT NOT NULL,
     "manifestHash" TEXT,
-    "format" TEXT NOT NULL DEFAULT 'umbrel',
+    "format" TEXT NOT NULL DEFAULT 'linuxserver',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );

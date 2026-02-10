@@ -56,7 +56,7 @@ export function AppStoreHeader({
         </div>
       </div>
 
-      <div className="umbrel-fade-scroller-x scrollbar-hide -my-1.5 flex gap-[5px] overflow-x-auto py-1.5">
+      <div className="homeio-fade-scroller-x scrollbar-hide -my-1.5 flex gap-[5px] overflow-x-auto py-1.5">
         {categories.map((category) => (
           <button
             key={category}

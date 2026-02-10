@@ -27,7 +27,7 @@ export function NetworkStorageDialog({
       >
         <ScrollArea
           className="h-[50vh] w-full"
-          viewportClassName="umbrel-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0"
+          viewportClassName="homeio-fade-scroller-y h-full w-full [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0"
         >
           <div className="flex min-h-full flex-col gap-4 px-3 pt-4 md:px-[28px] md:pt-7 xl:px-[40px]">
             <NetworkStorageHeader

@@ -1,0 +1,13 @@
+version: "3.7"
+
+services:
+  server:
+    image: homeassistant/home-assistant:2026.2.1@sha256:17441c45ba14560b4ef727ee06aac4d605cf0dc0625fc4f2e043cb2551d72749
+    network_mode: host
+    # UI at default port 8123
+    privileged: true
+    volumes:
+      - ${APP_DATA_DIR}/data:/config
+      - ${UMBREL_ROOT}/data/storage/downloads:/media
+      - /dev:/dev
+      - /run/dbus:/run/dbus:ro

@@ -76,7 +76,7 @@ async function resolveComposeForLifecycle(
 /**
  * Run a compose lifecycle command (start/stop/restart) if a compose file exists.
  * Falls back to plain docker command for legacy containers.
- * Uses --project-name to match Umbrel's container management pattern.
+ * Uses --project-name to match compose container management patterns.
  */
 async function composeLifecycle(
   appId: string,

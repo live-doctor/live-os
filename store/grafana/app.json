@@ -1,0 +1,23 @@
+{
+  "id": "grafana",
+  "title": "Grafana",
+  "name": "Grafana",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/grafana/icon.svg",
+  "tagline": "The open-source platform for monitoring and observability",
+  "overview": "Grafana allows you to query, visualize, alert on and understand your metrics no matter where they are stored. Create, explore, and share dashboards with your team and foster a data-driven culture:\n\n- Visualizations: Fast and flexible client side graphs with a multitude of options. Panel plugins offer many different ways to visualize metrics and logs.\n\n- Dynamic Dashboards: Create dynamic & reusable dashboards with template variables that appear as dropdowns at the top of the dashboard.\n\n- Explore Metrics: Explore your data through ad-hoc queries and dynamic drilldown. Split view and compare different time ranges, queries and data sources side by side.\n\n- Explore Logs: Experience the magic of switching from metrics to logs with preserved label filters. Quickly search through all your logs or streaming them live.\n\n- Alerting: Visually define alert rules for your most important metrics. Grafana will continuously evaluate and send notifications to systems like Slack, PagerDuty, VictorOps, OpsGenie.\n\n- Mixed Data Sources: Mix different data sources in the same graph! You can specify a data source on a per-query basis. This works for even custom datasources.",
+  "category": [
+    "networking"
+  ],
+  "developer": "Grafana Labs",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/grafana/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/grafana/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/grafana/3.jpg"
+  ],
+  "version": "12.3.2",
+  "releaseNotes": "This release includes bug fixes and improvements:\n  - Added missing scope check on dashboards for better security\n  - Improved avatar handling with sign-in requirements and timeout respect\n  - Updated Elasticsearch annotation time-range properties\n  - Reset legend when a new query is run in Explore\n  - Fixed race condition panic in alerting state reset\n  - Fixed data source recording rules editor in alerting\n\n\nFull release notes are available at https://github.com/grafana/grafana/releases",
+  "port": 3030,
+  "path": "",
+  "website": "https://grafana.com",
+  "repo": "https://github.com/grafana/grafana"
+}

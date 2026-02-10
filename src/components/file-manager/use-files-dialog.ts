@@ -56,7 +56,7 @@ export function useFilesDialog(open: boolean) {
         setLoading(false);
       }
     },
-    [nav.setCurrentPath],
+    [nav],
   );
 
   const editor = useFileEditor(nav.currentPath, loadDirectory);
@@ -105,7 +105,7 @@ export function useFilesDialog(open: boolean) {
       }
     };
     loadDefaults();
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, nav]);
 
   // Context menu outside click / escape
   useEffect(() => {

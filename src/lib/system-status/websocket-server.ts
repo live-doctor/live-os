@@ -8,7 +8,6 @@ import type { Systeminformation } from "systeminformation";
 import si from "systeminformation";
 import { WebSocket, WebSocketServer } from "ws";
 const DEFAULT_APP_ICON = "/icons/default-app-icon.png";
-const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
 
 /**
  * Compare two semantic version strings
@@ -111,11 +110,6 @@ type ExtendedGraphicsControllerData =
   Systeminformation.GraphicsControllerData & {
     utilization?: number;
   };
-
-function getAppIdFromContainerName(name: string): string {
-  if (!CONTAINER_PREFIX) return name;
-  return name.replace(new RegExp(`^${CONTAINER_PREFIX}`), "");
-}
 
 async function resolveHostPort(containerName: string): Promise<string | null> {
   try {
@@ -395,7 +389,7 @@ interface CollectedApps {
 /**
  * Collect installed Docker containers and unmanaged containers.
  * Uses com.docker.compose.project label (set by --project-name) to identify
- * managed apps — same pattern as Umbrel.
+ * managed apps — same compose project naming pattern.
  */
 async function collectInstalledApps(): Promise<CollectedApps> {
   try {
@@ -473,7 +467,7 @@ async function collectInstalledApps(): Promise<CollectedApps> {
       if (labels["homeio.helper"] === "true") continue;
 
       // Determine if this container belongs to a managed app:
-      // 1. Check compose project label against known appIds (Umbrel pattern)
+      // 1. Check compose project label against known appIds (compose pattern)
       // 2. Fallback: check container name against DB (legacy)
       const matchedAppId =
         (composeProject && managedAppIds.has(composeProject) ? composeProject : null) ||

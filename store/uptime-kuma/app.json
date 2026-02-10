@@ -1,0 +1,23 @@
+{
+  "id": "uptime-kuma",
+  "title": "Uptime Kuma",
+  "name": "Uptime Kuma",
+  "icon": "https://getumbrel.github.io/umbrel-apps-gallery/uptime-kuma/icon.svg",
+  "tagline": "Self-hosted uptime monitoring tool",
+  "overview": "Uptime Kuma is a self-hosted monitoring tool like Uptime Robot.\n\nFeatures:\n\n- Monitoring uptime for HTTP(s) / TCP / HTTP(s) Keyword / Ping / DNS Record / Push / Steam Game Server.\n- Fancy, Reactive, Fast UI/UX.\n- Notifications via Telegram, Discord, Gotify, Slack, Pushover, Email (SMTP), and 70+ notification services.\n- 20 second intervals.\n- Multi Languages\n- Simple Status Page\n- Ping Chart\n- Certificate Info\n",
+  "category": [
+    "networking"
+  ],
+  "developer": "Louis Lam",
+  "screenshots": [
+    "https://getumbrel.github.io/umbrel-apps-gallery/uptime-kuma/1.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/uptime-kuma/2.jpg",
+    "https://getumbrel.github.io/umbrel-apps-gallery/uptime-kuma/3.jpg"
+  ],
+  "version": "2.1.0",
+  "releaseNotes": "This release includes many new features and improvements.\n\nNew features:\n  - Added Jira Service Management as a notification provider\n  - Added Google Sheets notification provider\n  - Added Globalping support\n  - Added Bavarian German language support\n\n\nImprovements:\n  - Discord notifications now support custom messages and format presets\n  - Ntfy notifications now support custom title and message templates\n  - Slack notifications can now include monitor group names\n  - Improved monitor list selection behavior\n  - Expand/collapse all groups now works with nested groups\n\n\nBug fixes:\n  - Fixed certificate expiry handling\n  - Fixed RSS pubDate timezone issues\n  - Fixed monitor names being hidden by tags\n  - Improved RADIUS client error handling and socket cleanup\n  - Improved MongoDB monitor error handling\n  - Added input validation for monitor ID in badge endpoints\n\n\nFull release notes can be found at https://github.com/louislam/uptime-kuma/releases\n",
+  "port": 8385,
+  "path": "",
+  "website": "https://uptime.kuma.pet",
+  "repo": "https://github.com/louislam/uptime-kuma"
+}

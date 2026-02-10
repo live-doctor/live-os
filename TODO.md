@@ -1,6 +1,6 @@
 # Homeio Development Roadmap
 
-This document tracks features needed to reach feature parity with UmbrelOS and CasaOS.
+This document tracks features needed to reach feature parity with other self-hosted dashboards.
 
 ## Legend
 - [ ] Not started
@@ -9,7 +9,7 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
 
 ---
 
-## 🔍 Gaps vs CasaOS/UmbrelOS (add to roadmap)
+## 🔍 Gaps vs Other Dashboards (add to roadmap)
 - [x] Real app catalog with install/uninstall status, progress, and logs
 - [x] Docker/compose lifecycle controls (start/stop/restart, health, port/resource config)
 - [x] Live system dashboard (CPU/RAM/disk/network, temps, alerts)
@@ -580,7 +580,7 @@ This document tracks features needed to reach feature parity with UmbrelOS and C
 
 - [x] System monitoring (CPU, RAM, disk, network, temperature)
 - [x] Docker container management (basic)
-- [x] App store (Umbrel format + CasaOS community stores)
+- [x] App store (API catalog import + custom deploy)
 - [x] Installed apps management
 - [x] File browser with real filesystem (list, create, delete)
 - [x] Terminal access

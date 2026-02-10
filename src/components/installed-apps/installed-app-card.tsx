@@ -3,9 +3,10 @@
 import { getAppWebUI } from "@/app/actions/docker";
 import type { InstalledApp } from "@/components/app-store/types";
 import { surface } from "@/components/ui/design-tokens";
-import { ArrowUp } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowUp, Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { AppContextMenu } from "./app-context-menu";
 
@@ -13,11 +14,25 @@ export function InstalledAppCard({
   app,
   icon,
   onIconError,
+  onDeployStateChange,
 }: {
   app: InstalledApp;
   icon?: string;
   onIconError: () => void;
+  onDeployStateChange?: (appId: string, deploying: boolean) => void;
 }) {
+  const isRunning = app.status === "running";
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handleLoadingChange = useCallback(
+    (loading: boolean) => {
+      setActionLoading(loading);
+      // Notify grid so it keeps ghost entry during redeploy
+      onDeployStateChange?.(app.id, loading);
+    },
+    [app.id, onDeployStateChange],
+  );
+
   return (
     <motion.div
       variants={{
@@ -25,55 +40,79 @@ export function InstalledAppCard({
         show: { opacity: 1, scale: 1 },
       }}
     >
-      <AppContextMenu app={app}>
+      <AppContextMenu app={app} onLoadingChange={handleLoadingChange}>
         <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.97 }}
-          transition={{ type: "spring", stiffness: 380, damping: 18 }}
-          className="relative cursor-pointer"
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className="relative cursor-pointer p-2"
+          onClick={async () => {
+            try {
+              const url = await getAppWebUI(app.appId);
+              if (url) {
+                window.open(url, "_blank", "noopener,noreferrer");
+              } else {
+                toast.error(
+                  "Unable to determine app URL. Ensure the app is running.",
+                );
+              }
+            } catch {
+              toast.error("Failed to open app");
+            }
+          }}
         >
-          <div className="mx-auto flex w-16 flex-col items-center justify-start text-center">
+          <div className="flex flex-col items-center gap-2">
+            {/* Icon container with glass frame */}
             <div
-              className="relative h-14 w-14 overflow-hidden rounded-[10px] sm:h-16 sm:w-16"
-              onClick={async () => {
-                try {
-                  const url = await getAppWebUI(app.appId);
-                  if (url) {
-                    window.open(url, "_blank", "noopener,noreferrer");
-                  } else {
-                    toast.error(
-                      "Unable to determine app URL. Ensure the app is running.",
-                    );
-                  }
-                } catch {
-                  toast.error("Failed to open app");
-                }
-              }}
+              className={`relative h-14 w-14 overflow-hidden rounded-2xl border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
+                actionLoading
+                  ? "border-white/20 bg-white/10 shadow-black/20"
+                  : isRunning
+                    ? "border-white/15 bg-white/10 shadow-black/20"
+                    : "border-white/8 bg-white/5 shadow-black/10 grayscale opacity-50"
+              }`}
             >
               <Image
                 src={icon || "/default-application-icon.png"}
                 alt={app.name}
                 fill
-                className="object-contain p-1"
+                className={`object-contain p-1.5 transition-all duration-300 ${
+                  actionLoading ? "scale-95 blur-[1px]" : ""
+                }`}
                 onError={onIconError}
               />
-              {app.status !== "running" ? (
-                <div
-                  className="pointer-events-none absolute inset-0 rounded-[10px] bg-zinc-900/45"
-                  title={app.status}
-                />
-              ) : null}
-              {app.hasUpdate && (
-                <div
-                  className="absolute -top-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 shadow-lg shadow-blue-500/40"
-                  title={`Update available: ${app.availableVersion}`}
-                >
-                  <ArrowUp className="h-3 w-3 text-white" />
-                </div>
-              )}
+
+              {/* Loading overlay with spinner */}
+              <AnimatePresence>
+                {actionLoading && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 backdrop-blur-[2px]"
+                  >
+                    <Loader2 className="h-6 w-6 animate-spin text-white/90 sm:h-7 sm:w-7" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+
+            {/* Update badge */}
+            {app.hasUpdate && !actionLoading && (
+              <div
+                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 shadow-lg shadow-blue-500/40 ring-2 ring-black/30"
+                title={`Update available: ${app.availableVersion}`}
+              >
+                <ArrowUp className="h-3 w-3 text-white" />
+              </div>
+            )}
+
+            {/* App name */}
             <span
-              className={`mt-1.5 block w-full text-center text-[11px] font-medium leading-tight sm:text-xs ${surface.label}`}
+              className={`block w-20 text-center text-[11px] font-medium leading-tight sm:w-24 sm:text-xs transition-opacity duration-300 ${
+                actionLoading ? "opacity-60" : ""
+              } ${surface.label}`}
             >
               {app.name}
             </span>
