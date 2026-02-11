@@ -12,6 +12,13 @@ type BluetoothState = {
   adapter?: string | null;
   devices?: number;
   firstName?: string | null;
+  deviceList?: Array<{
+    address: string;
+    name: string;
+    connected: boolean;
+    paired: boolean;
+    trusted: boolean;
+  }>;
   error?: string | null;
 };
 
@@ -148,6 +155,36 @@ export function BluetoothDialog({
                     </span>
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-secondary/40 p-4">
+                <h3 className="text-[14px] font-medium leading-tight text-foreground">
+                  Nearby devices
+                </h3>
+                {status?.deviceList && status.deviceList.length > 0 ? (
+                  <div className="mt-2 space-y-2">
+                    {status.deviceList.slice(0, 8).map((device) => (
+                      <div
+                        key={device.address}
+                        className="flex items-center justify-between gap-3 text-[13px]"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-foreground">{device.name}</p>
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {device.address}
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-border bg-secondary/60 px-2 py-0.5 text-[11px] text-foreground">
+                          {device.connected ? "Connected" : "Detected"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[13px] text-muted-foreground">
+                    No devices found yet. Keep this dialog open and press Refresh.
+                  </p>
+                )}
               </div>
             </div>
 

@@ -98,7 +98,8 @@ function summarizeDeployFailure(
 ): string {
   const stderr = String(details.stderr || "").toLowerCase();
   const stdout = String(details.stdout || "").toLowerCase();
-  const combined = `${stderr}\n${stdout}`;
+  const jsonError = String(details.jsonError || "").toLowerCase();
+  const combined = `${stderr}\n${stdout}\n${jsonError}`;
 
   if (stage === "compose:pull") {
     if (combined.includes("toomanyrequests")) {
@@ -408,6 +409,7 @@ export async function deployApp(
       appId,
       stage,
       error: errorMessage,
+      ...details,
     });
     await logAction(
       "deploy:error",
@@ -684,6 +686,7 @@ function streamComposePull(
       const pull = spawn("docker", args, { cwd: appDir, env: envVars });
       const stdoutLines: string[] = [];
       const stderrLines: string[] = [];
+      let jsonError: string | undefined;
       const pushLine = (target: string[], value: string) => {
         target.push(value);
         if (target.length > 60) target.shift();
@@ -719,10 +722,15 @@ function streamComposePull(
             id?: string;
             status?: string;
             error?: string;
+            errorDetail?: { message?: string } | string;
             progressDetail?: { current?: number; total?: number };
           };
 
           if (payload.error) {
+            jsonError =
+              (typeof payload.errorDetail === "string"
+                ? payload.errorDetail
+                : payload.errorDetail?.message) || payload.error;
             advance(payload.error);
             return;
           }
@@ -816,10 +824,14 @@ function streamComposePull(
       });
 
       pull.on("error", (err) => {
+        const summarizedStdout = clipText(stdoutLines.join("\n"));
+        const summarizedStderr =
+          clipText(stderrLines.join("\n")) || clipText(jsonError);
         const e = stageError("compose:pull", "docker compose pull failed to start", {
           ...errorDetails(err),
-          stdout: clipText(stdoutLines.join("\n")),
-          stderr: clipText(stderrLines.join("\n")),
+          stdout: summarizedStdout,
+          stderr: summarizedStderr,
+          jsonError: clipText(jsonError),
           usedJsonProgress: useJsonProgress,
         });
         reject(e);
@@ -829,14 +841,18 @@ function streamComposePull(
           onProgress(0.85, "Images pulled");
           resolve();
         } else {
+          const summarizedStdout = clipText(stdoutLines.join("\n"));
+          const summarizedStderr =
+            clipText(stderrLines.join("\n")) || clipText(jsonError);
           reject(
             stageError(
               "compose:pull",
               `docker compose pull exited with code ${code}`,
               {
                 code,
-                stdout: clipText(stdoutLines.join("\n")),
-                stderr: clipText(stderrLines.join("\n")),
+                stdout: summarizedStdout,
+                stderr: summarizedStderr,
+                jsonError: clipText(jsonError),
                 usedJsonProgress: useJsonProgress,
               },
             ),

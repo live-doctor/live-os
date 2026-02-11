@@ -20,13 +20,25 @@ export type BluetoothStatus = {
   error?: string | null;
 };
 
+export type BluetoothDevice = {
+  address: string;
+  name: string;
+  connected: boolean;
+  paired: boolean;
+  trusted: boolean;
+};
+
 type CommandResult = {
   stdout: string;
   stderr: string;
 };
 
-async function runCommand(cmd: string, args: string[]): Promise<CommandResult> {
-  const result = await execFileAsync(cmd, args, { timeout: EXEC_TIMEOUT_MS });
+async function runCommand(
+  cmd: string,
+  args: string[],
+  timeout = EXEC_TIMEOUT_MS,
+): Promise<CommandResult> {
+  const result = await execFileAsync(cmd, args, { timeout });
   return { stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
 }
 
@@ -227,4 +239,90 @@ export async function setBluetoothPower(
     status,
     error: success ? undefined : commandError ?? status.error ?? "Bluetooth state did not change",
   };
+}
+
+function parseBluetoothDevices(stdout: string): BluetoothDevice[] {
+  const devices: BluetoothDevice[] = [];
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("Device ")) continue;
+    const match = trimmed.match(/^Device\s+([0-9A-F:]{17})\s+(.+)$/i);
+    if (!match) continue;
+    devices.push({
+      address: match[1],
+      name: match[2].trim(),
+      connected: false,
+      paired: false,
+      trusted: false,
+    });
+  }
+  return devices;
+}
+
+async function readDeviceFlags(
+  device: BluetoothDevice,
+): Promise<BluetoothDevice> {
+  try {
+    const { stdout } = await runCommand("bluetoothctl", ["info", device.address]);
+    return {
+      ...device,
+      connected: /Connected:\s*yes/i.test(stdout),
+      paired: /Paired:\s*yes/i.test(stdout),
+      trusted: /Trusted:\s*yes/i.test(stdout),
+    };
+  } catch {
+    return device;
+  }
+}
+
+export async function scanBluetoothDevices(
+  durationSeconds = 6,
+): Promise<{ devices: BluetoothDevice[]; error?: string }> {
+  const health = await checkBluetoothDaemonHealth();
+  if (!health.ok) {
+    return { devices: [], error: health.error ?? "Bluetooth service unavailable" };
+  }
+
+  const status = await getBluetoothStatus();
+  if (!status.available) {
+    return {
+      devices: [],
+      error: status.error ?? "No Bluetooth adapter detected",
+    };
+  }
+
+  if (!status.powered) {
+    return { devices: [], error: "Bluetooth is off. Turn it on to scan devices." };
+  }
+
+  const timeoutSeconds = Math.max(3, Math.min(durationSeconds, 12));
+  try {
+    await runCommand(
+      "bluetoothctl",
+      ["--timeout", String(timeoutSeconds), "scan", "on"],
+      (timeoutSeconds + 3) * 1000,
+    );
+  } catch (error) {
+    const message = (error as Error)?.message || "Bluetooth scan failed";
+    await logBt(
+      "bluetooth:scan:warn",
+      { timeoutSeconds, error: message },
+      "warn",
+    );
+  }
+
+  try {
+    const { stdout } = await runCommand("bluetoothctl", ["devices"]);
+    const devices = parseBluetoothDevices(stdout);
+    const enriched = await Promise.all(
+      devices.slice(0, 32).map((device) => readDeviceFlags(device)),
+    );
+    return {
+      devices: enriched.sort((a, b) => Number(b.connected) - Number(a.connected)),
+    };
+  } catch (error) {
+    const message = (error as Error)?.message || "Failed to list Bluetooth devices";
+    await logBt("bluetooth:devices:error", { error: message }, "error");
+    return { devices: [], error: message };
+  }
 }

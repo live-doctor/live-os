@@ -29,6 +29,8 @@ export {
 // Bluetooth
 export {
   type BluetoothStatus,
+  type BluetoothDevice,
   getBluetoothStatus,
+  scanBluetoothDevices,
   setBluetoothPower,
 } from "./bluetooth";

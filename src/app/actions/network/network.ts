@@ -177,6 +177,31 @@ async function getActiveWifiSsids(): Promise<string[]> {
   }
 }
 
+async function getWifiDeviceStatusLine(): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync(
+      "nmcli",
+      ["-t", "-f", "DEVICE,TYPE,STATE", "device", "status"],
+      { timeout: EXEC_TIMEOUT },
+    );
+
+    const wifiLines = stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => splitNmcliFields(line))
+      .filter(([, type]) => (type || "").toLowerCase() === "wifi");
+
+    if (wifiLines.length === 0) return "No Wi-Fi interface detected";
+
+    return wifiLines
+      .map(([device, , state]) => `${device || "wifi"}=${state || "unknown"}`)
+      .join(", ");
+  } catch {
+    return null;
+  }
+}
+
 export async function listWifiNetworks(): Promise<WifiListResult> {
   await logNet("network:wifi:list:start");
   const errors: string[] = [];
@@ -268,7 +293,7 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       // Rescan might fail if already scanning, continue anyway
     }
 
-    const { stdout /* , stderr */ } = await execFileAsync(
+    const { stdout, stderr } = await execFileAsync(
       "nmcli",
       ["-t", "-f", "ACTIVE,SSID,SECURITY,SIGNAL", "device", "wifi", "list"],
       {
@@ -297,6 +322,13 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       .sort((a, b) => b.signal - a.signal);
 
     if (networks.length === 0 && connectedSsids.size > 0) {
+      const nmcliStderr = stderr?.trim();
+      const deviceState = await getWifiDeviceStatusLine();
+      const warningParts = [
+        "WiFi scan returned no nearby networks. Showing current connection(s) only.",
+      ];
+      if (deviceState) warningParts.push(`Interfaces: ${deviceState}`);
+      if (nmcliStderr) warningParts.push(`nmcli: ${nmcliStderr.split("\n")[0]}`);
       const connectedOnly = Array.from(connectedSsids).map((ssid) => ({
         ssid,
         security: "",
@@ -305,7 +337,7 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
       }));
       return finish("nmcli-connected-fallback", {
         networks: dedupeNetworks(connectedOnly),
-        warning: "WiFi scan returned no nearby networks. Showing current connection(s) only.",
+        warning: warningParts.join(" "),
       });
     }
 

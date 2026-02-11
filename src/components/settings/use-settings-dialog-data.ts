@@ -2,7 +2,12 @@
 "use client";
 
 import { getFirewallStatus } from "@/app/actions/network/firewall";
-import { getBluetoothStatus, setBluetoothPower } from "@/app/actions/network/bluetooth";
+import {
+  getBluetoothStatus,
+  scanBluetoothDevices,
+  setBluetoothPower,
+  type BluetoothDevice,
+} from "@/app/actions/network/bluetooth";
 import { type LanDevice, listLanDevices } from "@/app/actions/network";
 import { getWallpapers, updateSettings } from "@/app/actions/auth/settings";
 import { getSystemInfo, getUptime } from "@/app/actions/system";
@@ -45,7 +50,10 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
   const [initialLoading, setInitialLoading] = useState(false);
 
   // Bluetooth
-  const [bluetoothStatus, setBtStatus] = useState<HardwareInfo["bluetooth"] | null>(null);
+  type BluetoothDisplayState = NonNullable<HardwareInfo["bluetooth"]> & {
+    deviceList?: BluetoothDevice[];
+  };
+  const [bluetoothStatus, setBtStatus] = useState<BluetoothDisplayState | null>(null);
   const [bluetoothLoading, setBtLoading] = useState(false);
   const [bluetoothError, setBtError] = useState<string | null>(null);
 
@@ -112,14 +120,19 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     setBtLoading(true);
     setBtError(null);
     try {
-      const status = await getBluetoothStatus();
+      const [status, scan] = await Promise.all([
+        getBluetoothStatus(),
+        scanBluetoothDevices(),
+      ]);
       setBtStatus((prev) => ({
         ...(prev ?? {}),
         ...status,
-        devices: prev?.devices,
-        firstName: prev?.firstName,
-        error: status.error ?? null,
+        devices: scan.devices.length,
+        firstName: scan.devices[0]?.name ?? undefined,
+        deviceList: scan.devices,
+        error: status.error ?? scan.error ?? null,
       }));
+      if (scan.error && !status.error) setBtError(scan.error);
     } catch (err) {
       setBtError((err as Error)?.message || "Failed to refresh Bluetooth status");
     } finally {
@@ -164,6 +177,7 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
         ...next,
         devices: next.devices ?? prev?.devices,
         firstName: next.firstName ?? prev?.firstName,
+        deviceList: prev?.deviceList,
         error: next.error ?? prev?.error ?? null,
       };
     });
@@ -206,12 +220,14 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
       setBtStatus((prev) => ({
         ...(prev ?? {}),
         ...result.status,
-        devices: prev?.devices,
-        firstName: prev?.firstName,
+        devices: enabled ? prev?.devices : 0,
+        firstName: enabled ? prev?.firstName : undefined,
+        deviceList: enabled ? prev?.deviceList : [],
         error: result.status.error ?? null,
       }));
       if (result.success) {
         toast.success(enabled ? "Bluetooth enabled" : "Bluetooth disabled");
+        if (enabled) await refreshBluetooth();
       } else {
         const msg = result.error || "Failed to change Bluetooth state";
         setBtError(msg);
@@ -224,7 +240,7 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     } finally {
       setBtLoading(false);
     }
-  }, []);
+  }, [refreshBluetooth]);
 
   const handleFirewallDialogChange = useCallback(
     (isOpen: boolean) => {
