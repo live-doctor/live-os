@@ -20,8 +20,8 @@ export function RecommendationsSection({
   if (recommendations.length === 0) return null;
 
   return (
-    <section className="rounded-[12px] bg-white/4 px-5 py-[30px] md:px-[26px] md:py-[36px]">
-      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-white/50">
+    <section className="rounded-lg bg-secondary/40 px-5 py-[30px] md:px-[26px] md:py-[36px]">
+      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-muted-foreground">
         You might also like
       </h2>
       <div className="mt-5 space-y-3">
@@ -50,7 +50,7 @@ function RecommendationCard({ app, onClick }: RecommendationCardProps) {
       onClick={onClick}
       className="group flex w-full cursor-pointer items-center gap-2.5 text-left"
     >
-      <div className="relative h-[50px] w-[50px] shrink-0 overflow-hidden rounded-[10px] border border-slate-100/10 bg-white/10">
+      <div className="relative h-[50px] w-[50px] shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/60">
         <Image
           src={iconSrc}
           alt={app.title}
@@ -63,7 +63,7 @@ function RecommendationCard({ app, onClick }: RecommendationCardProps) {
         <h3 className="truncate text-[14px] font-semibold leading-tight tracking-[-0.03em]">
           {app.title}
         </h3>
-        <p className="line-clamp-2 text-[12px] leading-tight text-white/40">
+        <p className="line-clamp-2 text-[12px] leading-tight text-muted-foreground">
           {app.tagline || app.overview}
         </p>
       </div>

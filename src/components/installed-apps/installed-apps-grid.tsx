@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import type { InstalledApp } from "@/components/app-store/types";
@@ -6,7 +5,7 @@ import { surface } from "@/components/ui/design-tokens";
 import type { InstalledApp as WSInstalledApp } from "@/hooks/system-status-types";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InstalledAppCard } from "./installed-app-card";
 import { OtherContainerCard } from "./other-container-card";
 import {
@@ -33,15 +32,13 @@ function resolveGridLayout(width: number, height: number) {
 
 export function InstalledAppsGrid() {
   const { installedApps: wsApps, otherContainers, connected } = useSystemStatus();
-  const [appIcons, setAppIcons] = useState<Record<string, string>>({});
+  const [iconOverrides, setIconOverrides] = useState<Record<string, string>>({});
   const [columns, setColumns] = useState(5);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Track apps currently being redeployed so they stay visible as ghost cards
   const [deployingApps, setDeployingApps] = useState<Set<string>>(new Set());
-  const [lastSnapshot, setLastSnapshot] = useState<Map<string, InstalledApp>>(
-    new Map(),
-  );
+  const lastSnapshotRef = useRef<Map<string, InstalledApp>>(new Map());
 
   const handleDeployStateChange = useCallback(
     (appId: string, deploying: boolean) => {
@@ -72,14 +69,12 @@ export function InstalledAppsGrid() {
 
   // Keep a snapshot of all known apps so deploying apps don't vanish
   useEffect(() => {
-    setLastSnapshot((prev) => {
-      if (liveApps.length === 0) return prev;
-      const next = new Map(prev);
-      for (const app of liveApps) {
-        next.set(app.id, app);
-      }
-      return next;
-    });
+    if (liveApps.length === 0) return;
+    const next = new Map(lastSnapshotRef.current);
+    for (const app of liveApps) {
+      next.set(app.id, app);
+    }
+    lastSnapshotRef.current = next;
   }, [liveApps]);
 
   // Merge live apps with ghost entries for deploying apps that temporarily disappeared
@@ -88,28 +83,15 @@ export function InstalledAppsGrid() {
     const ghosts: InstalledApp[] = [];
     for (const appId of deployingApps) {
       if (!liveIds.has(appId)) {
-        const snapshot = lastSnapshot.get(appId);
+        // eslint-disable-next-line react-hooks/refs
+        const snapshot = lastSnapshotRef.current.get(appId);
         if (snapshot) {
           ghosts.push({ ...snapshot, status: "stopped" });
         }
       }
     }
     return [...liveApps, ...ghosts];
-  }, [liveApps, deployingApps, lastSnapshot]);
-
-  useEffect(() => {
-    setAppIcons((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      for (const app of apps) {
-        if (app.icon && next[app.id] !== app.icon) {
-          next[app.id] = app.icon;
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [apps]);
+  }, [liveApps, deployingApps]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -158,7 +140,9 @@ export function InstalledAppsGrid() {
   if (!connected && apps.length === 0 && otherContainers.length === 0) {
     return (
       <div className="w-full max-w-6xl px-6 sm:px-8">
-        <p className="text-center text-sm text-white/80">Connecting to server...</p>
+        <p className="text-center text-sm text-muted-foreground">
+          Connecting to server...
+        </p>
       </div>
     );
   }
@@ -166,7 +150,7 @@ export function InstalledAppsGrid() {
   if (apps.length === 0 && otherContainers.length === 0) {
     return (
       <div className="w-full max-w-6xl px-6 sm:px-8">
-        <p className="text-center text-sm text-white/80">
+        <p className="text-center text-sm text-muted-foreground">
           No apps installed yet. Install apps from the App Store in the dock!
         </p>
       </div>
@@ -201,20 +185,28 @@ export function InstalledAppsGrid() {
                     gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
                   }}
                 >
-                  {pageApps.map((app) => (
-                    <InstalledAppCard
-                      key={app.id}
-                      app={app}
-                      icon={appIcons[app.id]}
-                      onIconError={() =>
-                        setAppIcons((prev) => ({
-                          ...prev,
-                          [app.id]: "/default-application-icon.png",
-                        }))
-                      }
-                      onDeployStateChange={handleDeployStateChange}
-                    />
-                  ))}
+                  {pageApps.map((app) => {
+                    const resolvedIcon =
+                      iconOverrides[app.id] ?? app.icon ?? "/default-application-icon.png";
+                    return (
+                      <InstalledAppCard
+                        key={app.id}
+                        app={app}
+                        icon={resolvedIcon}
+                        onIconError={() =>
+                          setIconOverrides((prev) =>
+                            prev[app.id] === "/default-application-icon.png"
+                              ? prev
+                              : {
+                                  ...prev,
+                                  [app.id]: "/default-application-icon.png",
+                                },
+                          )
+                        }
+                        onDeployStateChange={handleDeployStateChange}
+                      />
+                    );
+                  })}
                 </motion.div>
               </div>
             ))}

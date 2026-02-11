@@ -1,3 +1,4 @@
+import { dialog as dialogTokens } from "@/components/ui/design-tokens";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,7 @@ type BluetoothDialogProps = {
   onRefresh?: () => void | Promise<void>;
 };
 
-const rowClass = "flex justify-between text-sm text-white/80";
+const rowClass = "flex justify-between text-sm";
 
 export function BluetoothDialog({
   open,
@@ -47,12 +48,12 @@ export function BluetoothDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[760px] p-0">
+      <DialogContent className={cn(dialogTokens.content, dialogTokens.size.lg, dialogTokens.padding.none)}>
         <ScrollArea className="max-h-[78vh]">
           <div className="space-y-6 px-5 py-6">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-white">
+                <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-foreground">
                   Bluetooth
                 </h2>
                 <div className="flex items-center gap-2">
@@ -61,8 +62,9 @@ export function BluetoothDialog({
                     onClick={() => onToggle(!powered)}
                     disabled={loading || !available}
                     className={cn(
-                      "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-white transition-[color,background-color,box-shadow] duration-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20",
-                      (loading || !available) && "opacity-50 cursor-not-allowed",
+                      "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-foreground transition-[color,background-color,box-shadow] duration-300 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring/30",
+                      (loading || !available) &&
+                        "opacity-50 cursor-not-allowed",
                     )}
                     title={powered ? "Turn Bluetooth off" : "Turn Bluetooth on"}
                   >
@@ -78,8 +80,9 @@ export function BluetoothDialog({
                     onClick={onRefresh}
                     disabled={loading || !available}
                     className={cn(
-                      "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-white transition-[color,background-color,box-shadow] duration-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20",
-                      (loading || !available) && "opacity-50 cursor-not-allowed",
+                      "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-foreground transition-[color,background-color,box-shadow] duration-300 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring/30",
+                      (loading || !available) &&
+                        "opacity-50 cursor-not-allowed",
                     )}
                     title="Refresh Bluetooth status"
                   >
@@ -92,50 +95,64 @@ export function BluetoothDialog({
                   </button>
                 </div>
               </div>
-              <p className="text-[13px] leading-tight text-white opacity-45">
-                {status?.adapter ? `Adapter ${status.adapter}` : "Manage adapter power and check paired devices."}
+              <p className="text-[13px] leading-tight text-muted-foreground">
+                {status?.adapter
+                  ? `Adapter ${status.adapter}`
+                  : "Manage adapter power and check paired devices."}
               </p>
             </div>
 
             <div className="space-y-3">
-              <div className="pointer-events-none flex items-start gap-x-2 rounded-[12px] bg-white/6 p-4">
+              <div className="pointer-events-none flex items-start gap-x-2 rounded-lg border border-border bg-secondary/40 p-4">
                 <div className="flex-1 space-y-1">
-                  <h3 className="text-[14px] font-medium leading-tight text-white">Status</h3>
-                  <p className="text-[13px] leading-tight text-white opacity-45">
+                  <h3 className="text-[14px] font-medium leading-tight text-foreground">
+                    Status
+                  </h3>
+                  <p className="text-[13px] leading-tight text-muted-foreground">
                     {statusText}
                   </p>
                 </div>
-                <span className="pointer-events-auto inline-flex h-[30px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-white">
+                <span className="pointer-events-auto inline-flex h-[30px] items-center justify-center rounded-full border border-border bg-secondary/60 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-foreground">
                   {powered ? "Powered" : "Unpowered"}
                 </span>
               </div>
 
-              <div className="pointer-events-none flex items-start gap-x-2 rounded-[12px] bg-white/6 p-4">
+              <div className="pointer-events-none flex items-start gap-x-2 rounded-lg border border-border bg-secondary/40 p-4">
                 <div className="flex-1 space-y-2">
                   <div className={rowClass}>
-                    <span className="text-white/60">Available</span>
-                    <span className="text-white">{available ? "Yes" : "No"}</span>
-                  </div>
-                  <div className={rowClass}>
-                    <span className="text-white/60">Blocked</span>
-                    <span className="text-white">{blocked ? "Yes" : "No"}</span>
-                  </div>
-                  <div className={rowClass}>
-                    <span className="text-white/60">Connected devices</span>
-                    <span className="text-white">
-                      {typeof status?.devices === "number" ? status.devices : "—"}
+                    <span className="text-muted-foreground">Available</span>
+                    <span className="text-foreground">
+                      {available ? "Yes" : "No"}
                     </span>
                   </div>
                   <div className={rowClass}>
-                    <span className="text-white/60">First device</span>
-                    <span className="text-white">{status?.firstName || "—"}</span>
+                    <span className="text-muted-foreground">Blocked</span>
+                    <span className="text-foreground">
+                      {blocked ? "Yes" : "No"}
+                    </span>
+                  </div>
+                  <div className={rowClass}>
+                    <span className="text-muted-foreground">
+                      Connected devices
+                    </span>
+                    <span className="text-foreground">
+                      {typeof status?.devices === "number"
+                        ? status.devices
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className={rowClass}>
+                    <span className="text-muted-foreground">First device</span>
+                    <span className="text-foreground">
+                      {status?.firstName || "—"}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
             {(error || status?.error) && (
-              <div className="rounded-[12px] border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-300">
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-300">
                 {error || status?.error}
               </div>
             )}

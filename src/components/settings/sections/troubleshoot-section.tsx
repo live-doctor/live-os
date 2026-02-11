@@ -14,7 +14,7 @@ export function TroubleshootSection({
 }: TroubleshootSectionProps) {
   return (
     <SettingsSectionShell
-      icon={<Wrench className="h-4 w-4 text-white" />}
+      icon={<Wrench className="h-4 w-4 text-foreground" />}
       title="Troubleshoot"
       subtitle="Troubleshoot Homeio"
       actions={

@@ -2,6 +2,7 @@
 
 import { emptyTrash, listTrashedApps } from '@/app/actions/docker';
 import { Button } from '@/components/ui/button';
+import { badge, dialog as dialogTokens } from '@/components/ui/design-tokens';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 import { Loader2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -92,23 +94,19 @@ export function TrashDialog({ open, onOpenChange }: TrashDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl p-0">
-        <div className="border-b border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent px-6 py-4">
+      <DialogContent className={cn(dialogTokens.content, "max-w-xl", dialogTokens.padding.none)}>
+        <div className={cn(dialogTokens.header, "px-6 py-4")}>
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/70">
-                  Docker Trash
-                </span>
-                <DialogTitle className="text-lg text-white">
-                  Uninstalled app data
-                </DialogTitle>
+                <span className={badge.base}>Docker Trash</span>
+                <DialogTitle className="text-lg">Uninstalled app data</DialogTitle>
               </div>
-              <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/70">
+              <div className="rounded-lg border border-border bg-secondary/60 px-3 py-1 text-xs text-muted-foreground">
                 {items.length} item{items.length === 1 ? "" : "s"}
               </div>
             </div>
-            <DialogDescription className="text-white/60">
+            <DialogDescription className="text-muted-foreground">
               Uninstalled app data that can be permanently deleted.
             </DialogDescription>
           </DialogHeader>
@@ -117,13 +115,13 @@ export function TrashDialog({ open, onOpenChange }: TrashDialogProps) {
         <div className="p-6 space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-white/60" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-center text-white/60">
-              <Trash2 className="h-8 w-8 text-white/40" />
+            <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
+              <Trash2 className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm">Trash is empty</p>
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-muted-foreground">
                 Uninstalled app data will appear here before permanent deletion.
               </p>
             </div>
@@ -132,16 +130,16 @@ export function TrashDialog({ open, onOpenChange }: TrashDialogProps) {
               {items.map((item) => (
                 <div
                   key={`${item.appId}-${item.trashedAt}`}
-                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                  className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 px-4 py-3"
                 >
                   <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold text-white truncate">
+                    <p className="text-sm font-semibold text-foreground truncate">
                       {item.appId}
                     </p>
-                    <p className="text-xs text-white/60 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {item.path || "Unknown path"}
                     </p>
-                    <p className="text-xs text-white/40">
+                    <p className="text-xs text-muted-foreground">
                       Removed on {formatDate(item.trashedAt)}
                     </p>
                   </div>
@@ -165,7 +163,7 @@ export function TrashDialog({ open, onOpenChange }: TrashDialogProps) {
 
           {items.length > 0 && (
             <div className="flex items-center justify-between gap-3 pt-1">
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-muted-foreground">
                 Permanently deletes containers and volume data for these apps.
               </p>
               <Button

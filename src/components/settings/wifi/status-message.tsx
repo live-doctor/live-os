@@ -15,7 +15,7 @@ export function StatusMessage({ type, title, message }: StatusMessageProps) {
   const colorClass = type === "error" ? "text-red" : "text-yellow";
 
   if (type === "empty") {
-    return <div className="text-sm text-white/60">{message}</div>;
+    return <div className="text-sm text-muted-foreground">{message}</div>;
   }
 
   return (

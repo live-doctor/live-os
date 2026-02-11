@@ -18,8 +18,8 @@ export function ServerAuthPrompt({
   onBrowseAsGuest,
 }: ServerAuthPromptProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
-      <div className="flex items-center gap-2 text-sm text-white/80">
+    <div className="space-y-3 rounded-lg border border-border bg-secondary/40 p-4">
+      <div className="flex items-center gap-2 text-sm text-foreground">
         <Lock className="h-4 w-4" />
         <span>Enter credentials to browse shares</span>
       </div>
@@ -30,7 +30,7 @@ export function ServerAuthPrompt({
           onChange={(e) =>
             onCredentialsChange({ ...credentials, username: e.target.value })
           }
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/40 h-9"
+          className="bg-secondary/60 border-border text-foreground placeholder:text-muted-foreground h-9"
         />
         <Input
           type="password"
@@ -39,7 +39,7 @@ export function ServerAuthPrompt({
           onChange={(e) =>
             onCredentialsChange({ ...credentials, password: e.target.value })
           }
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/40 h-9"
+          className="bg-secondary/60 border-border text-foreground placeholder:text-muted-foreground h-9"
         />
       </div>
       <Button
@@ -53,7 +53,7 @@ export function ServerAuthPrompt({
       <Button
         size="sm"
         variant="ghost"
-        className="border border-white/15 text-white/80 hover:bg-white/10"
+        className="border border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
         onClick={onBrowseAsGuest}
       >
         Browse as guest

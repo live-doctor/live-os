@@ -51,8 +51,8 @@ function getColorClass(
   if (!hasBattery) return "text-green-400";
   if (isCharging) return "text-green-400";
   if (acConnected) return "text-green-400";
-  if (percent === null) return "text-white/60";
-  if (percent >= 50) return "text-white/80";
+  if (percent === null) return "text-muted-foreground";
+  if (percent >= 50) return "text-foreground";
   if (percent >= 20) return "text-yellow-400";
   return "text-red-400";
 }

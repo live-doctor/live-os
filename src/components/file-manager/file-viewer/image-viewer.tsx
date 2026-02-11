@@ -20,14 +20,14 @@ export function ImageViewer({ item }: Omit<FileViewerProps, "onClose">) {
     <div className="relative flex items-center justify-center">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 
       {error ? (
-        <div className="text-white/60 text-center p-8">
+        <div className="text-muted-foreground text-center p-8">
           <p>Failed to load image</p>
-          <p className="text-sm text-white/40 mt-2">{item.name}</p>
+          <p className="text-sm text-muted-foreground mt-2">{item.name}</p>
         </div>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element

@@ -41,7 +41,20 @@ export function useFilesDialog(open: boolean) {
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Sub-hooks
-  const nav = useFileNavigation(homePath);
+  const {
+    currentPath,
+    setCurrentPath,
+    historyIndex,
+    historyLength,
+    openingNative,
+    breadcrumbs,
+    navigate,
+    back,
+    forward,
+    goToParent,
+    openNative,
+    resetHistory,
+  } = useFileNavigation(homePath);
 
   const loadDirectory = useCallback(
     async (path: string) => {
@@ -49,17 +62,17 @@ export function useFilesDialog(open: boolean) {
       try {
         const result = await readDirectory(path);
         setContent(result);
-        nav.setCurrentPath(result.currentPath);
+        setCurrentPath(result.currentPath);
       } catch (error) {
         toast.error((error as Error).message || "Failed to load directory");
       } finally {
         setLoading(false);
       }
     },
-    [nav],
+    [setCurrentPath],
   );
 
-  const editor = useFileEditor(nav.currentPath, loadDirectory);
+  const editor = useFileEditor(currentPath, loadDirectory);
 
   const refreshTrashInfo = useCallback(async () => {
     try {
@@ -71,12 +84,12 @@ export function useFilesDialog(open: boolean) {
     }
   }, []);
 
-  const ops = useFileOperations(nav.currentPath, trashPath, loadDirectory, refreshTrashInfo);
+  const ops = useFileOperations(currentPath, trashPath, loadDirectory, refreshTrashInfo);
 
   // Load directory when path or open state changes
   useEffect(() => {
-    if (open && ready) loadDirectory(nav.currentPath);
-  }, [open, nav.currentPath, ready, loadDirectory]);
+    if (open && ready) loadDirectory(currentPath);
+  }, [open, currentPath, ready, loadDirectory]);
 
   useEffect(() => {
     if (!open) setReady(false);
@@ -98,14 +111,14 @@ export function useFilesDialog(open: boolean) {
         setFavorites(favResult.favorites);
         setTrashPath(trashResult.path);
         setTrashItemCount(trashResult.itemCount);
-        nav.resetHistory(normalizedHome);
+        resetHistory(normalizedHome);
         setReady(true);
       } catch {
         toast.error("Failed to load default directories");
       }
     };
     loadDefaults();
-  }, [open, nav]);
+  }, [open, resetHistory]);
 
   // Context menu outside click / escape
   useEffect(() => {
@@ -133,16 +146,16 @@ export function useFilesDialog(open: boolean) {
   const handleItemOpen = useCallback(
     (item: FileSystemItem) => {
       if (item.type === "directory") {
-        nav.navigate(item.path);
+        navigate(item.path);
         return;
       }
       if (isTextLike(item.name)) {
         editor.openFileInEditor(item.path);
         return;
       }
-      nav.openNative(item.path);
+      openNative(item.path);
     },
-    [nav, editor],
+    [navigate, openNative, editor],
   );
 
   const shortcutPath = useCallback(
@@ -202,15 +215,16 @@ export function useFilesDialog(open: boolean) {
   }, []);
 
   const refresh = useCallback(() => {
-    loadDirectory(nav.currentPath);
+    loadDirectory(currentPath);
     refreshFavorites();
     refreshTrashInfo();
-  }, [nav.currentPath, loadDirectory, refreshFavorites, refreshTrashInfo]);
+  }, [currentPath, loadDirectory, refreshFavorites, refreshTrashInfo]);
 
   const filteredItems = useMemo(
     () => content?.items.filter((item) => showHidden || !item.isHidden) || [],
     [content?.items, showHidden],
   );
+  const isLoading = loading || (open && !ready);
 
   const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, item: null }));
@@ -219,24 +233,24 @@ export function useFilesDialog(open: boolean) {
   return {
     // state
     homePath,
-    currentPath: nav.currentPath,
+    currentPath,
     viewMode,
     content,
-    loading,
-    openingNative: nav.openingNative,
+    loading: isLoading,
+    openingNative,
     showHidden,
     creatingFolder: ops.creatingFolder,
     newFolderName: ops.newFolderName,
     creatingFile: ops.creatingFile,
     newFileName: ops.newFileName,
-    historyIndex: nav.historyIndex,
-    historyLength: nav.historyLength,
+    historyIndex,
+    historyLength,
     shortcuts,
     favorites,
     trashPath,
     trashItemCount,
     filteredItems,
-    breadcrumbs: nav.breadcrumbs,
+    breadcrumbs,
     contextMenu,
     contextMenuRef,
     editorOpen: editor.editorOpen,
@@ -253,11 +267,11 @@ export function useFilesDialog(open: boolean) {
     setEditorContent: editor.setEditorContent,
     setEditorOriginalContent: editor.setEditorOriginalContent,
     closeEditor: editor.closeEditor,
-    navigate: nav.navigate,
-    goToParent: () => nav.goToParent(content),
-    back: nav.back,
-    forward: nav.forward,
-    openNative: nav.openNative,
+    navigate,
+    goToParent: () => goToParent(content),
+    back,
+    forward,
+    openNative,
     openItem: handleItemOpen,
     openContextMenu: handleContextMenu,
     share: handleShare,

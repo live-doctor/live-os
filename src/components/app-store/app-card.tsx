@@ -32,8 +32,8 @@ export function AppCard({ app, installedApp, onInstallSuccess }: AppCardProps) {
 
   return (
     <>
-      <Card className="group relative overflow-hidden border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/0 text-white backdrop-blur-xl shadow-2xl shadow-black/30 transition-all hover:-translate-y-1 hover:border-white/30 hover:shadow-black/50 h-full flex flex-col">
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-blue-500/10 via-cyan-400/10 to-transparent" />
+      <Card className="group relative overflow-hidden border border-border bg-card/80 text-foreground backdrop-blur-xl shadow-lg transition-all hover:-translate-y-1 hover:border-border/70 hover:shadow-xl h-full flex flex-col">
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" />
 
         <div
           onClick={() => setIsDetailOpen(true)}
@@ -41,7 +41,7 @@ export function AppCard({ app, installedApp, onInstallSuccess }: AppCardProps) {
         >
           <div className="flex items-start gap-4">
             {/* App Icon */}
-            <div className="relative w-16 h-16 flex-shrink-0 rounded-2xl overflow-hidden border border-white/15 bg-white/10 shadow-inner shadow-black/30">
+            <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-border bg-secondary/60 shadow-inner">
               <Image
                 src={iconSrc}
                 alt={app.title}
@@ -54,17 +54,17 @@ export function AppCard({ app, installedApp, onInstallSuccess }: AppCardProps) {
             {/* App Info */}
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-base truncate group-hover:text-white">
+                <h3 className="font-semibold text-base truncate group-hover:text-foreground">
                   {app.title}
                 </h3>
                 {app.version && (
-                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] uppercase tracking-wide border border-white/10 text-white/70">
+                  <span className="rounded-lg bg-secondary/60 px-2 py-0.5 text-[11px] uppercase tracking-wide border border-border text-muted-foreground">
                     v{app.version}
                   </span>
                 )}
               </div>
 
-              <p className="text-sm text-zinc-200/90 line-clamp-2 leading-relaxed">
+              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                 {app.tagline || app.overview || "No description available"}
               </p>
 
@@ -72,14 +72,14 @@ export function AppCard({ app, installedApp, onInstallSuccess }: AppCardProps) {
                 {app.category?.slice(0, 2).map((cat, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-white/80"
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary/60 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
                   >
-                    <Sparkles className="h-3 w-3 text-blue-200" />
+                    <Sparkles className="h-3 w-3 text-primary" />
                     {cat}
                   </span>
                 ))}
                 {app.developer && (
-                  <span className="text-xs text-white/60 truncate">
+                  <span className="text-xs text-muted-foreground truncate">
                     by {app.developer}
                   </span>
                 )}
@@ -98,7 +98,7 @@ export function AppCard({ app, installedApp, onInstallSuccess }: AppCardProps) {
                       setIsDetailOpen(true);
                     }
               }
-              className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/20 shadow-lg shadow-black/20"
+              className="w-full bg-primary text-primary-foreground border border-primary/30 shadow-lg hover:bg-primary/90"
               size="sm"
             >
               {installedApp ? (

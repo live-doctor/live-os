@@ -3,6 +3,7 @@
 import { getAppComposeContent } from '@/app/actions/appstore';
 import { getAppWebUI, deployApp } from '@/app/actions/docker';
 import { Button } from '@/components/ui/button';
+import { dialog as dialogTokens } from '@/components/ui/design-tokens';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { Loader2, Settings2 } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
@@ -210,7 +212,14 @@ export function AppInstallDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[95vw] overflow-hidden p-4 sm:max-w-2xl sm:p-6">
+      <DialogContent
+        className={cn(
+          dialogTokens.content,
+          dialogTokens.size.full,
+          "sm:max-w-2xl overflow-hidden",
+          dialogTokens.padding.roomy,
+        )}
+      >
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="relative w-12 h-12 flex-shrink-0">
@@ -252,12 +261,12 @@ export function AppInstallDialog({
                         type="number"
                         value={port.published}
                         onChange={(e) => updatePort(index, e.target.value)}
-                        className="bg-white/10 border-white/20 text-sm"
+                        className="bg-secondary/60 border-border text-sm"
                         placeholder={port.container}
                         min="1024"
                         max="65535"
                       />
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         ({port.protocol})
                       </span>
                     </div>
@@ -279,7 +288,7 @@ export function AppInstallDialog({
                       <Input
                         value={volume.source}
                         onChange={(e) => updateVolume(index, e.target.value)}
-                        className="bg-white/10 border-white/20 text-sm"
+                        className="bg-secondary/60 border-border text-sm"
                         placeholder={`/DATA/AppData/${app.id}`}
                       />
                     </div>
@@ -299,7 +308,7 @@ export function AppInstallDialog({
                       <Input
                         value={env.value}
                         onChange={(e) => updateEnv(index, e.target.value)}
-                        className="bg-white/10 border-white/20 text-sm"
+                        className="bg-secondary/60 border-border text-sm"
                         placeholder={env.key}
                       />
                     </div>
@@ -315,7 +324,7 @@ export function AppInstallDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={installing || loadingCompose}
-            className="bg-white/10 border-white/20 hover:bg-white/20"
+            className="bg-secondary/60 border-border hover:bg-secondary"
           >
             Cancel
           </Button>
@@ -323,7 +332,7 @@ export function AppInstallDialog({
             variant="outline"
             onClick={handleCustomizeInstall}
             disabled={installing || loadingCompose || !app.composePath}
-            className="bg-white/10 border-white/20 hover:bg-white/20"
+            className="bg-secondary/60 border-border hover:bg-secondary"
           >
             {loadingCompose ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -335,7 +344,7 @@ export function AppInstallDialog({
         <Button
           onClick={handleInstall}
           disabled={installing || loadingCompose || Boolean(isProgressActive)}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {(installing || isProgressActive) && (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

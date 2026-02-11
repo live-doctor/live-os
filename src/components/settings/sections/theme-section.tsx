@@ -1,23 +1,25 @@
 import {
-  type BackgroundStyle,
-  type BorderStyle,
-  useAppearanceTheme,
+    type BackgroundStyle,
+    type BorderStyle,
+    type DialogBackground,
+    useAppearanceTheme,
 } from "@/components/theme/theme-provider";
 import { Button } from "@/components/ui/button";
+import { dialog as dialogTokens, surface, themeButton } from "@/components/ui/design-tokens";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
-import { surface } from "@/components/ui/design-tokens";
-import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 import { Palette } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useState } from "react";
 import {
-  SettingsSectionShell,
-  settingsActionButtonWideClass,
-  settingsCardClass,
+    SettingsSectionShell,
+    settingsActionButtonWideClass,
+    settingsCardClass,
 } from "./section-shell";
 
 const modeOptions = [
@@ -36,6 +38,13 @@ const backgroundOptions = [
   { value: "subtle", label: "Subtle" },
   { value: "balanced", label: "Balanced" },
   { value: "deep", label: "Deep" },
+] as const;
+
+const dialogBackgroundOptions = [
+  { value: "background", label: "Background", swatch: "bg-background" },
+  { value: "card", label: "Card", swatch: "bg-card" },
+  { value: "secondary", label: "Secondary", swatch: "bg-secondary" },
+  { value: "accent", label: "Accent", swatch: "bg-accent" },
 ] as const;
 
 function OptionGroup({
@@ -60,10 +69,8 @@ function OptionGroup({
               key={option.value}
               type="button"
               onClick={() => onSelect(option.value)}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
-                active
-                  ? "border-black/30 bg-black/15 text-black dark:border-white/40 dark:bg-white/20 dark:text-white"
-                  : "border-black/20 bg-black/5 text-black/70 hover:bg-black/10 dark:border-white/15 dark:bg-white/10 dark:text-white/75 dark:hover:bg-white/15"
+              className={`${themeButton.base} ${
+                active ? themeButton.active : themeButton.inactive
               }`}
             >
               {option.label}
@@ -77,8 +84,14 @@ function OptionGroup({
 
 export function ThemeSection() {
   const { theme, setTheme } = useTheme();
-  const { borderStyle, backgroundStyle, setBorderStyle, setBackgroundStyle } =
-    useAppearanceTheme();
+  const {
+    borderStyle,
+    backgroundStyle,
+    dialogBackground,
+    setBorderStyle,
+    setBackgroundStyle,
+    setDialogBackground,
+  } = useAppearanceTheme();
   const [open, setOpen] = useState(false);
 
   const modeLabel =
@@ -87,13 +100,15 @@ export function ThemeSection() {
     borderStyle.charAt(0).toUpperCase() + borderStyle.slice(1);
   const backgroundLabel =
     backgroundStyle.charAt(0).toUpperCase() + backgroundStyle.slice(1);
+  const dialogLabel =
+    dialogBackground.charAt(0).toUpperCase() + dialogBackground.slice(1);
 
   return (
     <>
       <div
         role="button"
         tabIndex={0}
-        className="cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/25 rounded-[12px]"
+        className="cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/25 rounded-lg"
         onClick={() => setOpen(true)}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -103,9 +118,9 @@ export function ThemeSection() {
         }}
       >
         <SettingsSectionShell
-          icon={<Palette className="h-4 w-4 text-white" />}
+          icon={<Palette className="h-4 w-4 text-foreground" />}
           title="Theme"
-          subtitle={`Mode: ${modeLabel} • Border: ${borderLabel} • Background: ${backgroundLabel}`}
+          subtitle={`Mode: ${modeLabel} • Border: ${borderLabel} • Background: ${backgroundLabel} • Dialog: ${dialogLabel}`}
           className={settingsCardClass}
           actions={
             <Button
@@ -122,9 +137,9 @@ export function ThemeSection() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn(dialogTokens.content, dialogTokens.size.sm)}>
           <DialogHeader>
-            <DialogTitle className="text-white">Theme</DialogTitle>
+            <DialogTitle>Theme</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <OptionGroup
@@ -145,6 +160,33 @@ export function ThemeSection() {
               selectedValue={backgroundStyle}
               onSelect={(value) => setBackgroundStyle(value as BackgroundStyle)}
             />
+            <div className="space-y-2">
+              <p className={`text-xs ${surface.labelMuted}`}>
+                Dialog background
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {dialogBackgroundOptions.map((option) => {
+                  const active = dialogBackground === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        setDialogBackground(option.value as DialogBackground)
+                      }
+                      className={`${themeButton.base} ${
+                        active ? themeButton.active : themeButton.inactive
+                      } flex items-center gap-2`}
+                    >
+                      <span
+                        className={`h-4 w-4 rounded-full border border-border ${option.swatch}`}
+                      />
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

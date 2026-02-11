@@ -21,7 +21,7 @@ export function WidgetContainer({
   return (
     <div
       className={cn(
-        `h-[160px] w-full overflow-hidden rounded-[12px] ring-1 ring-white/20 sm:rounded-[20px] ${surface.panel}`,
+        `h-[160px] w-full overflow-hidden rounded-lg ring-1 ring-white/20 sm:rounded-lg ${surface.panel}`,
         isClickable &&
           `cursor-pointer ${surface.panelInteractive} hover:scale-[1.02] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 active:scale-[0.99]`,
         selected && card.selected,

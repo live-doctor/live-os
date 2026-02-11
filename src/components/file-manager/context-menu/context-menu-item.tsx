@@ -23,12 +23,12 @@ export function ContextMenuItem({
 }: ContextMenuItemProps) {
   return (
     <button
-      className={`w-full rounded-md px-2.5 py-1.5 text-left text-[14px] leading-tight -tracking-[0.015em] transition-colors ${
+      className={`w-full rounded-lg px-2.5 py-1.5 text-left text-[14px] leading-tight -tracking-[0.015em] transition-colors ${
         disabled
-          ? 'cursor-default text-white/35'
+          ? 'cursor-default text-muted-foreground'
           : danger
-            ? 'text-red-400 hover:bg-white/6'
-            : 'text-white hover:bg-white/6'
+            ? 'text-destructive hover:bg-destructive/10'
+            : 'text-foreground hover:bg-secondary/60'
       }`}
       disabled={disabled}
       onClick={() => onClick(id)}
@@ -37,7 +37,11 @@ export function ContextMenuItem({
         <div className="flex min-w-0 items-center gap-2">
           <Icon
             className={`h-3.5 w-3.5 shrink-0 ${
-              disabled ? "text-white/28" : danger ? "text-red-400/90" : "text-white/60"
+              disabled
+                ? "text-muted-foreground"
+                : danger
+                  ? "text-destructive"
+                  : "text-muted-foreground"
             }`}
           />
           <span className="truncate font-medium">{label}</span>
@@ -45,7 +49,7 @@ export function ContextMenuItem({
         {shortcut && (
           <span
             className={`shrink-0 text-[11px] font-medium ${
-              disabled ? 'text-white/28' : 'text-white/45'
+              disabled ? 'text-muted-foreground' : 'text-muted-foreground'
             }`}
           >
             {shortcut}

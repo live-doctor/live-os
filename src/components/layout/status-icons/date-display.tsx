@@ -14,7 +14,7 @@ function DateDisplayComponent() {
 
   if (!now) {
     return (
-      <div className="flex items-center gap-2 text-white/80">
+      <div className="flex items-center gap-2 text-muted-foreground">
         <span className="text-xs font-medium" suppressHydrationWarning>
           --
         </span>
@@ -26,7 +26,7 @@ function DateDisplayComponent() {
   }
 
   return (
-    <div className="flex items-center gap-2 text-white/80">
+    <div className="flex items-center gap-2 text-muted-foreground">
       <span className="text-xs font-medium" suppressHydrationWarning>
         {now.toLocaleDateString(undefined, {
           weekday: "short",

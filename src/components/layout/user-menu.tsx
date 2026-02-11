@@ -1,6 +1,7 @@
 "use client";
 
 import { getCurrentUser, logout, type AuthUser } from "@/app/actions/auth";
+import { useRebootTracker } from "@/hooks/useRebootTracker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,9 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { HelpCircle, LogOut, Settings, User } from "lucide-react";
+import { HelpCircle, LogOut, Power, RotateCw, Settings, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface UserMenuProps {
   onOpenSettings: () => void;
@@ -20,6 +22,7 @@ interface UserMenuProps {
 export function UserMenu({ onOpenSettings }: UserMenuProps) {
   // Component now requires an onOpenSettings callback prop
   const router = useRouter();
+  const { requestReboot } = useRebootTracker();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   // TODO: issue with rerendering infinite loop
@@ -36,6 +39,18 @@ export function UserMenu({ onOpenSettings }: UserMenuProps) {
     router.refresh();
   };
 
+  const handleRestart = async () => {
+    const result = await requestReboot();
+    if (result.ok) toast.success("Restarting system...");
+    else toast.error(result.error ?? "Restart failed");
+  };
+
+  const handleShutdown = async () => {
+    const res = await fetch("/api/system/shutdown", { method: "POST" });
+    if (res.ok) toast.success("Shutting down...");
+    else toast.error("Shutdown failed");
+  };
+
   const openShortcuts = () => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(new CustomEvent("openShortcuts"));
@@ -48,46 +63,61 @@ export function UserMenu({ onOpenSettings }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center justify-center h-9 w-9 border rounded-full bg-black/30 backdrop-blur-xl border border-white/10 transition-all shadow-lg shadow-black/30">
-          <User className="h-4 w-4 text-white/80" />
+        <button className="flex items-center justify-center h-9 w-9 border rounded-lg bg-secondary/60 backdrop-blur-xl border border-border transition-all shadow-lg">
+          <User className="h-4 w-4 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-64 bg-black/80 border border-white/10 backdrop-blur-xl shadow-2xl shadow-black/40 rounded-2xl p-2"
+        className="w-64 bg-popover/95 border border-border backdrop-blur-xl shadow-2xl rounded-lg p-2"
       >
-        <DropdownMenuLabel className="text-zinc-100 px-2 py-1.5">
+        <DropdownMenuLabel className="text-foreground px-2 py-1.5">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-sm font-semibold uppercase text-white/80">
+            <div className="h-10 w-10 rounded-lg bg-secondary/60 border border-border flex items-center justify-center text-sm font-semibold uppercase text-foreground">
               {user.username?.slice(0, 2) || "U"}
             </div>
             <div className="flex flex-col space-y-0.5">
               <p className="text-sm font-semibold">{user.username}</p>
-              <p className="text-[11px] text-zinc-400 font-normal tracking-wide uppercase">
+              <p className="text-[11px] text-muted-foreground font-normal tracking-wide uppercase">
                 {user.role}
               </p>
             </div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuSeparator className="bg-border/70" />
         <DropdownMenuItem
-          className="text-zinc-100 focus:bg-white/10 focus:text-white cursor-pointer rounded-xl px-3 py-2"
+          className="text-foreground focus:bg-secondary/60 focus:text-foreground cursor-pointer rounded-lg px-3 py-2"
           onClick={onOpenSettings}
         >
-          <Settings className="mr-2 h-4 w-4 text-white/70" />
+          <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
           Settings
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={openShortcuts}
-          className="text-zinc-100 focus:bg-white/10 focus:text-white cursor-pointer rounded-xl px-3 py-2"
+          className="text-foreground focus:bg-secondary/60 focus:text-foreground cursor-pointer rounded-lg px-3 py-2"
         >
-          <HelpCircle className="mr-2 h-4 w-4 text-white/70" />
+          <HelpCircle className="mr-2 h-4 w-4 text-muted-foreground" />
           Shortcut help
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuSeparator className="bg-border/70" />
+        <DropdownMenuItem
+          onClick={handleRestart}
+          className="text-foreground focus:bg-secondary/60 focus:text-foreground cursor-pointer rounded-lg px-3 py-2"
+        >
+          <RotateCw className="mr-2 h-4 w-4 text-muted-foreground" />
+          Restart
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={handleShutdown}
+          className="text-red-600 dark:text-red-300 focus:bg-red-500/10 focus:text-red-600 cursor-pointer rounded-lg px-3 py-2"
+        >
+          <Power className="mr-2 h-4 w-4" />
+          Shut down
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-border/70" />
         <DropdownMenuItem
           onClick={handleLogout}
-          className="text-red-400 focus:bg-red-500/10 focus:text-red-300 cursor-pointer rounded-xl px-3 py-2"
+          className="text-red-600 dark:text-red-400 focus:bg-red-500/10 focus:text-red-600 cursor-pointer rounded-lg px-3 py-2"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Log out

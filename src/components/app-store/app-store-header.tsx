@@ -16,7 +16,7 @@ interface AppStoreHeaderProps {
 }
 
 const pillBase =
-  "inline-flex h-[38px] shrink-0 items-center justify-center rounded-full px-[14px] text-[14px] font-medium leading-none tracking-[-0.02em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35";
+  "inline-flex h-[38px] shrink-0 items-center justify-center rounded-lg px-[14px] text-[14px] font-medium leading-none tracking-[-0.02em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 export function AppStoreHeader({
   searchQuery,
@@ -40,17 +40,17 @@ export function AppStoreHeader({
             variant="ghost"
             size="icon"
             onClick={onOpenSettings}
-            className="h-[38px] w-[38px] rounded-full border border-white/12 bg-white/8 text-white/70 transition-colors hover:border-white/20 hover:bg-white/14 hover:text-white"
+            className="h-[38px] w-[38px] rounded-lg border border-border bg-secondary/60 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <MoreHorizontal className="h-5 w-5" />
           </Button>
-          <div className="flex min-w-0 items-center rounded-full border border-white/10 bg-white/8 pl-3 transition-colors hover:border-white/20 hover:bg-white/12 focus-within:border-white/25 focus-within:bg-white/14">
-            <Search className="h-4 w-4 shrink-0 text-white/45" />
+          <div className="flex min-w-0 items-center rounded-lg border border-border bg-secondary/60 pl-3 transition-colors hover:bg-secondary focus-within:border-ring/50 focus-within:bg-secondary">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <Input
               placeholder="Search apps"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-[36px] w-[170px] border-0 bg-transparent px-2 py-0 text-[14px] text-white placeholder:text-white/40 focus-visible:ring-0 md:w-[220px]"
+              className="h-[36px] w-[170px] border-0 bg-transparent px-2 py-0 text-[14px] text-foreground placeholder:text-muted-foreground focus-visible:ring-0 md:w-[220px]"
             />
           </div>
         </div>
@@ -63,8 +63,8 @@ export function AppStoreHeader({
             onClick={() => onSelectCategory(category)}
             className={`${pillBase} ${
               selectedCategory === category
-                ? "bg-white text-black ring-1 ring-white/40"
-                : "border border-white/18 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/16"
+                ? "border border-primary/30 bg-primary/10 text-foreground ring-1 ring-primary/20"
+                : "border border-border bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
             }`}
           >
             {categoryLabel(category)}

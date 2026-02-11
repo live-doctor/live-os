@@ -34,12 +34,12 @@ export function PinInputForm({
       >
         {/* User prompt */}
         <div className="mb-4 flex items-center gap-3">
-          <div className={`${iconBox.md} rounded-full`}>
-            <User className="h-5 w-5 text-white" />
+          <div className={iconBox.md}>
+            <User className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
             <p className={text.subdued}>Enter your {PIN_LENGTH}-digit PIN</p>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Unlock Homeio for {username}
             </p>
           </div>
@@ -59,32 +59,32 @@ export function PinInputForm({
               <InputOTPSlot
                 mask
                 index={0}
-                className="h-12 w-12 rounded-xl border border-white/20 bg-white/5 text-xl text-white backdrop-blur focus:border-white/40"
+                className="h-12 w-12 rounded-lg border border-border bg-secondary/60 text-xl text-foreground backdrop-blur focus:border-ring/50"
               />
               <InputOTPSlot
                 mask
                 index={1}
-                className="h-12 w-12 rounded-xl border border-white/20 bg-white/5 text-xl text-white backdrop-blur focus:border-white/40"
+                className="h-12 w-12 rounded-lg border border-border bg-secondary/60 text-xl text-foreground backdrop-blur focus:border-ring/50"
               />
               <InputOTPSlot
                 mask
                 index={2}
-                className="h-12 w-12 rounded-xl border border-white/20 bg-white/5 text-xl text-white backdrop-blur focus:border-white/40"
+                className="h-12 w-12 rounded-lg border border-border bg-secondary/60 text-xl text-foreground backdrop-blur focus:border-ring/50"
               />
               <InputOTPSlot
                 mask
                 index={3}
-                className="h-12 w-12 rounded-xl border border-white/20 bg-white/5 text-xl text-white backdrop-blur focus:border-white/40"
+                className="h-12 w-12 rounded-lg border border-border bg-secondary/60 text-xl text-foreground backdrop-blur focus:border-ring/50"
               />
               <InputOTPSlot
                 mask
                 index={4}
-                className="h-12 w-12 rounded-xl border border-white/20 bg-white/5 text-xl text-white backdrop-blur focus:border-white/40"
+                className="h-12 w-12 rounded-lg border border-border bg-secondary/60 text-xl text-foreground backdrop-blur focus:border-ring/50"
               />
               <InputOTPSlot
                 mask
                 index={5}
-                className="h-12 w-12 rounded-xl border border-white/20 bg-white/5 text-xl text-white backdrop-blur focus:border-white/40"
+                className="h-12 w-12 rounded-lg border border-border bg-secondary/60 text-xl text-foreground backdrop-blur focus:border-ring/50"
               />
             </InputOTPGroup>
           </InputOTP>

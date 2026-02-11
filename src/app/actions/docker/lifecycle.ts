@@ -327,10 +327,19 @@ export async function updateApp(containerName: string): Promise<boolean> {
   }
 }
 
+type UninstallOptions = {
+  removeAppData?: boolean;
+};
+
 /**
- * Uninstall an app (remove container and volumes)
+ * Uninstall an app (remove container and volumes).
+ * By default, app data is moved to /DATA/AppTrash. Set removeAppData=true
+ * to permanently delete /DATA/AppData/<appId>.
  */
-export async function uninstallApp(appId: string): Promise<boolean> {
+export async function uninstallApp(
+  appId: string,
+  options?: UninstallOptions,
+): Promise<boolean> {
   console.log(`[Docker] uninstallApp: Uninstalling app "${appId}"...`);
 
   try {
@@ -379,14 +388,9 @@ export async function uninstallApp(appId: string): Promise<boolean> {
       }
     }
 
+    const removeAppData = options?.removeAppData === true;
     const appDataPath = path.join("/DATA/AppData", appId);
-    try {
-      const trashDir = path.join(TRASH_ROOT, `${appId}_${Date.now()}`);
-      await fs.mkdir(TRASH_ROOT, { recursive: true });
-      await fs.rename(appDataPath, trashDir);
-      console.log(`[Docker] uninstallApp: Moved data to trash ${trashDir}`);
-    } catch {
-      // rename may fail cross-device; fall back to permanent delete
+    if (removeAppData) {
       try {
         await fs.rm(appDataPath, { recursive: true, force: true });
         console.log(`[Docker] uninstallApp: Removed data dir ${appDataPath}`);
@@ -394,6 +398,18 @@ export async function uninstallApp(appId: string): Promise<boolean> {
         console.warn(
           `[Docker] uninstallApp: Failed to remove data dir ${appDataPath}:`,
           cleanupError,
+        );
+      }
+    } else {
+      try {
+        const trashDir = path.join(TRASH_ROOT, `${appId}_${Date.now()}`);
+        await fs.mkdir(TRASH_ROOT, { recursive: true });
+        await fs.rename(appDataPath, trashDir);
+        console.log(`[Docker] uninstallApp: Moved data to trash ${trashDir}`);
+      } catch (moveError) {
+        console.warn(
+          `[Docker] uninstallApp: Failed to move data dir ${appDataPath} to trash. Keeping it in place:`,
+          moveError,
         );
       }
     }

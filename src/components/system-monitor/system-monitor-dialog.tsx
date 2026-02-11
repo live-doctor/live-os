@@ -9,6 +9,11 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  HOMEIO_DIALOG_CLOSE_BUTTON_CLASS,
+  HOMEIO_DIALOG_SHELL_CLASS,
+} from "@/components/ui/dialog-chrome";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { useEffect, useRef, useState } from "react";
@@ -113,12 +118,13 @@ export function SystemMonitorDialog({
   const handleCardClick = (metric: SelectedMetric) => {
     setSelectedMetric(selectedMetric === metric ? null : metric);
   };
+  const loadingMetrics = !systemStats || !storageStats || !networkStats;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[92vh] max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl sm:max-w-[1280px]"
+        className={HOMEIO_DIALOG_SHELL_CLASS}
       >
         <DialogTitle className="sr-only">Live Usage</DialogTitle>
         <DialogDescription className="sr-only">
@@ -128,7 +134,7 @@ export function SystemMonitorDialog({
           variant="ghost"
           size="icon"
           onClick={() => onOpenChange(false)}
-          className="absolute right-5 top-5 z-20 h-8 w-8 cursor-pointer rounded-full border border-white/15 bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
+          className={HOMEIO_DIALOG_CLOSE_BUTTON_CLASS}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -140,84 +146,110 @@ export function SystemMonitorDialog({
           viewportClassName="homeio-scrollarea-fit h-full w-full"
         >
           <div className="min-w-0 space-y-3 px-3 pb-6 md:px-[28px] xl:px-[40px]">
-            {/* Top 4 Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <MetricChartCard
-                label="CPU"
-                value={`${currentSystemStats.cpu.usage}%`}
-                subtitle="Click to view by app"
-                color={getMetricColor(currentSystemStats.cpu.usage)}
-                gradientId="cpuGradient"
-                data={cpuHistory}
-                selected={selectedMetric === "cpu"}
-                clickable
-                onClick={() => handleCardClick("cpu")}
-              />
+            {loadingMetrics ? (
+              <>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                      key={`metric-skeleton-${index}`}
+                      className="space-y-2 rounded-lg border border-border bg-secondary/30 p-4"
+                    >
+                      <Skeleton className="h-3 w-14" />
+                      <Skeleton className="h-7 w-20" />
+                      <Skeleton className="h-3 w-28" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ))}
+                </div>
+                <Skeleton className="h-[180px] w-full" />
+                <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-3">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <Skeleton key={`app-row-skeleton-${index}`} className="h-9 w-full" />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Top 4 Metrics Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <MetricChartCard
+                    label="CPU"
+                    value={`${currentSystemStats.cpu.usage}%`}
+                    subtitle="Click to view by app"
+                    color={getMetricColor(currentSystemStats.cpu.usage)}
+                    gradientId="cpuGradient"
+                    data={cpuHistory}
+                    selected={selectedMetric === "cpu"}
+                    clickable
+                    onClick={() => handleCardClick("cpu")}
+                  />
 
-              <MetricChartCard
-                label="Memory"
-                value={
-                  formatBytes(currentSystemStats.memory.used).split(" ")[0]
-                }
-                unit="GB"
-                subtitle={`${formatBytes(currentSystemStats.memory.total)} total • Click to view by app`}
-                color={colors.memory}
-                gradientId="memoryGradient"
-                data={memoryHistory}
-                selected={selectedMetric === "memory"}
-                clickable
-                onClick={() => handleCardClick("memory")}
-              />
+                  <MetricChartCard
+                    label="Memory"
+                    value={
+                      formatBytes(currentSystemStats.memory.used).split(" ")[0]
+                    }
+                    unit="GB"
+                    subtitle={`${formatBytes(currentSystemStats.memory.total)} total • Click to view by app`}
+                    color={colors.memory}
+                    gradientId="memoryGradient"
+                    data={memoryHistory}
+                    selected={selectedMetric === "memory"}
+                    clickable
+                    onClick={() => handleCardClick("memory")}
+                  />
 
-              <MetricChartCard
-                label="GPU"
-                value={`${Math.round(gpuUsage)}%`}
-                subtitle={gpuName}
-                color={colors.gpu}
-                gradientId="gpuGradient"
-                data={gpuHistory}
-              />
+                  <MetricChartCard
+                    label="GPU"
+                    value={`${Math.round(gpuUsage)}%`}
+                    subtitle={gpuName}
+                    color={colors.gpu}
+                    gradientId="gpuGradient"
+                    data={gpuHistory}
+                  />
 
-              <MetricChartCard
-                label="Storage"
-                value={currentStorageStats.used.toFixed(1)}
-                unit="GB"
-                subtitle={`${(currentStorageStats.total - currentStorageStats.used).toFixed(0)} GB left • Click to view by app`}
-                color={colors.storage}
-                gradientId="storageGradient"
-                data={storageHistory}
-                selected={selectedMetric === "storage"}
-                clickable
-                onClick={() => handleCardClick("storage")}
-              />
-            </div>
+                  <MetricChartCard
+                    label="Storage"
+                    value={currentStorageStats.used.toFixed(1)}
+                    unit="GB"
+                    subtitle={`${(currentStorageStats.total - currentStorageStats.used).toFixed(0)} GB left • Click to view by app`}
+                    color={colors.storage}
+                    gradientId="storageGradient"
+                    data={storageHistory}
+                    selected={selectedMetric === "storage"}
+                    clickable
+                    onClick={() => handleCardClick("storage")}
+                  />
+                </div>
 
-            {/* Network Chart */}
-            <NetworkChart
-              uploadHistory={networkUploadHistory}
-              downloadHistory={networkDownloadHistory}
-              currentUpload={currentNetworkStats.uploadMbps}
-              currentDownload={currentNetworkStats.downloadMbps}
-              selected={selectedMetric === "network"}
-              clickable
-              onClick={() => handleCardClick("network")}
-            />
+                {/* Network Chart */}
+                <NetworkChart
+                  uploadHistory={networkUploadHistory}
+                  downloadHistory={networkDownloadHistory}
+                  currentUpload={currentNetworkStats.uploadMbps}
+                  currentDownload={currentNetworkStats.downloadMbps}
+                  selected={selectedMetric === "network"}
+                  clickable
+                  onClick={() => handleCardClick("network")}
+                />
 
-            {/* Applications List */}
-            <AppList
-              apps={[
-                {
-                  id: "system",
-                  name: "System",
-                  cpuUsage: currentSystemStats.cpu.usage,
-                  memoryUsage: currentSystemStats.memory.used,
-                },
-                ...runningApps,
-              ]}
-              connected={connected}
-              activeMetric={selectedMetric}
-              systemStorageLabel={`${currentStorageStats.used.toFixed(1)} GB`}
-            />
+                {/* Applications List */}
+                <AppList
+                  apps={[
+                    {
+                      id: "system",
+                      name: "System",
+                      cpuUsage: currentSystemStats.cpu.usage,
+                      memoryUsage: currentSystemStats.memory.used,
+                    },
+                    ...runningApps,
+                  ]}
+                  connected={connected}
+                  activeMetric={selectedMetric}
+                  systemStorageLabel={`${currentStorageStats.used.toFixed(1)} GB`}
+                />
+              </>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

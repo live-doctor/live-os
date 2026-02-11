@@ -24,7 +24,7 @@ export function AppScreenshots({ images, loading = false }: AppScreenshotsProps)
 
   if (validImages.length === 0) {
     return loading ? (
-      <p className="text-xs text-white/60">Loading previews…</p>
+      <p className="text-xs text-muted-foreground">Loading previews…</p>
     ) : null;
   }
 
@@ -37,7 +37,7 @@ export function AppScreenshots({ images, loading = false }: AppScreenshotsProps)
             key={index}
             type="button"
             onClick={() => setActiveIndex(index)}
-            className="relative w-32 h-20 sm:w-48 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+            className="relative w-32 h-20 sm:w-48 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden border border-border bg-secondary/60 focus:outline-none focus:ring-2 focus:ring-ring/50"
             title="Open preview"
           >
             <Image

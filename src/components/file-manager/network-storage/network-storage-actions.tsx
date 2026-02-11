@@ -20,10 +20,10 @@ export function NetworkStorageActions({
         type="button"
         variant="ghost"
         onClick={onAddManual}
-        className="h-[108px] w-[120px] rounded-xl border border-white/15 bg-white/5 p-3 text-white/80 hover:bg-white/10"
+        className="h-[108px] w-[120px] rounded-lg border border-border bg-secondary/40 p-3 text-foreground hover:bg-secondary"
       >
         <div className="flex h-full w-full flex-col items-center justify-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-secondary/60 ring-1 ring-border">
             <Plus className="h-5 w-5" />
           </span>
           <span className="text-[12px] font-medium">Add manually</span>
@@ -34,10 +34,10 @@ export function NetworkStorageActions({
         variant="ghost"
         onClick={onRefresh}
         disabled={busy}
-        className="h-[108px] w-[120px] rounded-xl border border-white/15 bg-white/5 p-3 text-white/80 hover:bg-white/10 disabled:opacity-70"
+        className="h-[108px] w-[120px] rounded-lg border border-border bg-secondary/40 p-3 text-foreground hover:bg-secondary disabled:opacity-70"
       >
         <div className="flex h-full w-full flex-col items-center justify-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-secondary/60 ring-1 ring-border">
             {busy ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (

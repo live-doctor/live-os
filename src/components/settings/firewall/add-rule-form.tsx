@@ -21,7 +21,7 @@ const DEFAULT_FORM: AddRuleFormData = {
 };
 
 const selectClass =
-  "h-9 w-full bg-white/5 border border-white/10 rounded-md px-3 text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-white/20";
+  "h-9 w-full bg-input border border-border rounded-md px-3 text-foreground text-sm appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring/30";
 
 export function AddRuleForm({ onAdd, loading }: AddRuleFormProps) {
   const [form, setForm] = useState<AddRuleFormData>(DEFAULT_FORM);
@@ -34,19 +34,22 @@ export function AddRuleForm({ onAdd, loading }: AddRuleFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/10">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 p-4 rounded-xl bg-secondary/40 border border-border"
+    >
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs text-white/60">Port</Label>
+          <Label className="text-xs text-muted-foreground">Port</Label>
           <Input
             value={form.port}
             onChange={(e) => setForm({ ...form, port: e.target.value })}
             placeholder="80 or 8000:8080"
-            className="h-9 bg-white/5 border-white/10 text-white text-sm placeholder:text-white/30"
+            className="h-9 bg-input border-border text-foreground text-sm placeholder:text-muted-foreground"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-white/60">Protocol</Label>
+          <Label className="text-xs text-muted-foreground">Protocol</Label>
           <select
             value={form.protocol}
             onChange={(e) => setForm({ ...form, protocol: e.target.value as AddRuleFormData["protocol"] })}
@@ -58,7 +61,7 @@ export function AddRuleForm({ onAdd, loading }: AddRuleFormProps) {
           </select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-white/60">Action</Label>
+          <Label className="text-xs text-muted-foreground">Action</Label>
           <select
             value={form.action}
             onChange={(e) => setForm({ ...form, action: e.target.value as AddRuleFormData["action"] })}
@@ -71,16 +74,16 @@ export function AddRuleForm({ onAdd, loading }: AddRuleFormProps) {
           </select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-white/60">From</Label>
+          <Label className="text-xs text-muted-foreground">From</Label>
           <Input
             value={form.from}
             onChange={(e) => setForm({ ...form, from: e.target.value })}
             placeholder="any or IP/CIDR"
-            className="h-9 bg-white/5 border-white/10 text-white text-sm placeholder:text-white/30"
+            className="h-9 bg-input border-border text-foreground text-sm placeholder:text-muted-foreground"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-white/60">Direction</Label>
+          <Label className="text-xs text-muted-foreground">Direction</Label>
           <select
             value={form.direction}
             onChange={(e) => setForm({ ...form, direction: e.target.value as AddRuleFormData["direction"] })}
@@ -94,7 +97,7 @@ export function AddRuleForm({ onAdd, loading }: AddRuleFormProps) {
       <Button
         type="submit"
         disabled={loading || !form.port.trim()}
-        className="w-full bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30"
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
       >
         <Plus className="h-4 w-4 mr-2" />
         Add Rule

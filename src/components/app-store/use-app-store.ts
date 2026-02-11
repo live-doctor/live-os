@@ -72,11 +72,21 @@ export function useAppStore(open: boolean) {
   }, [apps, storeMap]);
 
   const filteredApps = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
     return apps.filter((app) => {
       const matchesSearch =
-        searchQuery === "" ||
-        app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.tagline?.toLowerCase().includes(searchQuery.toLowerCase());
+        normalizedQuery === "" ||
+        [
+          app.id,
+          app.title,
+          app.name,
+          app.tagline,
+          app.developer,
+          app.repo,
+          app.website,
+        ].some((value) =>
+          value?.toLowerCase().includes(normalizedQuery),
+        );
       const matchesCategory =
         selectedCategory === "discover" ||
         selectedCategory === "all" ||

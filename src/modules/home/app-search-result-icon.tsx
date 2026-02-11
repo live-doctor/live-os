@@ -11,7 +11,7 @@ type AppSearchResultIconProps = {
 
 export function AppSearchResultIcon({ icon, title }: AppSearchResultIconProps) {
   return (
-    <span className="relative block h-full w-full overflow-hidden rounded-[6px] sm:rounded-[8px]">
+    <span className="relative block h-full w-full overflow-hidden rounded-[6px] sm:rounded-lg">
       <Image
         src={icon || DEFAULT_APP_ICON}
         alt={`${title} icon`}

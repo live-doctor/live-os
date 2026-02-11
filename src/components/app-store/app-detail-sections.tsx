@@ -9,11 +9,11 @@ interface AboutCardProps {
 
 export function AppDetailAboutCard({ overview, tagline }: AboutCardProps) {
   return (
-    <section className="rounded-[12px] bg-white/4 px-5 py-[30px] md:px-[26px] md:py-[36px]">
-      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-white/50">
+    <section className="rounded-lg bg-secondary/40 px-5 py-[30px] md:px-[26px] md:py-[36px]">
+      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-muted-foreground">
         About
       </h2>
-      <div className="mt-2.5 text-[15px] leading-snug text-white/85">
+      <div className="mt-2.5 text-[15px] leading-snug text-foreground">
         <p className="whitespace-pre-wrap break-words">{overview || tagline}</p>
       </div>
     </section>
@@ -36,21 +36,23 @@ export function AppDetailWhatsNewCard({
   if (!hasReleaseNotes && !hasChangelog) return null;
 
   return (
-    <section className="rounded-[12px] bg-white/4 px-5 py-[30px] md:px-[26px] md:py-[36px]">
-      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-white/50">
+    <section className="rounded-lg bg-secondary/40 px-5 py-[30px] md:px-[26px] md:py-[36px]">
+      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-muted-foreground">
         What&apos;s New
       </h2>
       {version && <h3 className="mt-2.5 text-[16px] font-semibold">Version {version}</h3>}
       {hasReleaseNotes && (
-        <div className="mt-2.5 text-[15px] leading-snug text-white/85">
+        <div className="mt-2.5 text-[15px] leading-snug text-foreground">
           <p className="whitespace-pre-wrap break-words">{releaseNotes}</p>
         </div>
       )}
       {hasChangelog && (
-        <ul className="mt-3 space-y-2 text-[14px] leading-snug text-white/80">
+        <ul className="mt-3 space-y-2 text-[14px] leading-snug text-foreground">
           {changelog.slice(0, 8).map((entry, index) => (
             <li key={`${entry.date ?? "no-date"}-${index}`}>
-              {entry.date ? <span className="text-white/50">{entry.date}: </span> : null}
+              {entry.date ? (
+                <span className="text-muted-foreground">{entry.date}: </span>
+              ) : null}
               <span>{entry.desc}</span>
             </li>
           ))}
@@ -86,18 +88,18 @@ export function AppDetailInfoCard({
   const numberFormatter = new Intl.NumberFormat();
 
   return (
-    <section className="rounded-[12px] bg-white/4 px-5 py-[30px] md:px-[26px] md:py-[36px]">
-      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-white/50">
+    <section className="rounded-lg bg-secondary/40 px-5 py-[30px] md:px-[26px] md:py-[36px]">
+      <h2 className="text-[12px] font-semibold uppercase tracking-normal text-muted-foreground">
         Info
       </h2>
       <dl className="mt-5 space-y-3">
         <div className="flex items-center gap-2">
-          <dt className="flex-1 text-[14px] text-white/50">Version</dt>
+          <dt className="flex-1 text-[14px] text-muted-foreground">Version</dt>
           <dd className="text-right text-[14px] font-medium">{version || "Unknown"}</dd>
         </div>
         {repo && (
           <div className="flex items-center gap-2">
-            <dt className="flex-1 text-[14px] text-white/50">Source Code</dt>
+            <dt className="flex-1 text-[14px] text-muted-foreground">Source Code</dt>
             <dd className="text-right text-[14px] font-medium">
               <a
                 href={repo}
@@ -111,7 +113,7 @@ export function AppDetailInfoCard({
           </div>
         )}
         <div className="flex items-center gap-2">
-          <dt className="flex-1 text-[14px] text-white/50">Developer</dt>
+          <dt className="flex-1 text-[14px] text-muted-foreground">Developer</dt>
           <dd className="text-right text-[14px] font-medium">
             {website ? (
               <a
@@ -128,12 +130,12 @@ export function AppDetailInfoCard({
           </dd>
         </div>
         <div className="flex items-center gap-2">
-          <dt className="flex-1 text-[14px] text-white/50">Compatibility</dt>
+          <dt className="flex-1 text-[14px] text-muted-foreground">Compatibility</dt>
           <dd className="text-right text-[14px] font-medium">Compatible</dd>
         </div>
         {typeof stable === "boolean" && (
           <div className="flex items-center gap-2">
-            <dt className="flex-1 text-[14px] text-white/50">Stable</dt>
+            <dt className="flex-1 text-[14px] text-muted-foreground">Stable</dt>
             <dd className="text-right text-[14px] font-medium">
               {stable ? "Yes" : "No"}
             </dd>
@@ -141,7 +143,7 @@ export function AppDetailInfoCard({
         )}
         {typeof deprecated === "boolean" && (
           <div className="flex items-center gap-2">
-            <dt className="flex-1 text-[14px] text-white/50">Deprecated</dt>
+            <dt className="flex-1 text-[14px] text-muted-foreground">Deprecated</dt>
             <dd className="text-right text-[14px] font-medium">
               {deprecated ? "Yes" : "No"}
             </dd>
@@ -149,7 +151,7 @@ export function AppDetailInfoCard({
         )}
         {typeof stars === "number" && (
           <div className="flex items-center gap-2">
-            <dt className="flex-1 text-[14px] text-white/50">Stars</dt>
+            <dt className="flex-1 text-[14px] text-muted-foreground">Stars</dt>
             <dd className="text-right text-[14px] font-medium">
               {numberFormatter.format(stars)}
             </dd>
@@ -157,7 +159,7 @@ export function AppDetailInfoCard({
         )}
         {typeof monthlyPulls === "number" && (
           <div className="flex items-center gap-2">
-            <dt className="flex-1 text-[14px] text-white/50">Monthly pulls</dt>
+            <dt className="flex-1 text-[14px] text-muted-foreground">Monthly pulls</dt>
             <dd className="text-right text-[14px] font-medium">
               {numberFormatter.format(monthlyPulls)}
             </dd>

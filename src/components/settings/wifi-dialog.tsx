@@ -1,19 +1,26 @@
 "use client";
 
 import {
-  connectToWifi,
-  listWifiNetworks,
-  setWifiRadio,
-  getWifiRadioState,
-  type WifiNetwork,
-  type WifiRadioState,
+    connectToWifi,
+    getWifiRadioState,
+    listWifiNetworks,
+    setWifiRadio,
+    type WifiNetwork,
+    type WifiRadioState,
 } from "@/app/actions/network";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { dialog as dialogTokens } from "@/components/ui/design-tokens";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { WifiDialogHeader, NetworkItem, StatusMessage } from "./wifi";
+import { NetworkItem, StatusMessage, WifiDialogHeader } from "./wifi";
 
 type WifiDialogProps = {
   open: boolean;
@@ -59,7 +66,10 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
         setWarning(result.warning);
       }
     } catch (err) {
-      setScanError("Failed to load Wi-Fi networks: " + ((err as Error)?.message || "Unknown error"));
+      setScanError(
+        "Failed to load Wi-Fi networks: " +
+          ((err as Error)?.message || "Unknown error"),
+      );
     } finally {
       setLoading(false);
     }
@@ -96,7 +106,10 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
 
     setConnecting(true);
     setConnectError(null);
-    const result = await connectToWifi(network.ssid, needsPassword ? password : undefined);
+    const result = await connectToWifi(
+      network.ssid,
+      needsPassword ? password : undefined,
+    );
     setConnecting(false);
 
     if (result.success) {
@@ -114,7 +127,7 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[760px] p-0">
+      <DialogContent className={cn(dialogTokens.content, dialogTokens.size.lg, dialogTokens.padding.none)}>
         <DialogTitle className="sr-only">Wi-Fi</DialogTitle>
         <DialogDescription className="sr-only">
           Connect to and manage available Wi-Fi networks.
@@ -130,7 +143,7 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
             />
             {/* Loading state */}
             {loading && (
-              <div className="flex items-center gap-2 rounded-[12px] bg-white/6 p-4 text-[13px] text-white/70">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/40 p-4 text-[13px] text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Scanning for networks...
               </div>
@@ -138,17 +151,29 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
 
             {/* Error state */}
             {!loading && scanError && (
-              <StatusMessage type="error" title="WiFi Scan Failed" message={scanError} />
+              <StatusMessage
+                type="error"
+                title="WiFi Scan Failed"
+                message={scanError}
+              />
             )}
 
             {/* Warning state */}
             {!loading && !scanError && warning && networks.length === 0 && (
-              <StatusMessage type="warning" title="No Networks Found" message={warning} />
+              <StatusMessage
+                type="warning"
+                title="No Networks Found"
+                message={warning}
+              />
             )}
 
             {/* Empty state */}
             {!loading && !scanError && !warning && networks.length === 0 && (
-              <StatusMessage type="empty" title="" message="No networks found." />
+              <StatusMessage
+                type="empty"
+                title=""
+                message="No networks found."
+              />
             )}
 
             {/* Network list */}
@@ -168,7 +193,7 @@ export function WifiDialog({ open, onOpenChange }: WifiDialogProps) {
 
             {/* Connect error */}
             {connectError && (
-              <div className="rounded-[12px] border border-red-500/30 bg-red-500/10 px-3 py-2">
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
                 <p className="text-[13px] text-red-300">{connectError}</p>
               </div>
             )}

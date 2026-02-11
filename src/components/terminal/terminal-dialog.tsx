@@ -22,8 +22,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { ChevronDown, Container, Server, X } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Terminal } from "xterm";
 import type { FitAddon } from "xterm-addon-fit";
@@ -36,9 +38,64 @@ interface TerminalDialogProps {
 
 export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
   const { installedApps } = useSystemStatus({ fast: true, enabled: open });
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
   const terminalRef = useRef<HTMLDivElement>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string>("host");
+  const [terminalReady, setTerminalReady] = useState(false);
+
+  const terminalTheme = useMemo(
+    () =>
+      isDark
+        ? {
+            background: "#00000000",
+            foreground: "#E6EAF2",
+            cursor: "#9FB3FF",
+            cursorAccent: "#11172A",
+            selectionBackground: "#7F90FF40",
+            black: "#151A2E",
+            red: "#FF6E7D",
+            green: "#7BE3A6",
+            yellow: "#F4CA78",
+            blue: "#87A9FF",
+            magenta: "#D39BFF",
+            cyan: "#82DBFF",
+            white: "#DFE6F6",
+            brightBlack: "#5A6785",
+            brightRed: "#FF8D98",
+            brightGreen: "#98F0BE",
+            brightYellow: "#FFD995",
+            brightBlue: "#A6BEFF",
+            brightMagenta: "#E0B6FF",
+            brightCyan: "#A2E6FF",
+            brightWhite: "#F4F7FF",
+          }
+        : {
+            background: "#00000000",
+            foreground: "#2D3748",
+            cursor: "#E05D38",
+            cursorAccent: "#FFFFFF",
+            selectionBackground: "#E05D3826",
+            black: "#1F2937",
+            red: "#DC2626",
+            green: "#16A34A",
+            yellow: "#CA8A04",
+            blue: "#2563EB",
+            magenta: "#7C3AED",
+            cyan: "#0891B2",
+            white: "#F9FAFB",
+            brightBlack: "#64748B",
+            brightRed: "#EF4444",
+            brightGreen: "#22C55E",
+            brightYellow: "#F59E0B",
+            brightBlue: "#3B82F6",
+            brightMagenta: "#8B5CF6",
+            brightCyan: "#06B6D4",
+            brightWhite: "#FFFFFF",
+          },
+    [isDark],
+  );
 
   const targets = useMemo(() => {
     const hostTarget = {
@@ -64,7 +121,11 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
   const activeTarget = targets.find((t) => t.id === targetId) ?? targets[0];
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setTerminalReady(false);
+      return;
+    }
+    setTerminalReady(false);
 
     let disposed = false;
     let term: Terminal | null = null;
@@ -97,33 +158,11 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
         cursorBlink: true,
         fontSize: 12.5,
         fontFamily:
-          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+          'var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
         fontWeight: 400,
         allowTransparency: true,
         letterSpacing: 0.1,
-        theme: {
-          background: "#00000000",
-          foreground: "#E6EAF2",
-          cursor: "#9FB3FF",
-          cursorAccent: "#11172A",
-          selectionBackground: "#7F90FF40",
-          black: "#151A2E",
-          red: "#FF6E7D",
-          green: "#7BE3A6",
-          yellow: "#F4CA78",
-          blue: "#87A9FF",
-          magenta: "#D39BFF",
-          cyan: "#82DBFF",
-          white: "#DFE6F6",
-          brightBlack: "#5A6785",
-          brightRed: "#FF8D98",
-          brightGreen: "#98F0BE",
-          brightYellow: "#FFD995",
-          brightBlue: "#A6BEFF",
-          brightMagenta: "#E0B6FF",
-          brightCyan: "#A2E6FF",
-          brightWhite: "#F4F7FF",
-        },
+        theme: terminalTheme,
         cols: 80,
         rows: 24,
       });
@@ -139,6 +178,7 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       if (terminalRef.current) {
         term.open(terminalRef.current);
         fitAddon.fit();
+        setTerminalReady(true);
       }
 
       // Connect to WebSocket
@@ -237,20 +277,21 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
+      setTerminalReady(false);
       if (resizeHandler) {
         window.removeEventListener("resize", resizeHandler);
       }
       ws?.close();
       term?.dispose();
     };
-  }, [open, activeTarget?.id, activeTarget?.label]);
+  }, [open, activeTarget?.id, activeTarget?.label, terminalTheme]);
 
   const targetSelector = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="h-10 rounded-[10px] border border-white/8 bg-white/8 px-3 text-white/75 hover:border-white/12 hover:bg-white/12 hover:text-white"
+          className="h-10 rounded-lg border border-border bg-secondary/60 px-3 text-foreground hover:bg-secondary"
         >
           <div className="flex items-center gap-2">
             {activeTarget?.icon}
@@ -263,23 +304,25 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="min-w-[220px] rounded-[12px] border border-white/10 bg-[rgba(35,40,54,0.88)] text-white backdrop-blur-xl"
+        className="min-w-[220px] rounded-lg border border-border bg-popover/95 text-popover-foreground backdrop-blur-xl"
       >
-        <DropdownMenuLabel className="text-white/80">Connect to</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-muted-foreground">
+          Connect to
+        </DropdownMenuLabel>
         <DropdownMenuItem
           onSelect={(event) => {
             event.preventDefault();
             setTargetId("host");
             setStatusMessage(null);
           }}
-          className="flex items-center gap-2 text-white/90"
+          className="flex items-center gap-2"
         >
           <Server className="h-4 w-4 text-emerald-300" />
           <span>Homeio Host Shell</span>
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuSeparator className="bg-border/70" />
         {targets.filter((t) => t.id !== "host").length === 0 && (
-          <DropdownMenuItem disabled className="text-white/50">
+          <DropdownMenuItem disabled className="text-muted-foreground">
             No running Docker apps
           </DropdownMenuItem>
         )}
@@ -293,12 +336,14 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
                 setTargetId(target.id);
                 setStatusMessage(`Connecting to ${target.label}...`);
               }}
-              className="flex items-center gap-2 text-white/90"
+              className="flex items-center gap-2"
             >
               <Container className="h-4 w-4 text-sky-300" />
               <div className="flex flex-col">
                 <span>{target.label}</span>
-                <span className="text-[11px] text-white/60">docker exec</span>
+                <span className="text-[11px] text-muted-foreground">
+                  docker exec
+                </span>
               </div>
             </DropdownMenuItem>
           ))}
@@ -341,17 +386,30 @@ export function TerminalDialog({ open, onOpenChange }: TerminalDialogProps) {
         <div
           className={`flex min-h-0 flex-1 pb-3 md:pb-5 ${HOMEIO_DIALOG_CONTENT_GUTTER_CLASS}`}
         >
-          <div
-            ref={terminalRef}
-            className="w-full min-h-0 flex-1 rounded-[14px] border border-white/10 bg-[linear-gradient(160deg,rgba(13,17,31,0.9),rgba(9,13,25,0.88))] p-3 backdrop-blur-xl scrollbar-hide terminal-scrollbar-hide md:p-4"
-            style={{ overflow: "hidden" }}
-          />
+          <div className="relative w-full min-h-0 flex-1">
+            <div
+              ref={terminalRef}
+              className="h-full w-full min-h-0 flex-1 rounded-lg border border-border bg-card/70 p-3 backdrop-blur-xl scrollbar-hide terminal-scrollbar-hide md:p-4"
+              style={{ overflow: "hidden" }}
+            />
+            {!terminalReady && (
+              <div className="pointer-events-none absolute inset-0 rounded-lg border border-border/70 bg-card/60 p-4 backdrop-blur-sm">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-4 w-56" />
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-64" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <div className="absolute bottom-3 right-3 z-20 md:bottom-5 md:right-[28px] xl:right-[40px]">
           {targetSelector}
         </div>
         {statusMessage && (
-          <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[min(420px,calc(100%-24px))] rounded-[10px] border border-amber-600/35 bg-amber-950/70 px-3 py-2 text-xs text-amber-100 shadow-lg backdrop-blur-md md:bottom-5 md:left-[28px] xl:left-[40px]">
+          <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[min(420px,calc(100%-24px))] rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 shadow-lg backdrop-blur-md dark:text-amber-200 md:bottom-5 md:left-[28px] xl:left-[40px]">
             {statusMessage}
           </div>
         )}

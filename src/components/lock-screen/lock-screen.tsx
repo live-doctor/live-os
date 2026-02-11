@@ -81,7 +81,7 @@ export function LockScreen({ open, onUnlock }: LockScreenProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 px-4 backdrop-blur-md">
       <div className={cn("w-full max-w-xl", HOMEIO_GLASS_PANEL_CLASS)}>
         <div className={cn("py-4 md:py-5", HOMEIO_GLASS_HEADER_CLASS, HOMEIO_DIALOG_CONTENT_GUTTER_CLASS)}>
           <UserHeader username={friendlyName} loading={loadingUser} />

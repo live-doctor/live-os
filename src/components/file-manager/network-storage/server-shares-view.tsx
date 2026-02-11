@@ -43,9 +43,9 @@ export function ServerSharesView({
 }: ServerSharesViewProps) {
   if (loadingServerInfo) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-6 justify-center">
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-6 justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-cyan-200" />
-        <span className="text-sm text-white/70">
+        <span className="text-sm text-muted-foreground">
           Loading shares from {server.host}...
         </span>
       </div>
@@ -55,22 +55,22 @@ export function ServerSharesView({
   return (
     <>
       {/* Server info header */}
-      <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-        <div className="h-12 w-12 rounded-xl bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center">
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-3">
+        <div className="h-12 w-12 rounded-lg bg-secondary/60 border border-border flex items-center justify-center">
           <Server className="h-6 w-6 text-cyan-200" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-white font-semibold">
+            <span className="text-foreground font-semibold">
               {server.name || server.host}
             </span>
             {serverInfo?.isHOMEIO && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/20 text-cyan-200 text-[10px] px-2 py-0.5 uppercase tracking-wide">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-cyan-500/20 text-cyan-700 dark:text-cyan-200 text-[10px] px-2 py-0.5 uppercase tracking-wide">
                 Homeio
               </span>
             )}
           </div>
-          <div className="text-xs text-white/60">
+          <div className="text-xs text-muted-foreground">
             {server.ip || server.host}
             {(serverInfo?.shares.length ?? 0) > 0 &&
               ` • ${serverInfo?.shares.length} share${serverInfo?.shares.length !== 1 ? "s" : ""} available`}
@@ -88,7 +88,7 @@ export function ServerSharesView({
       )}
 
       {serverInfo?.error && !serverInfo.requiresAuth && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+        <div className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-200">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <div>{serverInfo.error}</div>
         </div>
@@ -98,7 +98,7 @@ export function ServerSharesView({
         !serverInfo.requiresAuth &&
         serverInfo.shares.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs text-white/60 uppercase tracking-[0.2em] px-1">
+            <div className="text-xs text-muted-foreground uppercase tracking-[0.2em] px-1">
               Available Shares
             </div>
             {serverInfo.shares.map((shareName) => {
@@ -106,27 +106,27 @@ export function ServerSharesView({
               return (
                 <div
                   key={shareName}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3"
+                  className="flex items-center gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-3"
                 >
-                  <div className="h-10 w-10 rounded-lg bg-blue-500/15 border border-blue-400/30 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-lg bg-secondary/60 border border-border flex items-center justify-center">
                     <Folder className="h-5 w-5 text-blue-200" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-white font-medium">
+                    <div className="text-sm text-foreground font-medium">
                       {shareName}
                     </div>
-                    <div className="text-[11px] text-white/60">
+                    <div className="text-[11px] text-muted-foreground">
                       {`//${server.host}/${shareName}`}
                     </div>
                   </div>
                   {alreadyAdded ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-200 text-[11px] px-3 py-1">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-200 text-[11px] px-3 py-1">
                       <BadgeCheck className="h-3 w-3" /> Added
                     </span>
                   ) : (
                     <Button
                       size="sm"
-                      className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
                       onClick={() => onAddShare(shareName)}
                       disabled={addingShare === shareName}
                     >
@@ -148,16 +148,16 @@ export function ServerSharesView({
         !serverInfo.requiresAuth &&
         !serverInfo.error &&
         serverInfo.shares.length === 0 && (
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-center">
-            <Folder className="h-8 w-8 text-white/30" />
-            <div className="text-sm text-white/70">
+          <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-secondary/40 px-4 py-6 text-center">
+            <Folder className="h-8 w-8 text-muted-foreground" />
+            <div className="text-sm text-muted-foreground">
               No shares found on this server
             </div>
           </div>
         )}
 
       {formError && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-100">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <div>{formError}</div>
         </div>

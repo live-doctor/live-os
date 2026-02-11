@@ -19,11 +19,11 @@ export function DiscoverSection({
 }: DiscoverSectionProps) {
   return (
     <section className={`space-y-4 ${className}`}>
-      <div className="overflow-hidden rounded-[20px] bg-gradient-to-b from-[#24242499] to-[#18181899] px-2 py-2 md:px-[26px] md:py-[36px]">
+      <div className="overflow-hidden rounded-lg border border-border bg-gradient-to-b from-secondary/70 to-secondary/40 px-2 py-2 backdrop-blur-xl md:px-[26px] md:py-[36px]">
         <div className="flex items-end justify-between gap-4 p-2.5">
           <div>
             {label && (
-              <p className="mb-1.5 mt-1 text-[12px] font-bold uppercase leading-tight text-white/50 md:mb-2 md:text-[15px]">
+              <p className="mb-1.5 mt-1 text-[12px] font-bold uppercase leading-tight text-muted-foreground md:mb-2 md:text-[15px]">
                 {label}
               </p>
             )}

@@ -39,15 +39,15 @@ export function OtherContainerCard({
         <div className="flex flex-col items-center gap-2">
           {/* Icon container with glass frame — grayscale when not running */}
           <div
-            className={`relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
+            className={`relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
               isRunning
-                ? "border-white/10 bg-white/5 shadow-black/20"
-                : "border-white/8 bg-white/5 shadow-black/10 grayscale opacity-50"
+                ? "border-border bg-secondary/60 shadow-black/20"
+                : "border-border/70 bg-secondary/40 shadow-black/10 grayscale opacity-60"
             }`}
           >
             <Box
               className={`h-7 w-7 sm:h-8 sm:w-8 ${
-                isRunning ? "text-white/40" : "text-white/25"
+                isRunning ? "text-foreground/60" : "text-muted-foreground/70"
               }`}
             />
           </div>

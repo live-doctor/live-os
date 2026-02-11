@@ -110,21 +110,13 @@ export async function getAppStoreApps(): Promise<App[]> {
   return withActionLogging("appstore:list", async () => {
     await logAction("appstore:list:start");
     try {
-      let records = await prisma.app.findMany({
+      // Always verify default/local stores before listing apps so new local
+      // manifests appear without requiring a manual full refresh.
+      await ensureDefaultStoresInstalled();
+      const records = await prisma.app.findMany({
         orderBy: [{ title: "asc" }],
         include: { store: true },
       });
-
-      const hasDefaultStoreApps = records.some((record) =>
-        isProtectedStore(record.store),
-      );
-      if (records.length === 0 || !hasDefaultStoreApps) {
-        await ensureDefaultStoresInstalled();
-        records = await prisma.app.findMany({
-          orderBy: [{ title: "asc" }],
-          include: { store: true },
-        });
-      }
 
       const apps = records.map((record) => ({
         id: record.appId,
@@ -491,16 +483,50 @@ async function importLocalStore(): Promise<{
   error?: string;
 }> {
   try {
+    const manifestHash = await computeLocalStoreManifestHash();
+    const existingStore = await prisma.store.findUnique({
+      where: { slug: LOCAL_STORE_SLUG },
+      include: { _count: { select: { apps: true } } },
+    });
+    if (existingStore && existingStore.manifestHash === manifestHash) {
+      return {
+        success: true,
+        apps: existingStore._count.apps,
+        skipped: true,
+      };
+    }
+
     const apps = await parseLocalStore(LOCAL_STORE_DIR);
     if (apps.length === 0) {
-      return { success: true, apps: 0, skipped: true };
+      const store = await prisma.store.upsert({
+        where: { slug: LOCAL_STORE_SLUG },
+        update: {
+          url: LOCAL_STORE_URL,
+          name: LOCAL_STORE_NAME,
+          description: LOCAL_STORE_DESCRIPTION,
+          localPath: LOCAL_STORE_DIR,
+          manifestHash,
+          format: "local",
+        },
+        create: {
+          slug: LOCAL_STORE_SLUG,
+          url: LOCAL_STORE_URL,
+          name: LOCAL_STORE_NAME,
+          description: LOCAL_STORE_DESCRIPTION,
+          localPath: LOCAL_STORE_DIR,
+          manifestHash,
+          format: "local",
+        },
+      });
+      await prisma.app.deleteMany({ where: { storeId: store.id } });
+      return { success: true, apps: 0 };
     }
 
     await persistStoreApps({
       apps,
       format: "local",
       localPath: LOCAL_STORE_DIR,
-      manifestHash: "local",
+      manifestHash,
       name: LOCAL_STORE_NAME,
       slug: LOCAL_STORE_SLUG,
       url: LOCAL_STORE_URL,
@@ -513,6 +539,39 @@ async function importLocalStore(): Promise<{
       error instanceof Error ? error.message : "Failed to import local store";
     return { success: false, error: message };
   }
+}
+
+async function computeLocalStoreManifestHash(): Promise<string> {
+  const entries = await fs
+    .readdir(LOCAL_STORE_DIR, { withFileTypes: true })
+    .catch(() => []);
+  const hash = crypto.createHash("sha256");
+  const appDirs = entries
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
+  hash.update(`apps:${appDirs.length}`);
+
+  for (const appId of appDirs) {
+    hash.update(`dir:${appId}`);
+    const appDir = path.join(LOCAL_STORE_DIR, appId);
+    for (const fileName of [
+      "app.json",
+      "docker-compose.yml",
+      "docker-compose.yaml",
+    ]) {
+      const filePath = path.join(appDir, fileName);
+      try {
+        const content = await fs.readFile(filePath);
+        hash.update(`file:${fileName}`);
+        hash.update(content);
+      } catch {
+        // Optional file missing for this app; skip.
+      }
+    }
+  }
+
+  return hash.digest("hex");
 }
 
 /**

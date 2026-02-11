@@ -19,7 +19,7 @@ const serviceBadge = {
   running: "bg-emerald-500/15 text-emerald-200 border border-emerald-500/30",
   stopped: "bg-red-500/15 text-red-200 border border-red-500/30",
   error: "bg-red-500/15 text-red-200 border border-red-500/30",
-  unknown: "bg-white/10 text-white/70 border-white/15",
+  unknown: "bg-secondary/60 text-muted-foreground border-border",
 };
 
 type Props = {
@@ -111,13 +111,13 @@ export function ServicesCard({ open }: Props) {
   const renderRow = (service: SystemService) => (
     <div
       key={service.name}
-      className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-2"
     >
       <div className="space-y-1 min-w-0">
-        <p className="text-white text-sm font-semibold truncate">
+        <p className="text-foreground text-sm font-semibold truncate">
           {service.displayName}
         </p>
-        <p className="text-white/60 text-xs truncate">{service.name}</p>
+        <p className="text-muted-foreground text-xs truncate">{service.name}</p>
       </div>
       <div className="flex items-center gap-2">
         <span
@@ -131,7 +131,7 @@ export function ServicesCard({ open }: Props) {
         <Button
           variant="ghost"
           size="sm"
-          className="border border-white/15 bg-white/10 hover:bg-white/20 text-white text-xs"
+          className="border border-border bg-secondary/60 hover:bg-secondary text-foreground text-xs"
           onClick={() => void handleToggle(service)}
           disabled={toggling === service.name}
         >
@@ -148,7 +148,7 @@ export function ServicesCard({ open }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            className="border border-white/15 bg-white/10 hover:bg-white/20 text-white text-xs"
+            className="border border-border bg-secondary/60 hover:bg-secondary text-foreground text-xs"
             onClick={() => void handleRestart(service.name)}
             disabled={restarting === service.name}
           >
@@ -178,7 +178,7 @@ export function ServicesCard({ open }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            className="border border-white/15 bg-white/10 hover:bg-white/20 text-white text-xs"
+            className="border border-border bg-secondary/60 hover:bg-secondary text-foreground text-xs"
             onClick={() => void fetchCritical()}
             disabled={servicesLoading}
           >
@@ -193,7 +193,7 @@ export function ServicesCard({ open }: Props) {
       </header>
 
       <div className="space-y-2">
-        <label className="text-xs text-white/60">
+        <label className="text-xs text-muted-foreground">
           Lookup a service (press Enter)
         </label>
         <div className="flex items-center gap-2">
@@ -207,12 +207,12 @@ export function ServicesCard({ open }: Props) {
                 void handleSearch();
               }
             }}
-            className="bg-white/5 text-white border-white/15"
+            className="bg-input text-foreground border-border"
           />
           <Button
             variant="ghost"
             size="sm"
-            className="border border-white/15 bg-white/10 hover:bg-white/20 text-white text-xs"
+            className="border border-border bg-secondary/60 hover:bg-secondary text-foreground text-xs"
             onClick={() => void handleSearch()}
             disabled={searchLoading}
           >
@@ -226,7 +226,7 @@ export function ServicesCard({ open }: Props) {
         </div>
         {searched && (
           <div className="mt-2">
-            <p className="text-xs text-white/60 mb-1">Search result</p>
+            <p className="text-xs text-muted-foreground mb-1">Search result</p>
             {renderRow(searched)}
           </div>
         )}
@@ -235,13 +235,13 @@ export function ServicesCard({ open }: Props) {
       <div className="space-y-2 mt-3">
         <p className={text.muted}>Critical services</p>
         {servicesLoading && (
-          <div className="flex items-center gap-2 text-white/70 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
             Checking services...
           </div>
         )}
         {!servicesLoading && critical.length === 0 && (
-          <div className="text-white/60 text-sm">No services detected.</div>
+          <div className="text-muted-foreground text-sm">No services detected.</div>
         )}
         {critical.map(renderRow)}
       </div>

@@ -40,12 +40,12 @@ export function ThermalsWidget({ data }: ThermalsWidgetProps) {
     <div ref={cardRef} className="relative h-full w-full overflow-visible">
       <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-amber-400/5 to-transparent" />
       <div className="absolute -left-12 -top-12 h-32 w-32 rounded-full bg-orange-500/15 blur-3xl" />
-      <div className="absolute -right-10 -bottom-10 h-28 w-28 rounded-full bg-white/5 blur-3xl" />
+      <div className="absolute -right-10 -bottom-10 h-28 w-28 rounded-full bg-secondary/40 blur-3xl" />
 
       <div className="relative flex h-full flex-col justify-between p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/10 shadow-inner shadow-black/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/60 shadow-inner">
               <Thermometer className="h-5 w-5 text-amber-200" />
             </div>
             <div>
@@ -58,24 +58,24 @@ export function ThermalsWidget({ data }: ThermalsWidgetProps) {
                 Thermals
               </p>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-semibold text-white leading-tight">
+                <span className="text-lg font-semibold text-foreground leading-tight">
                   {headlineTemp ?? "—"}
                 </span>
                 {headlineTemp !== null && (
-                  <span className={cn(text.muted, "text-white/70 text-xs")}>
+                  <span className={cn(text.muted, "text-muted-foreground text-xs")}>
                     °C
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-white/60">
+              <p className="text-[10px] text-muted-foreground">
                 {headlineTemp !== null ? "CPU temp" : "Awaiting data"}
               </p>
             </div>
           </div>
 
-          <div className="rounded-lg bg-white/5 px-2 py-1.5 text-right">
+          <div className="rounded-lg bg-secondary/40 px-2 py-1.5 text-right">
             <p className={cn(text.label, "text-[10px]")}>Max</p>
-            <p className="text-lg font-semibold text-white leading-tight">
+            <p className="text-lg font-semibold text-foreground leading-tight">
               {maxDisplay ?? "—"}
             </p>
           </div>
@@ -118,11 +118,11 @@ function StatPill({
 
   return (
     <div className="relative group">
-      <div className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-1">
+      <div className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/60 px-2 py-1">
         <Flame className="h-3 w-3 text-amber-200 shrink-0" />
         <div className="flex flex-col leading-none min-w-0">
-          <span className="text-[10px] text-white/50">{label}</span>
-          <span className="text-xs text-white truncate">{value}</span>
+          <span className="text-[10px] text-muted-foreground">{label}</span>
+          <span className="text-xs text-foreground truncate">{value}</span>
         </div>
       </div>
 
@@ -135,20 +135,20 @@ function StatPill({
           }}
         >
           <div
-            className="rounded-xl border border-white/15 bg-zinc-900/95 px-3 py-2 shadow-xl shadow-black/40 backdrop-blur"
+            className="rounded-lg border border-border bg-popover/95 px-3 py-2 shadow-xl backdrop-blur"
             style={{
               maxHeight: overlaySize?.height || undefined,
               overflowY: "auto",
             }}
           >
-            <p className="text-[10px] uppercase tracking-wide text-white/50 mb-2">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">
               {label} temps
             </p>
-            <div className="flex flex-wrap gap-1 text-[11px] text-white">
+            <div className="flex flex-wrap gap-1 text-[11px] text-foreground">
               {filteredTemps.map((temp, idx) => (
                 <span
                   key={`${label}-${idx}`}
-                  className="rounded-full bg-white/10 px-2 py-[3px] border border-white/10"
+                  className="rounded-lg bg-secondary/60 px-2 py-[3px] border border-border"
                 >
                   {idx + 1}: {Math.round(temp)}°C
                 </span>

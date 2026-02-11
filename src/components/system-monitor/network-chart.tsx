@@ -40,11 +40,9 @@ export function NetworkChart({
   const yMax = Math.max(1, Math.ceil(maxValue * 1.1));
   const yTicks = [0, yMax / 2, yMax];
   const clickableClass = clickable
-    ? "cursor-pointer transition-all hover:border-white/30 hover:bg-black/40"
+    ? `cursor-pointer transition-all ${card.hover}`
     : "";
-  const selectedClass = selected
-    ? "bg-black/40 border-cyan-500/50 ring-1 ring-cyan-500/30"
-    : "";
+  const selectedClass = selected ? card.selected : "";
 
   return (
     <div
@@ -59,7 +57,7 @@ export function NetworkChart({
             {clickable ? "Click to view by app" : "Real-time bandwidth usage"}
           </p>
         </div>
-        <div className="flex gap-4 text-xs text-white/60">
+        <div className="flex gap-4 text-xs text-muted-foreground">
           {/* Upload */}
           <div className="flex items-center gap-1.5">
             <div
@@ -67,10 +65,10 @@ export function NetworkChart({
               style={{ backgroundColor: colors.network.upload }}
             />
             <span>Upload</span>
-            <span className="text-white/80 font-semibold">
+            <span className="text-foreground font-semibold">
               {formatMbps(currentUpload)}
             </span>
-            <span className="text-white/50">Mbit/s</span>
+            <span className="text-muted-foreground">Mbit/s</span>
           </div>
           {/* Download */}
           <div className="flex items-center gap-1.5">
@@ -79,10 +77,10 @@ export function NetworkChart({
               style={{ backgroundColor: colors.network.download }}
             />
             <span>Download</span>
-            <span className="text-white/80 font-semibold">
+            <span className="text-foreground font-semibold">
               {formatMbps(currentDownload)}
             </span>
-            <span className="text-white/50">Mbit/s</span>
+            <span className="text-muted-foreground">Mbit/s</span>
           </div>
         </div>
       </div>
@@ -123,7 +121,7 @@ export function NetworkChart({
             <YAxis
               orientation="left"
               tick={{
-                fill: "rgba(255,255,255,0.8)",
+                fill: "var(--muted-foreground)",
                 fontSize: 11,
                 fontWeight: 600,
               }}

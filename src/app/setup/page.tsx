@@ -191,7 +191,7 @@ export default function SetupPage() {
         badge="Setup"
         title="Homeio"
         subtitle="Preparing first-time setup…"
-        icon={<Rocket className="h-5 w-5 text-white/80" />}
+        icon={<Rocket className="h-5 w-5 text-muted-foreground" />}
       >
         <div className="flex justify-center py-12">
           <OrbitLoader />
@@ -231,7 +231,7 @@ export default function SetupPage() {
       badge="Setup"
       title="Create your admin"
       subtitle="Set a username and a secure PIN"
-      icon={<ShieldCheck className="h-5 w-5 text-white/80" />}
+      icon={<ShieldCheck className="h-5 w-5 text-muted-foreground" />}
       widthClass="max-w-2xl"
     >
       <RegisterStep

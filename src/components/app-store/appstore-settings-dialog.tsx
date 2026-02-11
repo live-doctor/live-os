@@ -60,7 +60,7 @@ type UpdateDetail = {
 };
 
 const panelClass =
-  "rounded-[12px] border border-white/12 bg-white/[0.07] px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] md:px-4";
+  "rounded-lg border border-border bg-secondary/40 px-3 py-4 shadow-sm md:px-4";
 
 export function AppStoreSettingsDialog({
   open,
@@ -170,15 +170,15 @@ export function AppStoreSettingsDialog({
 
           <div className={`${panelClass} flex items-center justify-between gap-3`}>
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-white">Custom Deploy</h3>
-              <p className="text-xs text-white/60">
+              <h3 className="text-sm font-semibold text-foreground">Custom Deploy</h3>
+              <p className="text-xs text-muted-foreground">
                 Launch a custom Docker Compose or Docker Run deployment.
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+              className="border-border bg-secondary/60 text-foreground hover:bg-secondary"
               onClick={() => {
                 onOpenChange(false);
                 onCustomDeploy?.();
@@ -192,13 +192,15 @@ export function AppStoreSettingsDialog({
           <div className={`${panelClass} space-y-4`}>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-white">Update App Store</h3>
-                <p className="text-xs text-white/60">Refresh all stores to get the latest apps</p>
+                <h3 className="text-sm font-semibold text-foreground">Update App Store</h3>
+                <p className="text-xs text-muted-foreground">
+                  Refresh all stores to get the latest apps
+                </p>
               </div>
               <Button
                 onClick={handleUpdateAll}
                 disabled={updating || stores.length === 0}
-                className="bg-brand text-white hover:bg-brand-lighter"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 size="sm"
               >
                 {updating ? (
@@ -211,16 +213,16 @@ export function AppStoreSettingsDialog({
             </div>
 
             {confirming && !updating && (
-              <div className="space-y-2 rounded-lg border border-yellow-400/30 bg-yellow-500/10 p-3 text-yellow-100">
+              <div className="space-y-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-amber-800 dark:text-amber-100">
                 <div className="text-sm font-medium">Confirm refresh?</div>
-                <p className="text-xs text-yellow-50/90">
+                <p className="text-xs text-amber-700 dark:text-amber-200">
                   We will download and re-parse {stores.length} store(s):
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs">
                   {stores.map((store) => (
                     <span
                       key={store.slug}
-                      className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-white/80"
+                      className="rounded-lg border border-border bg-secondary/60 px-2 py-1 text-muted-foreground"
                     >
                       {store.name}
                     </span>
@@ -229,7 +231,7 @@ export function AppStoreSettingsDialog({
                 <div className="flex gap-2 pt-1">
                   <Button
                     size="sm"
-                    className="bg-brand text-white hover:bg-brand-lighter"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                     onClick={runUpdateAll}
                   >
                     Run updates
@@ -237,7 +239,7 @@ export function AppStoreSettingsDialog({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+                    className="border-border bg-secondary/60 text-foreground hover:bg-secondary"
                     onClick={() => setConfirming(false)}
                   >
                     Cancel
@@ -251,8 +253,8 @@ export function AppStoreSettingsDialog({
                 <div
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
                     updateResults.success
-                      ? "bg-green-500/10 text-green-300"
-                      : "bg-red-500/10 text-red-300"
+                      ? "bg-green-500/10 text-green-700 dark:text-green-300"
+                      : "bg-red-500/10 text-red-700 dark:text-red-300"
                   }`}
                 >
                   {updateResults.success ? (
@@ -264,32 +266,40 @@ export function AppStoreSettingsDialog({
                 </div>
 
                 {updateDetails.length > 0 && (
-                  <div className="divide-y divide-white/5 rounded-lg border border-white/10 bg-white/5">
+                  <div className="divide-y divide-border/40 rounded-lg border border-border bg-secondary/40">
                     {updateDetails.map((detail) => (
                       <div
                         key={detail.slug}
-                        className="flex items-center justify-between px-3 py-2 text-sm text-white/80"
+                        className="flex items-center justify-between px-3 py-2 text-sm text-foreground"
                       >
                         <div className="min-w-0">
                           <div className="truncate font-medium">{detail.name}</div>
-                          <div className="truncate text-xs text-white/50">{detail.slug}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {detail.slug}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
                           {detail.success ? (
                             detail.skipped ? (
-                              <span className="text-white/60">No change</span>
+                              <span className="text-muted-foreground">No change</span>
                             ) : (
-                              <span className="text-green-400">Updated</span>
+                              <span className="text-green-600 dark:text-green-400">
+                                Updated
+                              </span>
                             )
                           ) : (
-                            <span className="text-red-400">Failed</span>
+                            <span className="text-red-600 dark:text-red-400">
+                              Failed
+                            </span>
                           )}
                           {typeof detail.apps === "number" && (
-                            <span className="text-white/50">{detail.apps} apps</span>
+                            <span className="text-muted-foreground">
+                              {detail.apps} apps
+                            </span>
                           )}
                           {detail.error && !detail.success && (
                             <span
-                              className="max-w-[160px] truncate text-red-300"
+                              className="max-w-[160px] truncate text-red-600 dark:text-red-300"
                               title={detail.error}
                             >
                               {detail.error}
@@ -304,11 +314,11 @@ export function AppStoreSettingsDialog({
             )}
 
             <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Store className="h-4 w-4" />
                 <span>{stores.length} stores</span>
               </div>
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" />
                 <span>{totalApps} apps</span>
               </div>
@@ -316,21 +326,23 @@ export function AppStoreSettingsDialog({
           </div>
 
           <div className="space-y-3">
-            <h3 className="px-1 text-sm font-semibold text-white/80">Imported Stores</h3>
+            <h3 className="px-1 text-sm font-semibold text-foreground">
+              Imported Stores
+            </h3>
 
             {loading ? (
-              <div className="flex items-center justify-center py-8 text-white/60">
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Loading stores...
               </div>
             ) : stores.length === 0 ? (
-              <div className="py-8 text-center text-sm text-white/50">
+              <div className="py-8 text-center text-sm text-muted-foreground">
                 No stores imported yet.
                 <br />
                 Import a community store to get started.
               </div>
             ) : (
-              <ScrollArea className="h-[220px] rounded-[10px] border border-white/12 bg-white/[0.06] p-2">
+              <ScrollArea className="h-[220px] rounded-lg border border-border bg-secondary/40 p-2">
                 <div className="space-y-2 pr-2">
                   {stores.map((store) => (
                     <StoreItem
@@ -360,28 +372,32 @@ interface StoreItemProps {
 
 function StoreItem({ store, locked, removing, onRemove }: StoreItemProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[10px] border border-white/12 bg-white/[0.07] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] md:px-4">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-3 shadow-sm md:px-4">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <Store className="h-4 w-4 text-white/60" />
-          <span className="truncate text-sm font-medium text-white">{store.name}</span>
+          <Store className="h-4 w-4 text-muted-foreground" />
+          <span className="truncate text-sm font-medium text-foreground">
+            {store.name}
+          </span>
           {locked && (
-            <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">
+            <span className="rounded-lg border border-border bg-secondary/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
               Default
             </span>
           )}
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/40">
+          <span className="rounded-lg bg-secondary/60 px-2 py-0.5 text-xs text-muted-foreground">
             {store.appCount} apps
           </span>
         </div>
         {store.description && (
-          <p className="mt-1 truncate pl-6 text-xs text-white/50">{store.description}</p>
+          <p className="mt-1 truncate pl-6 text-xs text-muted-foreground">
+            {store.description}
+          </p>
         )}
       </div>
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 text-white/50 hover:bg-red-500/10 hover:text-red-400 disabled:text-white/30"
+        className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:text-muted-foreground/50"
         disabled={locked || removing}
         onClick={onRemove}
       >

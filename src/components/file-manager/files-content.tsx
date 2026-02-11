@@ -1,10 +1,11 @@
 "use client";
 
 import { type FileSystemItem } from "@/app/actions/filesystem";
+import { FilesContentSkeleton } from "@/components/file-manager/files-content-skeleton";
 import { FolderIcon, getFileIcon } from "@/components/icons/files";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FilePlus, HardDrive, Loader2, Upload } from "lucide-react";
+import { FilePlus, HardDrive, Upload } from "lucide-react";
 import {
   type DragEvent,
   memo,
@@ -206,9 +207,9 @@ const FileGridItem = memo(function FileGridItem({
       onContextMenu={handleContext}
       className={`flex select-none flex-col items-center gap-3 group transition-all ${
         isDragOver && item.type === "directory"
-          ? "bg-cyan-500/20 rounded-xl ring-2 ring-cyan-500/50 scale-105"
+          ? "bg-primary/10 rounded-lg ring-2 ring-primary/30 scale-105"
           : selected
-            ? "rounded-md border border-primary/40 bg-primary/12"
+            ? "rounded-lg border border-primary/30 bg-primary/10"
             : ""
       }`}
     >
@@ -224,7 +225,7 @@ const FileGridItem = memo(function FileGridItem({
         <div className="w-12 h-14 transition-transform group-hover:scale-105 relative">
           {FileIcon && <FileIcon className="w-full h-full drop-shadow-lg" />}
           {extLabel && (
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full border border-white/10 bg-black/40 backdrop-blur-sm text-[9px] uppercase tracking-wider text-white/70">
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-lg border border-border bg-background/70 backdrop-blur-sm text-[9px] uppercase tracking-wider text-muted-foreground">
               {extLabel}
             </div>
           )}
@@ -236,7 +237,7 @@ const FileGridItem = memo(function FileGridItem({
           <div className="flex flex-col items-center gap-1">
             <input
               ref={inputRef}
-              className="w-32 rounded-md bg-white/90 text-black px-2 py-1 text-sm font-medium shadow focus:outline-none"
+              className="w-32 rounded-lg border border-border bg-background px-2 py-1 text-sm font-medium text-foreground shadow focus:outline-none"
               value={renameValue ?? ""}
               onChange={(e) => onRenameValueChange?.(e.target.value)}
               onBlur={() => onRenameSubmit?.()}
@@ -251,19 +252,19 @@ const FileGridItem = memo(function FileGridItem({
               }}
               disabled={renaming}
             />
-            <div className="text-[11px] text-white/60">
+            <div className="text-[11px] text-muted-foreground">
               Press Enter to save, Esc to cancel
             </div>
           </div>
         ) : (
           <>
             <div
-              className="text-sm font-medium text-white/90 -tracking-[0.01em] truncate"
+              className="text-sm font-medium text-foreground -tracking-[0.01em] truncate"
               onDoubleClick={handleRenameStart}
             >
               {item.displayName || item.name}
             </div>
-            <div className="text-xs text-white/40 -tracking-[0.01em]">
+            <div className="text-xs text-muted-foreground -tracking-[0.01em]">
               {item.type === "directory" ? "Folder" : formatSize(item.size)}
             </div>
           </>
@@ -429,12 +430,12 @@ const FileListItem = memo(function FileListItem({
       onMouseDown={handleMouseDown}
       onClick={handleClick}
       onContextMenu={handleContext}
-      className={`w-full select-none rounded-md transition-colors ${
+      className={`w-full select-none rounded-lg transition-colors ${
         isDragOver && item.type === "directory"
-          ? "bg-cyan-500/10 ring-2 ring-cyan-500/40"
+          ? "bg-primary/10 ring-2 ring-primary/30"
           : selected
-            ? "border border-primary/40 bg-primary/12"
-            : "hover:bg-white/6"
+            ? "border border-primary/30 bg-primary/10"
+            : "hover:bg-secondary/60"
       }`}
     >
       <div className="flex items-center">
@@ -453,7 +454,7 @@ const FileListItem = memo(function FileListItem({
                 <div className="w-7 h-8 flex-shrink-0 relative">
                   {FileIcon && <FileIcon className="w-full h-full" />}
                   {extLabel && (
-                    <span className="absolute bottom-0 -right-2 px-1 py-[2px] text-[7px] font-bold uppercase tracking-[0.12em] text-white/70 leading-none">
+                    <span className="absolute bottom-0 -right-2 px-1 py-[2px] text-[7px] font-bold uppercase tracking-[0.12em] text-muted-foreground leading-none">
                       {extLabel}
                     </span>
                   )}
@@ -463,7 +464,7 @@ const FileListItem = memo(function FileListItem({
             {isRenaming ? (
               <input
                 ref={inputRef}
-                className="w-full rounded-md bg-white/90 text-black px-2 py-1 text-sm font-medium shadow focus:outline-none"
+                className="w-full rounded-lg border border-border bg-background px-2 py-1 text-sm font-medium text-foreground shadow focus:outline-none"
                 value={renameValue ?? ""}
                 onChange={(e) => onRenameValueChange?.(e.target.value)}
                 onBlur={() => onRenameSubmit?.()}
@@ -491,13 +492,13 @@ const FileListItem = memo(function FileListItem({
             )}
           </div>
         </div>
-        <div className="flex-[2] p-2.5 whitespace-nowrap overflow-hidden text-ellipsis text-[12px] font-medium text-white/60">
+        <div className="flex-[2] p-2.5 whitespace-nowrap overflow-hidden text-ellipsis text-[12px] font-medium text-muted-foreground">
           {modifiedLabel}
         </div>
-        <div className="flex-1 p-2.5 whitespace-nowrap overflow-hidden text-ellipsis text-[12px] font-medium text-white/60">
+        <div className="flex-1 p-2.5 whitespace-nowrap overflow-hidden text-ellipsis text-[12px] font-medium text-muted-foreground">
           {sizeLabel}
         </div>
-        <div className="flex-[2] p-2.5 whitespace-nowrap overflow-hidden text-ellipsis text-[12px] font-medium text-white/60">
+        <div className="flex-[2] p-2.5 whitespace-nowrap overflow-hidden text-ellipsis text-[12px] font-medium text-muted-foreground">
           {typeLabel}
         </div>
       </div>
@@ -513,16 +514,16 @@ const ListHeader = memo(function ListHeader() {
           <div className="border-none">
             <div className="cursor-default transition-colors">
               <div className="flex">
-                <button className="flex flex-[5] items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-white/65">
+                <button className="flex flex-[5] items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-muted-foreground">
                   Name
                 </button>
-                <button className="flex flex-[2] items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-white/65">
+                <button className="flex flex-[2] items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-muted-foreground">
                   Modified
                 </button>
-                <button className="flex flex-1 items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-white/65">
+                <button className="flex flex-1 items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-muted-foreground">
                   Size
                 </button>
-                <button className="flex flex-[2] items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-white/65">
+                <button className="flex flex-[2] items-center justify-between overflow-hidden whitespace-nowrap p-2.5 text-[12px] font-medium text-muted-foreground">
                   Type
                 </button>
               </div>
@@ -563,29 +564,29 @@ export function FilesContent({
   }, [items]);
 
   return (
-    <div className="relative h-full rounded-[12px] border border-white/10 bg-[linear-gradient(165deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-0 pt-3 lg:p-5 lg:pt-3">
+    <div className="relative h-full rounded-lg border border-border bg-card/80 p-2 pt-3 md:p-3 md:pt-3 lg:p-4 lg:pt-3">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {viewMode === "list" && items.length > 0 && <ListHeader />}
         <ScrollArea className="flex-1">
           <div className="homeio-files-fade-scroller h-full w-full overflow-auto">
             <div className="p-0">
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-                </div>
+                <FilesContentSkeleton viewMode={viewMode} />
               ) : items.length === 0 ? (
                 <div className="flex min-h-[320px] items-center justify-center p-6">
                   <div className="flex flex-col items-center gap-4">
                     <div className="h-16 w-20">
                       <FolderIcon className="h-full w-full drop-shadow-lg" />
                     </div>
-                    <p className="text-sm font-medium text-white/45">No items in this folder</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      No items in this folder
+                    </p>
                     <div className="flex items-center gap-2">
                       <Button
                         type="button"
                         variant="ghost"
                         onClick={onEmptyUpload}
-                        className="h-[34px] rounded-full bg-primary px-4 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90"
+                        className="h-[34px] rounded-lg bg-primary px-4 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90"
                       >
                         <Upload className="mr-1.5 h-3.5 w-3.5" />
                         Upload
@@ -594,7 +595,7 @@ export function FilesContent({
                         type="button"
                         variant="ghost"
                         onClick={onEmptyCreateFolder}
-                        className="h-[34px] rounded-full border border-white/20 bg-white/10 px-4 text-[14px] font-semibold text-white hover:bg-white/20"
+                        className="h-[34px] rounded-lg border border-border bg-secondary/60 px-4 text-[14px] font-semibold text-foreground hover:bg-secondary"
                       >
                         <FilePlus className="mr-1.5 h-3.5 w-3.5" />
                         Folder
@@ -603,7 +604,7 @@ export function FilesContent({
                   </div>
                 </div>
               ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5 xl:grid-cols-6">
                   {itemsWithMeta.map(({ item, FileIcon, extLabel }) => (
                     <FileGridItem
                       key={item.path}
@@ -625,7 +626,7 @@ export function FilesContent({
                   ))}
                 </div>
               ) : (
-                <div className="divide-y divide-white/8">
+                <div className="divide-y divide-border/40">
                   {itemsWithMeta.map(({ item, FileIcon, extLabel }) => (
                     <FileListItem
                       key={item.path}
@@ -651,7 +652,7 @@ export function FilesContent({
           </div>
         </ScrollArea>
       </div>
-      <span className="absolute bottom-2 right-4 text-[11px] font-medium text-white/60">
+      <span className="absolute bottom-2 right-3 text-[11px] font-medium text-muted-foreground">
         {itemCountLabel}
       </span>
     </div>

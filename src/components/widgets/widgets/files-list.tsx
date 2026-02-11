@@ -31,7 +31,7 @@ export function FilesListWidget({ data }: FilesListProps) {
                 key={file.id}
                 className={cn(
                   "flex items-center gap-2 py-1.5 px-2 rounded-lg",
-                  "hover:bg-white/5 transition-colors cursor-pointer"
+                  "hover:bg-secondary/40 transition-colors cursor-pointer"
                 )}
               >
                 <div className={cn(
@@ -55,7 +55,7 @@ export function FilesListWidget({ data }: FilesListProps) {
 
         {/* Gradient fade */}
         {files.length > 5 && (
-          <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background/70 to-transparent pointer-events-none" />
         )}
       </div>
     </div>

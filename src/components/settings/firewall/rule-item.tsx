@@ -17,10 +17,12 @@ const actionColors: Record<string, string> = {
 };
 
 export function RuleItem({ rule, index, onDelete, deleting }: RuleItemProps) {
-  const actionClass = actionColors[rule.action] || "text-white/60 bg-white/5 border-white/10";
+  const actionClass =
+    actionColors[rule.action] ||
+    "text-muted-foreground bg-secondary/40 border-border";
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+    <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border hover:bg-secondary/60 transition-colors">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <span
           className={`px-2 py-0.5 rounded text-[10px] font-medium border ${actionClass}`}
@@ -29,14 +31,20 @@ export function RuleItem({ rule, index, onDelete, deleting }: RuleItemProps) {
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-white font-medium truncate">{rule.to}</span>
+            <span className="text-foreground font-medium truncate">
+              {rule.to}
+            </span>
             {rule.direction && (
-              <span className="text-white/40 text-xs">({rule.direction})</span>
+              <span className="text-muted-foreground text-xs">
+                ({rule.direction})
+              </span>
             )}
           </div>
-          <div className="text-xs text-white/50 truncate">
+          <div className="text-xs text-muted-foreground truncate">
             from {rule.from}
-            {rule.v6 && <span className="ml-1 text-white/30">(IPv6)</span>}
+            {rule.v6 && (
+              <span className="ml-1 text-muted-foreground">(IPv6)</span>
+            )}
           </div>
         </div>
       </div>
@@ -45,7 +53,7 @@ export function RuleItem({ rule, index, onDelete, deleting }: RuleItemProps) {
         size="icon"
         onClick={() => onDelete(index + 1)}
         disabled={deleting}
-        className="h-8 w-8 text-white/40 hover:text-red-400 hover:bg-red-500/10 flex-shrink-0"
+        className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 flex-shrink-0"
       >
         <Trash2 className="h-4 w-4" />
       </Button>

@@ -8,6 +8,7 @@ import {
     type SmbShare,
 } from "@/app/actions/filesystem/smb-share";
 import { Button } from "@/components/ui/button";
+import { dialog as dialogTokens } from "@/components/ui/design-tokens";
 import {
     Dialog,
     DialogContent,
@@ -27,6 +28,7 @@ import {
     Trash2,
     X,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -146,9 +148,9 @@ export function SmbShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className={cn(dialogTokens.content, dialogTokens.size.md)}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <Network className="h-5 w-5 text-cyan-400" />
             Share over Network
           </DialogTitle>
@@ -156,22 +158,22 @@ export function SmbShareDialog({
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : !sambaInstalled ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-amber-800 dark:text-amber-100">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-medium text-yellow-200">
+                  <div className="font-medium">
                     Samba not installed
                   </div>
-                  <div className="text-sm text-yellow-200/70 mt-1">
+                  <div className="text-sm text-amber-700 dark:text-amber-200 mt-1">
                     To share folders over the network, Samba needs to be
                     installed.
                   </div>
-                  <code className="block mt-2 text-xs bg-black/30 rounded px-2 py-1 text-white/70">
+                  <code className="block mt-2 text-xs bg-secondary/60 rounded-lg px-2 py-1 text-foreground">
                     sudo apt install samba
                   </code>
                 </div>
@@ -180,17 +182,17 @@ export function SmbShareDialog({
           </div>
         ) : !sambaRunning ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-amber-800 dark:text-amber-100">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-medium text-yellow-200">
+                  <div className="font-medium">
                     Samba not running
                   </div>
-                  <div className="text-sm text-yellow-200/70 mt-1">
+                  <div className="text-sm text-amber-700 dark:text-amber-200 mt-1">
                     The Samba service is installed but not running.
                   </div>
-                  <code className="block mt-2 text-xs bg-black/30 rounded px-2 py-1 text-white/70">
+                  <code className="block mt-2 text-xs bg-secondary/60 rounded-lg px-2 py-1 text-foreground">
                     sudo systemctl start smbd
                   </code>
                 </div>
@@ -199,14 +201,14 @@ export function SmbShareDialog({
           </div>
         ) : existingShare ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+            <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-green-800 dark:text-green-200">
               <div className="flex items-start gap-3">
                 <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <div className="font-medium text-green-200">
+                  <div className="font-medium">
                     Already shared
                   </div>
-                  <div className="text-sm text-green-200/70 mt-1">
+                  <div className="text-sm text-green-700 dark:text-green-200 mt-1">
                     This folder is already shared as &quot;{existingShare.name}
                     &quot;
                   </div>
@@ -217,7 +219,7 @@ export function SmbShareDialog({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1 border-white/15 bg-white/5 hover:bg-white/10 text-white"
+                className="flex-1 border-border bg-secondary/60 hover:bg-secondary text-foreground"
                 onClick={() => copySharePath(existingShare.name)}
               >
                 <Copy className="h-4 w-4 mr-2" />
@@ -225,7 +227,7 @@ export function SmbShareDialog({
               </Button>
               <Button
                 variant="outline"
-                className="border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-300"
+                className="border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-200"
                 onClick={() => handleRemove(existingShare.id)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -236,19 +238,19 @@ export function SmbShareDialog({
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-white/70">Share Name</Label>
+              <Label className="text-muted-foreground">Share Name</Label>
               <Input
                 value={shareName}
                 onChange={(e) => setShareName(e.target.value)}
                 placeholder="Enter share name"
-                className="bg-white/5 border-white/15 text-white placeholder:text-white/40"
+                className="bg-secondary/60 border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
             <div className="flex items-center justify-between py-2">
               <div>
-                <Label className="text-white">Allow guests</Label>
-                <div className="text-xs text-white/50">
+                <Label className="text-foreground">Allow guests</Label>
+                <div className="text-xs text-muted-foreground">
                   No password required to access
                 </div>
               </div>
@@ -257,8 +259,8 @@ export function SmbShareDialog({
 
             <div className="flex items-center justify-between py-2">
               <div>
-                <Label className="text-white">Read-only</Label>
-                <div className="text-xs text-white/50">
+                <Label className="text-foreground">Read-only</Label>
+                <div className="text-xs text-muted-foreground">
                   Prevent modifications
                 </div>
               </div>
@@ -266,7 +268,7 @@ export function SmbShareDialog({
             </div>
 
             <Button
-              className="w-full bg-cyan-600 hover:bg-cyan-500 text-white"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={handleCreate}
               disabled={creating || !shareName.trim()}
             >
@@ -287,23 +289,23 @@ export function SmbShareDialog({
 
         {/* Existing shares list */}
         {shares.length > 0 && !loading && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
+          <div className="mt-4 pt-4 border-t border-border">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
               Active Shares
             </div>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {shares.map((share) => (
                 <div
                   key={share.id}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10"
+                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-secondary/40 border border-border"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Network className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     <div className="truncate">
-                      <div className="text-sm font-medium text-white truncate">
+                      <div className="text-sm font-medium text-foreground truncate">
                         {share.name}
                       </div>
-                      <div className="text-xs text-white/40 truncate">
+                      <div className="text-xs text-muted-foreground truncate">
                         {share.path}
                       </div>
                     </div>
@@ -312,7 +314,7 @@ export function SmbShareDialog({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                       onClick={() => copySharePath(share.name)}
                     >
                       <Copy className="h-3.5 w-3.5" />
@@ -320,7 +322,7 @@ export function SmbShareDialog({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+                      className="h-7 w-7 text-red-600 hover:text-red-600 hover:bg-red-500/10 dark:text-red-400"
                       onClick={() => handleRemove(share.id)}
                     >
                       <X className="h-3.5 w-3.5" />

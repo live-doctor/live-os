@@ -29,7 +29,7 @@ export function DockerRunConverter({
 
   return (
     <div className="space-y-2">
-      <Label className="text-white/85">
+      <Label className="text-foreground">
         Convert Docker Run Command (optional)
       </Label>
       <div className="flex gap-2">
@@ -37,7 +37,7 @@ export function DockerRunConverter({
           placeholder="docker run -d --name myapp -p 8080:80 nginx:latest"
           value={command}
           onChange={(e) => setCommand(e.target.value)}
-          className="flex-1 border-white/20 bg-white/8 font-mono text-sm text-white placeholder:text-white/40"
+          className="flex-1 border-border bg-secondary/60 font-mono text-sm text-foreground placeholder:text-muted-foreground"
           disabled={loading || converting}
           onKeyDown={(e) => {
             if (e.key === "Enter") handleConvert();
@@ -48,7 +48,7 @@ export function DockerRunConverter({
           size="sm"
           onClick={handleConvert}
           disabled={loading || converting || !command.trim()}
-          className="h-9 whitespace-nowrap border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+          className="h-9 whitespace-nowrap border-border bg-secondary/60 text-foreground hover:bg-secondary"
         >
           {converting ? (
             <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -58,7 +58,7 @@ export function DockerRunConverter({
           Convert
         </Button>
       </div>
-      <p className="text-xs text-white/50">
+      <p className="text-xs text-muted-foreground">
         Paste a docker run command to auto-convert it to Compose format
       </p>
     </div>

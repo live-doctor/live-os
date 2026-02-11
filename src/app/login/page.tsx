@@ -58,7 +58,7 @@ export default function LoginPage() {
         badge="Login"
         title="Homeio"
         subtitle="Preparing sign-in…"
-        icon={<LogIn className="h-5 w-5 text-white/80" />}
+        icon={<LogIn className="h-5 w-5 text-muted-foreground" />}
       >
         <div className="flex justify-center py-12">
           <OrbitLoader />
@@ -72,18 +72,20 @@ export default function LoginPage() {
       badge="Login"
       title="Welcome back"
       subtitle="Sign in to Homeio"
-      icon={<LogIn className="h-5 w-5 text-white/80" />}
+      icon={<LogIn className="h-5 w-5 text-muted-foreground" />}
       widthClass="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-inner shadow-black/25">
+        <div className="rounded-lg border border-border bg-secondary/40 p-6 shadow-inner">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10">
-              <User className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/60">
+              <User className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm text-white/80">Username</p>
-              <p className="text-xs text-white/50">Your Homeio account id</p>
+              <p className="text-sm text-foreground">Username</p>
+              <p className="text-xs text-muted-foreground">
+                Your Homeio account id
+              </p>
             </div>
           </div>
           <Input
@@ -95,21 +97,21 @@ export default function LoginPage() {
             required
             autoComplete="username"
             autoFocus
-            className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-white/40"
+            className="bg-secondary/60 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/40"
             disabled={loading}
           />
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-inner shadow-black/25">
+        <div className="rounded-lg border border-border bg-secondary/40 p-6 shadow-inner">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10">
-              <ShieldCheck className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/60">
+              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm text-white/80">
+              <p className="text-sm text-foreground">
                 Enter your {PIN_LENGTH}-digit PIN
               </p>
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-muted-foreground">
                 Secure authentication code
               </p>
             </div>
@@ -123,7 +125,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           disabled={loading || !username || pin.length !== PIN_LENGTH}
-          className="w-full border border-white/20 bg-white/10 text-white hover:bg-white/20"
+          className="w-full border border-border bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {loading ? (
             <>

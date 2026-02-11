@@ -6,8 +6,8 @@ type InfoRowProps = {
 export function InfoRow({ label, value }: InfoRowProps) {
   return (
     <div className="flex">
-      <span className="w-36 text-white/60">{label}</span>
-      <span className="text-white">{value ?? "Unknown"}</span>
+      <span className="w-36 text-muted-foreground">{label}</span>
+      <span className="text-foreground">{value ?? "Unknown"}</span>
     </div>
   );
 }

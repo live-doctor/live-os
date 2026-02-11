@@ -7,9 +7,11 @@ import {
 } from "@/app/actions/appstore";
 import type { CommunityStore } from "@/app/actions/store/types";
 import { Button } from "@/components/ui/button";
+import { dialog as dialogTokens } from "@/components/ui/design-tokens";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { Clipboard, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -120,26 +122,35 @@ export function CommunityStoreDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[50vh] max-w-[95vw] sm:max-w-3xl">
+      <DialogContent
+        className={cn(
+          dialogTokens.content,
+          dialogTokens.size.full,
+          dialogTokens.size.xl,
+          "max-h-[50vh]",
+        )}
+      >
         <DialogHeader>
           <DialogTitle>Import Community App Store</DialogTitle>
-          <DialogDescription className="text-zinc-300">
+          <DialogDescription className="text-muted-foreground">
             Browse community catalogs or add a custom source URL.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
-            <p className="text-sm text-zinc-200">Paste a store API endpoint to import.</p>
+          <div className="rounded-lg border border-border bg-secondary/40 p-3 space-y-2">
+            <p className="text-sm text-foreground">
+              Paste a store API endpoint to import.
+            </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
                 placeholder="https://api.linuxserver.io/api/v1/images?include_config=true&include_deprecated=true"
-                className="bg-white/10 border-white/20 text-white placeholder:text-zinc-400"
+                className="bg-secondary/60 border-border text-foreground placeholder:text-muted-foreground"
               />
               <div className="flex gap-2">
                 <Button
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => handleImport(customUrl)}
                   disabled={!customUrl || importingUrl === customUrl}
                 >
@@ -152,7 +163,7 @@ export function CommunityStoreDialog({
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-white border-white/20 bg-white/5 hover:bg-white/10"
+                  className="text-foreground border-border bg-secondary/60 hover:bg-secondary"
                   onClick={() => handleCopy(customUrl)}
                   disabled={!customUrl}
                 >
@@ -164,22 +175,24 @@ export function CommunityStoreDialog({
           </div>
         </div>
         {importSuccess && (
-          <div className="text-green-200 text-sm">{importSuccess}</div>
+          <div className="text-green-600 dark:text-green-300 text-sm">
+            {importSuccess}
+          </div>
         )}
         {/* Imported stores */}
         {importedStores.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-white/80">Imported stores</h4>
+            <h4 className="text-sm font-semibold text-foreground">Imported stores</h4>
             <div className="space-y-2">
               {importedStores.map((store) => (
                 <div
                   key={store.slug}
-                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                  className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 px-3 py-2 text-sm"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-white/80 truncate">{store.name}</span>
+                    <span className="text-foreground truncate">{store.name}</span>
                     {store.isDefault && (
-                      <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">
+                      <span className="rounded-lg border border-border bg-secondary/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
                         Default
                       </span>
                     )}
@@ -187,7 +200,7 @@ export function CommunityStoreDialog({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-white/70 hover:text-white disabled:text-white/30"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/50"
                     disabled={store.isDefault || removingStore === store.slug}
                     onClick={() => handleRemoveStore(store.slug)}
                   >
@@ -204,18 +217,20 @@ export function CommunityStoreDialog({
         )}
         <ScrollArea className="h-[50vh] pr-2 space-y-3">
           {loading && (
-            <div className="flex items-center justify-center py-10 gap-2 text-sm text-zinc-300">
+            <div className="flex items-center justify-center py-10 gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading community stores...
             </div>
           )}
 
           {error && !loading && (
-            <div className="text-center text-red-200 text-sm py-4">{error}</div>
+            <div className="text-center text-destructive text-sm py-4">
+              {error}
+            </div>
           )}
 
           {!loading && !error && stores.length === 0 && (
-            <div className="text-center text-zinc-300 text-sm py-6">
+            <div className="text-center text-muted-foreground text-sm py-6">
               No curated community stores right now. Use a custom URL above.
             </div>
           )}
@@ -225,15 +240,15 @@ export function CommunityStoreDialog({
               {stores.map((store) => (
                 <div
                   key={store.id}
-                  className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2"
+                  className="rounded-lg border border-border bg-secondary/40 p-3 space-y-2"
                 >
-                  <div className="text-sm font-semibold text-white">{store.name}</div>
-                  <div className="text-xs text-white/60">{store.description}</div>
+                  <div className="text-sm font-semibold text-foreground">{store.name}</div>
+                  <div className="text-xs text-muted-foreground">{store.description}</div>
                   <div className="flex flex-wrap gap-2">
                     {store.sourceUrls.map((sourceUrl) => (
                       <Button
                         key={sourceUrl}
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
                         onClick={() =>
                           handleImport(sourceUrl, {
                             name: store.name,

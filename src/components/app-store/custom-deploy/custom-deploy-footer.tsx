@@ -9,19 +9,19 @@ type CustomDeployFooterProps = {
 
 export function CustomDeployFooter({ loading, onCancel, onDeploy }: CustomDeployFooterProps) {
   return (
-    <div className="flex items-center justify-end gap-3 border-t border-white/10 px-6 py-4">
+    <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
       <Button
         variant="outline"
         onClick={onCancel}
         disabled={loading}
-        className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+        className="border-border bg-secondary/60 text-foreground hover:bg-secondary"
       >
         Cancel
       </Button>
       <Button
         onClick={onDeploy}
         disabled={loading}
-        className="rounded-full bg-brand px-[15px] text-white hover:bg-brand-lighter"
+        className="rounded-lg bg-primary px-[15px] text-primary-foreground hover:bg-primary/90"
       >
         {loading ? (
           <>

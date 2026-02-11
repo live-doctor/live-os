@@ -19,41 +19,41 @@ export function WallpaperSection({
 }: WallpaperSectionProps) {
   return (
     <SettingsSectionShell
-      icon={<ImageIcon className="h-4 w-4 text-white" />}
+      icon={<ImageIcon className="h-4 w-4 text-foreground" />}
       title="Wallpaper"
       subtitle={`Your Homeio wallpaper and theme${saving ? " • Saving…" : ""}`}
       className={settingsCardClass}
     >
-      <div className="w-full overflow-x-auto py-1 scrollbar-hide">
-        <div className="flex items-center gap-1">
+      <div className="w-full min-w-0 overflow-x-auto py-1 scrollbar-hide">
+        <div className="inline-flex min-w-full items-center gap-1">
           <div className="w-1 shrink-0" />
-        {wallpapersLoading && (
-          <div className="py-2 text-xs text-white/60">
-            Loading wallpapers...
-          </div>
-        )}
-        {!wallpapersLoading && wallpapers.length === 0 && (
-          <div className="py-2 text-xs text-white/60">
-            No wallpapers found in `public/wallpapers`.
-          </div>
-        )}
-        {wallpapers.map((wallpaper) => (
-          <button
-            key={wallpaper.id}
-            onClick={() => onSelect(wallpaper.path)}
+          {wallpapersLoading && (
+            <div className="py-2 text-xs text-muted-foreground">
+              Loading wallpapers...
+            </div>
+          )}
+          {!wallpapersLoading && wallpapers.length === 0 && (
+            <div className="py-2 text-xs text-muted-foreground">
+              No wallpapers found in `public/wallpapers`.
+            </div>
+          )}
+          {wallpapers.map((wallpaper) => (
+            <button
+              key={wallpaper.id}
+              onClick={() => onSelect(wallpaper.path)}
             className={`
-              h-6 w-10 shrink-0 rounded-[5px] bg-white/10 bg-cover bg-center outline-none transition-all duration-200
+              h-10 w-16 shrink-0 rounded-lg bg-secondary/60 bg-cover bg-center outline-none transition-all duration-200
               ${
                 currentWallpaper === wallpaper.path
-                  ? "mx-2 scale-[1.4] ring-2 ring-white/50"
-                  : "ring-1 ring-white/30 hover:ring-white/50"
+                  ? "scale-105 ring-2 ring-primary/60"
+                  : "ring-1 ring-border/70 hover:ring-border"
               }
             `}
-            style={{ backgroundImage: `url(${wallpaper.path})` }}
-          >
-            <span className="sr-only">{wallpaper.name}</span>
-          </button>
-        ))}
+              style={{ backgroundImage: `url(${wallpaper.path})` }}
+            >
+              <span className="sr-only">{wallpaper.name}</span>
+            </button>
+          ))}
           <div className="w-1 shrink-0" />
         </div>
       </div>

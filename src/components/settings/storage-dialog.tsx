@@ -1,6 +1,7 @@
 "use client";
 
 import { getStorageInfo, type StorageInfo } from "@/app/actions/system/storage";
+import { dialog as dialogTokens } from "@/components/ui/design-tokens";
 import {
     Dialog,
     DialogContent,
@@ -8,13 +9,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatBytes } from "@/lib/utils";
-import {
-    HardDrive,
-    HardDriveDownload,
-    Loader2,
-    RefreshCw,
-} from "lucide-react";
+import { cn, formatBytes } from "@/lib/utils";
+import { HardDrive, HardDriveDownload, Loader2, RefreshCw } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -54,17 +50,24 @@ export function StorageDialog({ open, onOpenChange }: StorageDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[95vw] p-0 sm:max-w-5xl">
+      <DialogContent
+        className={cn(
+          dialogTokens.content,
+          dialogTokens.size.full,
+          "sm:max-w-5xl",
+          dialogTokens.padding.none,
+        )}
+      >
         <div className="space-y-3 px-5 py-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-white">
+            <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-foreground">
               Storage
             </h2>
             <button
               type="button"
               onClick={refresh}
               disabled={loading}
-              className="inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-white transition-[color,background-color,box-shadow] duration-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50"
+              className="inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-foreground transition-[color,background-color,box-shadow] duration-300 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -75,15 +78,16 @@ export function StorageDialog({ open, onOpenChange }: StorageDialogProps) {
             </button>
           </div>
           <DialogTitle className="sr-only">Storage</DialogTitle>
-          <DialogDescription className="text-[13px] leading-tight text-white/45">
-            Disks, partitions, and volumes. Live snapshot from systeminformation plus df / lsblk.
+          <DialogDescription className="text-[13px] leading-tight text-muted-foreground">
+            Disks, partitions, and volumes. Live snapshot from systeminformation
+            plus df / lsblk.
           </DialogDescription>
         </div>
 
         <ScrollArea className="max-h-[72vh] px-5 pb-6">
           <div className="space-y-4 pb-2">
             {error && (
-              <div className="rounded-[12px] border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[13px] text-amber-100">
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[13px] text-amber-100">
                 {error}
               </div>
             )}
@@ -116,24 +120,24 @@ export function StorageDialog({ open, onOpenChange }: StorageDialogProps) {
                       {info.disks.map((disk, idx) => (
                         <div
                           key={`${disk.device}-${idx}`}
-                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 rounded-[12px] border border-white/10 bg-white/6 px-3 py-3 text-sm text-white"
+                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 rounded-lg border border-border bg-secondary/40 px-3 py-3 text-sm text-foreground"
                         >
                           <div className="min-w-0">
                             <p className="font-semibold truncate">
                               {disk.name || disk.device}
                             </p>
-                            <p className="text-white/60 text-xs truncate">
+                            <p className="text-muted-foreground text-xs truncate">
                               {disk.vendor || "Unknown vendor"} ·{" "}
                               {disk.interfaceType || "?"}
                             </p>
                           </div>
-                          <div className="text-white/80">
+                          <div className="text-foreground">
                             {formatBytes(disk.size)}
                           </div>
-                          <div className="text-white/70 text-xs">
+                          <div className="text-muted-foreground text-xs">
                             Type: {disk.type || "Unknown"}
                           </div>
-                          <div className="text-white/60 text-xs truncate">
+                          <div className="text-muted-foreground text-xs truncate">
                             Serial: {disk.serialNum || "N/A"}
                           </div>
                         </div>
@@ -150,21 +154,21 @@ export function StorageDialog({ open, onOpenChange }: StorageDialogProps) {
                       {info.partitions.map((part) => (
                         <div
                           key={`${part.name}-${part.uuid ?? part.label ?? part.mount}`}
-                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 rounded-[12px] border border-white/10 bg-white/6 px-3 py-3 text-sm text-white"
+                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 rounded-lg border border-border bg-secondary/40 px-3 py-3 text-sm text-foreground"
                         >
                           <div className="truncate font-semibold">
                             {part.name}
                           </div>
-                          <div className="text-white/80 truncate">
+                          <div className="text-foreground truncate">
                             {part.mount || "—"}
                           </div>
-                          <div className="text-white/70 text-xs">
+                          <div className="text-muted-foreground text-xs">
                             {part.fsType || "Unknown"}
                           </div>
-                          <div className="text-white/70 text-xs truncate">
+                          <div className="text-muted-foreground text-xs truncate">
                             {part.label || part.uuid || "No label"}
                           </div>
-                          <div className="text-white/80 text-sm">
+                          <div className="text-foreground text-sm">
                             {formatBytes(Number(part.size) || 0)}
                           </div>
                         </div>
@@ -181,20 +185,20 @@ export function StorageDialog({ open, onOpenChange }: StorageDialogProps) {
                       {info.volumes.map((vol) => (
                         <div
                           key={vol.fs}
-                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 rounded-[12px] border border-white/10 bg-white/6 px-3 py-3 text-sm text-white"
+                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 rounded-lg border border-border bg-secondary/40 px-3 py-3 text-sm text-foreground"
                         >
                           <div className="truncate font-semibold">{vol.fs}</div>
-                          <div className="text-white/70 text-xs">
+                          <div className="text-muted-foreground text-xs">
                             {vol.type || "Unknown"}
                           </div>
-                          <div className="text-white/70 text-xs truncate">
+                          <div className="text-muted-foreground text-xs truncate">
                             {vol.mount || "—"}
                           </div>
-                          <div className="text-white/80 text-sm">
+                          <div className="text-foreground text-sm">
                             {formatBytes(vol.used)} / {formatBytes(vol.size)}{" "}
                             {vol.use ? `(${vol.use}%)` : ""}
                           </div>
-                          <div className="text-white/60 text-xs truncate">
+                          <div className="text-muted-foreground text-xs truncate">
                             {vol.mount || vol.type || ""}
                           </div>
                         </div>
@@ -235,12 +239,12 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[12px] border border-white/10 bg-white/6 px-4 py-3 text-white flex items-center justify-between">
+    <div className="rounded-lg border border-border bg-secondary/40 px-4 py-3 text-foreground flex items-center justify-between">
       <div className="space-y-1">
-        <p className="text-xs text-white/60">{label}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-lg font-semibold">{value}</p>
       </div>
-      <span className="rounded-full border border-white/15 bg-white/10 p-2 text-white/80">
+      <span className="rounded-full border border-border bg-secondary/60 p-2 text-foreground">
         {icon}
       </span>
     </div>
@@ -256,14 +260,16 @@ function Section({
 }) {
   return (
     <div className="space-y-2">
-      <h4 className="text-[14px] font-medium leading-tight text-white">{title}</h4>
+      <h4 className="text-[14px] font-medium leading-tight text-foreground">
+        {title}
+      </h4>
       {children}
     </div>
   );
 }
 
 function EmptyMessage({ text }: { text: string }) {
-  return <p className="text-sm text-white/60">{text}</p>;
+  return <p className="text-sm text-muted-foreground">{text}</p>;
 }
 
 function CommandOutput({
@@ -274,7 +280,7 @@ function CommandOutput({
   placeholder: string;
 }) {
   return (
-    <div className="rounded-[12px] border border-white/10 bg-black/35 text-white/80 font-mono text-xs p-3 overflow-x-auto whitespace-pre-wrap">
+    <div className="rounded-lg border border-border bg-secondary/30 text-muted-foreground font-mono text-xs p-3 overflow-x-auto whitespace-pre-wrap">
       {output || placeholder}
     </div>
   );

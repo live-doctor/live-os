@@ -23,7 +23,7 @@ export function NetworkDevicesSection({
 
   return (
     <SettingsSectionShell
-      icon={<Network className="h-4 w-4 text-white" />}
+      icon={<Network className="h-4 w-4 text-foreground" />}
       title="Network Devices"
       subtitle={subtitle}
       actions={[

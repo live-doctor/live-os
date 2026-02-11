@@ -45,7 +45,7 @@ export function DiagnosticsCard({ diagnostics, loading, onRun }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            className="border border-white/15 bg-white/10 hover:bg-white/20 text-white text-xs shadow-sm"
+            className="border border-border bg-secondary/60 hover:bg-secondary text-foreground text-xs shadow-sm"
             onClick={onRun}
             disabled={loading}
           >
@@ -61,14 +61,16 @@ export function DiagnosticsCard({ diagnostics, loading, onRun }: Props) {
 
       <div className="space-y-2">
         {loading && (
-          <div className="flex items-center gap-2 text-white/70 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
             Running diagnostics...
           </div>
         )}
 
         {!loading && !diagnostics && (
-          <div className="text-white/60 text-sm">Run diagnostics to see detailed checks.</div>
+          <div className="text-muted-foreground text-sm">
+            Run diagnostics to see detailed checks.
+          </div>
         )}
 
         {diagnostics && (
@@ -76,12 +78,20 @@ export function DiagnosticsCard({ diagnostics, loading, onRun }: Props) {
             {diagnostics.checks.map((check) => (
               <div
                 key={check.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                className="flex items-start justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-2"
               >
                 <div className="space-y-1">
-                  <p className="text-white text-sm font-medium">{check.name}</p>
-                  <p className="text-white/60 text-xs">{check.description}</p>
-                  {check.message && <p className="text-white/70 text-xs">{check.message}</p>}
+                  <p className="text-foreground text-sm font-medium">
+                    {check.name}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {check.description}
+                  </p>
+                  {check.message && (
+                    <p className="text-muted-foreground text-xs">
+                      {check.message}
+                    </p>
+                  )}
                 </div>
                 <span
                   className={cn(
@@ -92,7 +102,7 @@ export function DiagnosticsCard({ diagnostics, loading, onRun }: Props) {
                         ? "bg-amber-500/15 text-amber-200 border-amber-500/30"
                         : check.status === "failed"
                           ? "bg-red-500/15 text-red-200 border-red-500/30"
-                          : "bg-white/10 text-white/70 border-white/15",
+                          : "bg-secondary/60 text-muted-foreground border-border",
                   )}
                 >
                   {check.status}

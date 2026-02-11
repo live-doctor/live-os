@@ -25,10 +25,10 @@ export function InstallProgressOverlay({ installs }: InstallProgressOverlayProps
             transition={{ duration: 0.15 }}
             className={cn(
               card.base,
-              "flex items-center gap-3 rounded-2xl border border-white/15 bg-black/60 p-3 backdrop-blur-xl shadow-2xl"
+              "flex items-center gap-3 border-border bg-popover/90 p-3 backdrop-blur-xl shadow-lg"
             )}
           >
-            <div className="relative h-12 w-12 overflow-hidden rounded-xl border border-white/10 bg-white/5">
+            <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-border bg-secondary/60">
               <Image
                 src={install.icon || "/default-application-icon.png"}
                 alt={install.name}
@@ -40,14 +40,14 @@ export function InstallProgressOverlay({ installs }: InstallProgressOverlayProps
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-foreground">
                     {install.name}
                   </p>
-                  <p className={cn(text.muted, "text-white/70")}>
+                  <p className={cn(text.muted, "text-muted-foreground")}>
                     {statusLabel(install)}
                   </p>
                 </div>
-                <span className="text-xs text-white/70">
+                <span className="text-xs text-muted-foreground">
                   {Math.round(clamp01(install.progress) * 100)}%
                 </span>
               </div>

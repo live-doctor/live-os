@@ -20,6 +20,8 @@ import { FilesToolbar } from "@/components/file-manager/files-toolbar";
 import { NetworkStorageDialog } from "@/components/file-manager/network-storage";
 import { SmbShareDialog } from "@/components/file-manager/smb-share-dialog";
 import { useFilesDialog } from "@/components/file-manager/use-files-dialog";
+import { Button } from "@/components/ui/button";
+import { button, dialog as dialogTokens } from "@/components/ui/design-tokens";
 import {
   Dialog,
   DialogContent,
@@ -28,16 +30,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import {
+  HOMEIO_DIALOG_SHELL_CLASS,
+  HOMEIO_DIALOG_SUBTITLE_CLASS,
+  HOMEIO_DIALOG_TITLE_CLASS,
+} from "@/components/ui/dialog-chrome";
 import { Loader2, Trash2, X } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
+import { toast } from "sonner";
 
 type InteractOutsideEvent = {
   target: EventTarget | null;
   detail?: { originalEvent?: Event };
   preventDefault: () => void;
 };
-import { toast } from "sonner";
 
 interface FilesDialogProps {
   open: boolean;
@@ -183,13 +195,10 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
   }, []);
 
   // Handle rename lifecycle
-  const handleRename = useCallback(
-    (item: FileSystemItem) => {
-      setRenameTarget(item);
-      setRenameValue(item.name);
-    },
-    [],
-  );
+  const handleRename = useCallback((item: FileSystemItem) => {
+    setRenameTarget(item);
+    setRenameValue(item.name);
+  }, []);
 
   const handleRenameSubmit = useCallback(async () => {
     if (!renameTarget) return;
@@ -267,7 +276,7 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[92vh] max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl sm:max-w-[1280px]"
+        className={HOMEIO_DIALOG_SHELL_CLASS}
         aria-describedby="files-description"
         onInteractOutside={(event: InteractOutsideEvent) => {
           const originalTarget = (event.detail?.originalEvent?.target ||
@@ -278,17 +287,32 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
           }
         }}
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 z-20 h-7 w-7 cursor-pointer rounded-full border border-white/15 bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
-        >
-          <X className="h-4 w-4" />
-        </Button>
         <div ref={portalAnchorRef} className="relative h-[92vh] w-full">
-          <div className="flex h-full flex-col gap-2 pb-3 pl-3 pr-12 pt-4 md:gap-3 md:pb-4 md:pl-6 md:pr-14 md:pt-5">
+          <DialogTitle className="sr-only">Files</DialogTitle>
+          <DialogDescription id="files-description" className="sr-only">
+            File manager for browsing and managing files.
+          </DialogDescription>
+
+          <div className="flex h-full flex-col gap-3 p-3 md:gap-4 md:p-4">
+            <div className="flex items-start justify-between gap-3 px-1">
+              <div className="min-w-0">
+                <h2 className={HOMEIO_DIALOG_TITLE_CLASS}>Files</h2>
+                <p className={HOMEIO_DIALOG_SUBTITLE_CLASS}>
+                  Search, browse, and manage your files.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+                className={button.closeIcon}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
             <FilesToolbar
+              showTitle={false}
               breadcrumbs={breadcrumbs}
               historyIndex={historyIndex}
               historyLength={historyLength}
@@ -313,8 +337,8 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
               onEmptyTrash={emptyTrash}
             />
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[170px_minmax(0,1fr)]">
-              <div className="hidden min-h-0 lg:block">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="hidden min-h-0 rounded-lg border border-border bg-secondary/30 p-2 lg:block">
                 <FilesSidebar
                   homePath={homePath}
                   shortcuts={shortcuts}
@@ -328,7 +352,7 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
                 />
               </div>
 
-              <div className="flex min-h-0 flex-col rounded-xl">
+              <div className="flex min-h-0 flex-col rounded-lg border border-border bg-secondary/20 p-2 ">
                 {/* Hidden file input for upload */}
                 <input
                   ref={fileInputRef}
@@ -360,14 +384,19 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
                   />
                 )}
 
-                <FileUploadZone targetDir={currentPath} onUploadComplete={refresh}>
+                <FileUploadZone
+                  targetDir={currentPath}
+                  onUploadComplete={refresh}
+                >
                   <FilesContent
                     loading={loading}
                     viewMode={viewMode}
                     items={filteredItems}
                     selectedPath={contextMenu.item?.path ?? null}
                     itemCountLabel={`${filteredItems.length} items${
-                      showHidden ? ` (${content?.items.length ?? filteredItems.length} total)` : ""
+                      showHidden
+                        ? ` (${content?.items.length ?? filteredItems.length} total)`
+                        : ""
                     }`}
                     onOpenItem={handleOpenItem}
                     onContextMenu={openContextMenu}
@@ -449,7 +478,9 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
           if (!next && !trashing) setTrashTarget(null);
         }}
       >
-        <DialogContent className="max-w-md border border-white/10 bg-white/90 dark:bg-black/90 backdrop-blur-xl">
+        <DialogContent
+          className={`${dialogTokens.content} ${dialogTokens.size.sm}`}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trash2 className="h-4 w-4 text-red-400" />
@@ -486,9 +517,7 @@ function FilesDialogContent({ open, onOpenChange }: FilesDialogProps) {
               }}
               disabled={trashing}
             >
-              {trashing && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {trashing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Move to trash
             </Button>
           </DialogFooter>

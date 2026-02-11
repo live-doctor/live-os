@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -51,8 +52,10 @@ export function FileEditorModal({
   onChangeContent,
   onSave,
 }: FileEditorModalProps) {
+  const { resolvedTheme } = useTheme();
   const fileName = useMemo(() => path.split("/").filter(Boolean).pop(), [path]);
   const [isMaximized, setIsMaximized] = useState(false);
+  const editorTheme = resolvedTheme === "light" ? "vs" : "vs-dark";
   const extension = useMemo(() => {
     if (!fileName) return "";
     if (/dockerfile$/i.test(fileName)) return "docker";
@@ -116,23 +119,23 @@ export function FileEditorModal({
       open={open}
       onOpenChange={(isOpen) => (!isOpen ? onClose() : undefined)}
     >
-      <ModalContent
-        aria-describedby="file-editor-description"
-        showCloseButton={false}
-        className={`${
-          isMaximized
-            ? "max-w-[98vw] h-[98vh]"
-            : "max-w-[95vw] sm:max-w-[1400px] h-[90vh]"
-        } bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl shadow-black/50 p-0 gap-0 overflow-hidden ring-1 ring-white/5 transition-all`}
-      >
+        <ModalContent
+          aria-describedby="file-editor-description"
+          showCloseButton={false}
+          className={`${
+            isMaximized
+              ? "max-w-[98vw] h-[98vh]"
+              : "max-w-[95vw] sm:max-w-[1400px] h-[90vh]"
+        } bg-card/80 border border-border backdrop-blur-xl shadow-2xl p-0 gap-0 overflow-hidden ring-1 ring-border/50 transition-all`}
+        >
         <ModalDescription id="file-editor-description" className="sr-only">
           Edit text files with syntax highlighting
         </ModalDescription>
         <div className="flex flex-col h-full min-h-0">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-gradient-to-r from-white/10 via-white/5 to-transparent backdrop-blur">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-gradient-to-r from-secondary/60 via-secondary/30 to-transparent backdrop-blur">
             <div className="flex items-center gap-3">
               <span
-                className={`${badge.base} rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.28em]`}
+                className={`${badge.base} rounded-lg px-3 py-1 text-[11px] uppercase tracking-[0.28em]`}
               >
                 Editor
               </span>
@@ -140,11 +143,11 @@ export function FileEditorModal({
                 <p className={`${text.muted} text-xs`}>Homeio File Manager</p>
                 <div className="flex flex-col gap-1">
                   <ModalTitle
-                    className={`${text.headingLarge} text-white drop-shadow`}
+                    className={`${text.headingLarge} text-foreground drop-shadow`}
                   >
                     {fileName || "Untitled"}
                   </ModalTitle>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/80">
+                  <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
                     {extensionBadge.icon}
                     <span>{extensionBadge.label}</span>
                   </div>
@@ -156,7 +159,7 @@ export function FileEditorModal({
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMaximized((prev) => !prev)}
-                className="h-10 w-10 rounded-full border border-white/15 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
+                className="h-10 w-10 rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
               >
                 {isMaximized ? (
                   <Minimize2 className="h-4 w-4" />
@@ -168,28 +171,28 @@ export function FileEditorModal({
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="h-10 w-10 rounded-full border border-white/15 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
+                className="h-10 w-10 rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="p-6 space-y-3 bg-white/5 h-full min-h-0 flex flex-col">
+          <div className="p-6 space-y-3 bg-secondary/40 h-full min-h-0 flex flex-col">
             <div className={`${text.muted} text-[11px]`}>
               Tip: press{" "}
-              <span className="font-semibold text-white/80">Ctrl/⌘ + S</span> to
+              <span className="font-semibold text-foreground">Ctrl/⌘ + S</span> to
               save
             </div>
             <div
-              className={`${card.base} flex-1 min-h-0 overflow-hidden border-white/10`}
+              className={`${card.base} flex-1 min-h-0 overflow-hidden border-border`}
             >
               <MonacoEditor
                 height="100%"
                 language={language}
                 defaultLanguage={language}
                 path={path || "untitled"}
-                theme="vs-dark"
+                theme={editorTheme}
                 value={content}
                 onChange={(value) => onChangeContent(value ?? "")}
                 options={{
@@ -203,7 +206,7 @@ export function FileEditorModal({
             </div>
           </div>
 
-          <div className="px-6 py-4 flex items-center justify-between border-t border-white/10 bg-black/30 backdrop-blur">
+          <div className="px-6 py-4 flex items-center justify-between border-t border-border bg-secondary/40 backdrop-blur">
             {isDirty ? (
               <Button
                 onClick={onSave}

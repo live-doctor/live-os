@@ -2,7 +2,6 @@
 
 import { type DefaultDirectory } from "@/app/actions/filesystem";
 import { FolderIcon } from "@/components/icons/files";
-import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Grid3x3, Home, Plus, Star, Trash2, Clock3, Rewind } from "lucide-react";
 
@@ -30,7 +29,7 @@ export function FilesSidebar({
   onOpenNetwork,
 }: FilesSidebarProps) {
   const isInTrash = currentPath === trashPath;
-  const homeLabel = homePath.split("/").filter(Boolean).pop() || "Home";
+  const homeLabel = "Home";
   const favoritesSet = new Set(favorites);
   const getFolderName = (path: string) => {
     const parts = path.split("/").filter(Boolean);
@@ -52,43 +51,36 @@ export function FilesSidebar({
     (shortcut) => shortcut.path !== appDataPath,
   );
   const navItemBase =
-    "w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[12px] font-medium text-white/65 transition-colors hover:bg-white/8 hover:text-white";
+    "w-full flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-[12px] font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground";
   const navItemActive =
-    "w-full flex items-center gap-1.5 rounded-lg bg-white/12 px-2 py-1.5 text-left text-[12px] font-semibold text-white";
+    "w-full flex items-center gap-1.5 rounded-lg bg-secondary/60 px-2.5 py-1.5 text-left text-[12px] font-semibold text-foreground";
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
-      <DialogTitle className="sr-only text-3xl font-semibold text-white drop-shadow">
-        Files
-      </DialogTitle>
-      <DialogDescription id="files-description" className="sr-only">
-        File manager for browsing and managing your files
-      </DialogDescription>
-
-      <ScrollArea className="min-h-0 flex-1 pr-2">
+      <ScrollArea className="min-h-0 flex-1 pr-1">
         <div className="space-y-1">
           <button
             className={navItemActive}
             onClick={() => onNavigate(homePath)}
           >
-            <Home className="h-3.5 w-3.5 text-white/80" />
+            <Home className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[12px] font-medium -tracking-[0.01em]">{homeLabel}</span>
           </button>
 
           <button className={navItemBase} onClick={() => onNavigate(currentPath)}>
-            <Clock3 className="h-3.5 w-3.5 text-white/70" />
+            <Clock3 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[12px] font-medium -tracking-[0.01em]">Recents</span>
           </button>
 
           <button className={navItemBase} onClick={() => onNavigate(getShortcutPath("AppData"))}>
-            <Grid3x3 className="h-3.5 w-3.5 text-white/70" />
+            <Grid3x3 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[12px] font-medium -tracking-[0.01em]">Apps</span>
           </button>
 
-          <div className="my-2 h-px w-full bg-[radial-gradient(35%_35%_at_35%_35%,rgba(255,255,255,0.18)_0%,transparent_70%)]" />
+          <div className="my-2 h-px w-full bg-border/60" />
 
           <div className="pb-1 pt-2">
-            <div className="px-2 text-[10px] font-medium text-white/45 -tracking-[0.01em]">
+            <div className="px-2 text-[10px] font-medium text-muted-foreground -tracking-[0.01em]">
               Favorites
             </div>
           </div>
@@ -108,7 +100,7 @@ export function FilesSidebar({
                   : shortcut.name.charAt(0).toUpperCase() +
                     shortcut.name.slice(1)}
                 {shortcut.isFavorite && (
-                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-1.5 py-[1px] text-[9px] uppercase tracking-[0.1em] text-amber-200">
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-lg bg-amber-500/20 px-1.5 py-[1px] text-[9px] uppercase tracking-[0.1em] text-amber-700 dark:text-amber-200">
                     <Star className="h-3 w-3" />
                     Fav
                   </span>
@@ -117,10 +109,10 @@ export function FilesSidebar({
             </button>
           ))}
 
-          <div className="my-2 h-px w-full bg-[radial-gradient(35%_35%_at_35%_35%,rgba(255,255,255,0.18)_0%,transparent_70%)]" />
+          <div className="my-2 h-px w-full bg-border/60" />
 
           <div className="pb-1 pt-2">
-            <div className="px-2 text-[10px] font-medium text-white/45 -tracking-[0.01em]">
+            <div className="px-2 text-[10px] font-medium text-muted-foreground -tracking-[0.01em]">
               Network
             </div>
           </div>
@@ -136,35 +128,35 @@ export function FilesSidebar({
               </div>
             </div>
             <span className="text-[12px] font-medium -tracking-[0.01em]">Devices</span>
-            <Plus className="h-3 w-3 ml-auto text-white/40" />
+            <Plus className="h-3 w-3 ml-auto text-muted-foreground" />
           </button>
 
           <div className="h-4" />
         </div>
       </ScrollArea>
 
-      <div className="mr-2 mt-1.5 space-y-1 pb-2">
+      <div className="mt-1.5 space-y-1 pb-1 pr-1">
         <button
           className={`w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors ${
             isInTrash
-              ? 'bg-white/12 text-white'
-              : 'text-white/60 hover:bg-white/8 hover:text-white'
+              ? 'bg-secondary/60 text-foreground'
+              : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
           }`}
           onClick={() => onNavigate(trashPath)}
         >
-          <Trash2 className="h-3.5 w-3.5 text-white/50" />
+          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[12px] font-medium -tracking-[0.01em]">Trash</span>
           {trashItemCount > 0 && (
-            <span className="ml-auto text-xs text-white/40 bg-white/10 px-1.5 py-0.5 rounded-full">
+            <span className="ml-auto text-xs text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded-lg">
               {trashItemCount}
             </span>
           )}
         </button>
         <button
           disabled
-          className="w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-white/35 opacity-70 cursor-not-allowed"
+          className="w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-muted-foreground opacity-70 cursor-not-allowed"
         >
-          <Rewind className="h-3.5 w-3.5 text-white/35" />
+          <Rewind className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[12px] font-medium -tracking-[0.01em]">Rewind</span>
         </button>
       </div>

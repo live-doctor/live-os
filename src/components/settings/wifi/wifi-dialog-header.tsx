@@ -21,7 +21,7 @@ export function WifiDialogHeader({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-white">
+        <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-foreground">
           Wi-Fi
         </h2>
         <div className="flex items-center gap-2">
@@ -30,7 +30,7 @@ export function WifiDialogHeader({
             onClick={onToggleRadio}
             disabled={toggling || radioEnabled === null}
             className={cn(
-              "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-white transition-[color,background-color,box-shadow] duration-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20",
+              "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-foreground transition-[color,background-color,box-shadow] duration-300 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring/30",
               (toggling || radioEnabled === null) && "opacity-50 cursor-not-allowed",
             )}
             title={radioEnabled ? "Turn Wi-Fi off" : "Turn Wi-Fi on"}
@@ -47,7 +47,7 @@ export function WifiDialogHeader({
             onClick={onRefresh}
             disabled={loading || radioEnabled === false}
             className={cn(
-              "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-white transition-[color,background-color,box-shadow] duration-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20",
+              "inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-foreground transition-[color,background-color,box-shadow] duration-300 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring/30",
               (loading || radioEnabled === false) && "opacity-50 cursor-not-allowed",
             )}
             title="Rescan networks"
@@ -61,7 +61,7 @@ export function WifiDialogHeader({
           </button>
         </div>
       </div>
-      <p className="text-[13px] leading-tight text-white opacity-45">
+      <p className="text-[13px] leading-tight text-muted-foreground">
         Select a network to connect. Secured networks may require a password.
       </p>
     </div>

@@ -47,11 +47,11 @@ export function AppListItem({
       onClick={onClick}
       className={
         isCompact
-          ? "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-[14px] px-1 py-1.5 outline-none transition-colors hover:bg-white/4"
-          : "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-[20px] p-2.5 outline-none transition-colors hover:bg-white/4"
+          ? "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-1 py-1.5 outline-none transition-colors hover:bg-secondary/40"
+          : "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-lg p-2.5 outline-none transition-colors hover:bg-secondary/40"
       }
     >
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[10px] border border-slate-100/10 bg-white/10">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/60">
         <Image
           src={iconSrc}
           alt={app.title}
@@ -60,8 +60,8 @@ export function AppListItem({
           onError={() => setIconSrc("/default-application-icon.png")}
         />
         {installedApp && (
-          <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#1f1f1f]">
-            <Check className="h-2.5 w-2.5 text-white" />
+          <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-background">
+            <Check className="h-2.5 w-2.5 text-primary-foreground" />
           </div>
         )}
       </div>
@@ -70,7 +70,7 @@ export function AppListItem({
         <h3 className="truncate text-[13px] font-bold tracking-[-0.03em] md:text-[15px]">
           {app.title}
         </h3>
-        <p className="line-clamp-2 w-full min-w-0 text-[12px] leading-tight text-white/40 md:text-[13px]">
+        <p className="line-clamp-2 w-full min-w-0 text-[12px] leading-tight text-muted-foreground md:text-[13px]">
           {app.tagline || app.overview}
         </p>
       </div>
@@ -81,7 +81,7 @@ export function AppListItem({
             size="sm"
             variant="ghost"
             onClick={isInstalled ? handleOpen : onClick}
-            className={`mt-1 h-[25px] rounded-full px-[10px] text-[12px] ${isInstalled ? "bg-white/90 text-black hover:bg-white" : "border border-white/20 bg-white/10 text-white hover:bg-white/15"}`}
+            className={`mt-1 h-[25px] rounded-lg px-[10px] text-[12px] ${isInstalled ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border bg-secondary/60 text-foreground hover:bg-secondary"}`}
           >
             {isInstalled ? (
               <ExternalLink className="mr-1 h-3.5 w-3.5" />
@@ -91,7 +91,7 @@ export function AppListItem({
         </div>
       )}
       {storeBadge ? (
-        <span className="pointer-events-none absolute bottom-1 right-1 max-w-[120px] truncate rounded-md bg-black/45 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] text-white/60">
+        <span className="pointer-events-none absolute bottom-1 right-1 max-w-[120px] truncate rounded-lg border border-border bg-background/70 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {storeBadge}
         </span>
       ) : null}

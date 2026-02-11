@@ -1,0 +1,20 @@
+{
+  "id": "chithi",
+  "title": "Chithi",
+  "name": "Chithi",
+  "icon": "https://github.com/chithi-dev.png",
+  "tagline": "Encrypted file and folder sharing",
+  "overview": "Chithi is a privacy-focused file sharing app for securely sharing files and folders with strong encryption and a minimal interface.",
+  "category": [
+    "security",
+    "files"
+  ],
+  "developer": "chithi-dev",
+  "screenshots": [],
+  "version": "latest",
+  "releaseNotes": "Initial local store entry.",
+  "port": 3000,
+  "path": "",
+  "website": "https://github.com/chithi-dev/chithi",
+  "repo": "https://github.com/chithi-dev/chithi"
+}

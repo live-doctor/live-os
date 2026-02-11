@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { HOMEIO_DIALOG_SHELL_CLASS } from "@/components/ui/dialog-chrome";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import type { NetworkShare } from "./types";
@@ -31,9 +32,9 @@ export function CredentialPromptDialog({
 
   return (
     <Dialog open={!!share} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl sm:max-w-md">
+      <DialogContent className={`${HOMEIO_DIALOG_SHELL_CLASS} sm:max-w-md`}>
         <div className="space-y-4 p-5">
-          <DialogTitle className="text-[20px] font-bold leading-none tracking-[-0.03em] text-white/80">
+          <DialogTitle className="text-[20px] font-bold leading-none tracking-[-0.03em] text-foreground">
             Connect to {share?.host}
           </DialogTitle>
           <div className="space-y-2">
@@ -43,7 +44,7 @@ export function CredentialPromptDialog({
               onChange={(e) =>
                 onCredFormChange({ ...credForm, username: e.target.value })
               }
-              className="h-9 border-white/15 bg-white/5 text-white placeholder:text-white/40"
+              className="h-9 border-border bg-secondary/60 text-foreground placeholder:text-muted-foreground"
             />
             <Input
               type="password"
@@ -52,11 +53,11 @@ export function CredentialPromptDialog({
               onChange={(e) =>
                 onCredFormChange({ ...credForm, password: e.target.value })
               }
-              className="h-9 border-white/15 bg-white/5 text-white placeholder:text-white/40"
+              className="h-9 border-border bg-secondary/60 text-foreground placeholder:text-muted-foreground"
             />
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose} className="text-white">
+            <Button variant="ghost" onClick={onClose} className="text-muted-foreground hover:text-foreground">
               Cancel
             </Button>
             <Button

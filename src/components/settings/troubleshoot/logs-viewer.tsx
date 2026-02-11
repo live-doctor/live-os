@@ -30,7 +30,7 @@ const LEVEL_CONFIG = {
     bg: "bg-yellow-500/10",
   },
   info: { icon: Info, color: "text-cyan-400", bg: "bg-cyan-500/10" },
-  debug: { icon: Bug, color: "text-white/40", bg: "bg-white/5" },
+  debug: { icon: Bug, color: "text-muted-foreground", bg: "bg-secondary/40" },
 };
 
 export function LogsViewer() {
@@ -101,8 +101,10 @@ export function LogsViewer() {
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={cn(
-              "border border-white/15 text-white text-xs",
-              autoRefresh ? "bg-cyan-500/20 border-cyan-500/30" : "bg-white/10",
+              "border border-border text-foreground text-xs",
+              autoRefresh
+                ? "bg-primary/20 border-primary/30"
+                : "bg-secondary/60",
             )}
           >
             <RefreshCw
@@ -117,7 +119,7 @@ export function LogsViewer() {
             variant="ghost"
             size="sm"
             onClick={handleExport}
-            className="border border-white/15 bg-white/10 hover:bg-white/20 text-white text-xs"
+            className="border border-border bg-secondary/60 hover:bg-secondary text-foreground text-xs"
           >
             <Download className="h-3.5 w-3.5 mr-1.5" />
             Export
@@ -134,8 +136,8 @@ export function LogsViewer() {
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
               source === s.value
-                ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10",
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "bg-secondary/40 text-muted-foreground border border-border hover:bg-secondary/60",
             )}
           >
             {s.label}
@@ -146,11 +148,11 @@ export function LogsViewer() {
       {/* Logs List */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-1 rounded-lg bg-black/20 p-2"
+        className="flex-1 overflow-y-auto space-y-1 rounded-lg bg-secondary/30 p-2"
       >
         {loading && logs.length === 0 && (
           <div className="flex items-center justify-center h-full">
-            <RefreshCw className="h-5 w-5 text-white/40 animate-spin" />
+            <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
           </div>
         )}
         {!loading && logs.length === 0 && (
@@ -172,13 +174,13 @@ export function LogsViewer() {
               <Icon
                 className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", config.color)}
               />
-              <span className="text-white/40 shrink-0 font-mono">
+              <span className="text-muted-foreground shrink-0 font-mono">
                 {formatTime(log.timestamp)}
               </span>
-              <span className="text-white/60 shrink-0 font-medium">
+              <span className="text-muted-foreground shrink-0 font-medium">
                 [{log.source}]
               </span>
-              <span className="text-white/80 break-all">{log.message}</span>
+              <span className="text-foreground break-all">{log.message}</span>
             </div>
           );
         })}

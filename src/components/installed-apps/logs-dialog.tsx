@@ -3,6 +3,7 @@
 import { getAppLogs } from '@/app/actions/docker';
 import type { InstalledApp } from '@/components/app-store/types';
 import { Button } from '@/components/ui/button';
+import { dialog as dialogTokens } from '@/components/ui/design-tokens';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { Copy, Radio, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -91,7 +93,14 @@ export function LogsDialog({ open, onOpenChange, app }: LogsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[95vw] p-4 sm:max-w-3xl sm:p-6">
+      <DialogContent
+        className={cn(
+          dialogTokens.content,
+          dialogTokens.size.full,
+          dialogTokens.size.xl,
+          dialogTokens.padding.roomy,
+        )}
+      >
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl">
             {app.name} - Logs
@@ -113,8 +122,8 @@ export function LogsDialog({ open, onOpenChange, app }: LogsDialogProps) {
               setLive((v) => !v);
               if (!live) clear();
             }}
-            className={`bg-white/10 border-white/20 hover:bg-white/20 ${
-              live ? 'text-green-400' : ''
+            className={`border-border bg-secondary/60 hover:bg-secondary ${
+              live ? 'text-emerald-500' : 'text-foreground'
             }`}
           >
             <Radio className="h-4 w-4 mr-2" />
@@ -126,7 +135,7 @@ export function LogsDialog({ open, onOpenChange, app }: LogsDialogProps) {
               size="sm"
               onClick={loadStaticLogs}
               disabled={loading}
-              className="bg-white/10 border-white/20 hover:bg-white/20"
+              className="border-border bg-secondary/60 text-foreground hover:bg-secondary"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -136,7 +145,7 @@ export function LogsDialog({ open, onOpenChange, app }: LogsDialogProps) {
             variant="outline"
             size="sm"
             onClick={handleCopy}
-            className="bg-white/10 border-white/20 hover:bg-white/20"
+            className="border-border bg-secondary/60 text-foreground hover:bg-secondary"
           >
             <Copy className="h-4 w-4 mr-2" />
             Copy
@@ -149,10 +158,10 @@ export function LogsDialog({ open, onOpenChange, app }: LogsDialogProps) {
                 setSelectedContainer(e.target.value);
                 clear();
               }}
-              className="h-8 rounded-md bg-white/10 border border-white/20 text-white text-xs px-2 outline-none"
+              className="h-8 rounded-lg border border-border bg-input px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {containerList.map((name) => (
-                <option key={name} value={name} className="bg-zinc-900">
+                <option key={name} value={name} className="bg-popover text-popover-foreground">
                   {name}
                 </option>
               ))}
@@ -160,8 +169,8 @@ export function LogsDialog({ open, onOpenChange, app }: LogsDialogProps) {
           )}
         </div>
 
-        <ScrollArea className="h-[50vh] w-full rounded border border-white/20 bg-black/20 p-4">
-          <pre className="text-xs font-mono whitespace-pre-wrap break-words">
+        <ScrollArea className="h-[50vh] w-full rounded-lg border border-border bg-secondary/30 p-4">
+          <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">
             {displayText || 'No logs available'}
           </pre>
           <div ref={bottomRef} />

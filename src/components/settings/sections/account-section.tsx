@@ -91,7 +91,7 @@ export function AccountSection() {
   return (
     <>
       <SettingsSectionShell
-        icon={<User className="h-4 w-4 text-white" />}
+        icon={<User className="h-4 w-4 text-foreground" />}
         title="Account"
         subtitle="Your name and password"
         actions={[
@@ -120,14 +120,14 @@ export function AccountSection() {
 
       <Dialog open={nameOpen} onOpenChange={setNameOpen}>
         <DialogContent
-          className={cn(dialogTokens.content, "max-w-md text-white")}
+          className={cn(dialogTokens.content, dialogTokens.size.sm)}
         >
           <DialogHeader>
-            <DialogTitle className="text-white">Change username</DialogTitle>
+            <DialogTitle>Change username</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label className="text-white/80">New username</Label>
+              <Label className="text-muted-foreground">New username</Label>
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -135,13 +135,13 @@ export function AccountSection() {
                 className={cn(
                   inputTokens.base,
                   inputTokens.placeholder,
-                  "border border-white/15 text-white",
+                  "border border-border",
                 )}
                 autoFocus
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-white/80">Current PIN</Label>
+              <Label className="text-muted-foreground">Current PIN</Label>
               <Input
                 value={currentPinForName}
                 onChange={(e) => setCurrentPinForName(e.target.value)}
@@ -150,13 +150,13 @@ export function AccountSection() {
                 className={cn(
                   inputTokens.base,
                   inputTokens.placeholder,
-                  "border border-white/15 text-white",
+                  "border border-border",
                 )}
                 inputMode="numeric"
               />
             </div>
             <Button
-              className="w-full bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleChangeName}
               disabled={pending}
             >
@@ -168,14 +168,14 @@ export function AccountSection() {
 
       <Dialog open={pinOpen} onOpenChange={setPinOpen}>
         <DialogContent
-          className={cn(dialogTokens.content, "max-w-md text-white")}
+          className={cn(dialogTokens.content, dialogTokens.size.sm)}
         >
           <DialogHeader>
-            <DialogTitle className="text-white">Change PIN</DialogTitle>
+            <DialogTitle>Change PIN</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label className="text-white/80">New PIN</Label>
+              <Label className="text-muted-foreground">New PIN</Label>
               <Input
                 value={newPin}
                 onChange={(e) => setNewPin(e.target.value)}
@@ -185,12 +185,12 @@ export function AccountSection() {
                 className={cn(
                   inputTokens.base,
                   inputTokens.placeholder,
-                  "border border-white/15 text-white",
+                  "border border-border",
                 )}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-white/80">Confirm new PIN</Label>
+              <Label className="text-muted-foreground">Confirm new PIN</Label>
               <Input
                 value={confirmPin}
                 onChange={(e) => setConfirmPin(e.target.value)}
@@ -200,12 +200,12 @@ export function AccountSection() {
                 className={cn(
                   inputTokens.base,
                   inputTokens.placeholder,
-                  "border border-white/15 text-white",
+                  "border border-border",
                 )}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-white/80">Current PIN</Label>
+              <Label className="text-muted-foreground">Current PIN</Label>
               <Input
                 value={currentPinForPin}
                 onChange={(e) => setCurrentPinForPin(e.target.value)}
@@ -215,12 +215,12 @@ export function AccountSection() {
                 className={cn(
                   inputTokens.base,
                   inputTokens.placeholder,
-                  "border border-white/15 text-white",
+                  "border border-border",
                 )}
               />
             </div>
             <Button
-              className="w-full bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleChangePin}
               disabled={pending}
             >

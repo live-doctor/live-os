@@ -64,12 +64,12 @@ export function InstalledAppCard({
           <div className="flex flex-col items-center gap-2">
             {/* Icon container with glass frame */}
             <div
-              className={`relative h-14 w-14 overflow-hidden rounded-2xl border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
+              className={`relative h-14 w-14 overflow-hidden rounded-lg border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
                 actionLoading
-                  ? "border-white/20 bg-white/10 shadow-black/20"
+                  ? "border-border bg-secondary/70 shadow-black/20"
                   : isRunning
-                    ? "border-white/15 bg-white/10 shadow-black/20"
-                    : "border-white/8 bg-white/5 shadow-black/10 grayscale opacity-50"
+                    ? "border-border bg-secondary/60 shadow-black/20"
+                    : "border-border/70 bg-secondary/40 shadow-black/10 grayscale opacity-60"
               }`}
             >
               <Image
@@ -90,9 +90,9 @@ export function InstalledAppCard({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 backdrop-blur-[2px]"
+                    className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/70 backdrop-blur-[2px]"
                   >
-                    <Loader2 className="h-6 w-6 animate-spin text-white/90 sm:h-7 sm:w-7" />
+                    <Loader2 className="h-6 w-6 animate-spin text-foreground sm:h-7 sm:w-7" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -101,10 +101,10 @@ export function InstalledAppCard({
             {/* Update badge */}
             {app.hasUpdate && !actionLoading && (
               <div
-                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 shadow-lg shadow-blue-500/40 ring-2 ring-black/30"
+                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/40 ring-2 ring-background/70"
                 title={`Update available: ${app.availableVersion}`}
               >
-                <ArrowUp className="h-3 w-3 text-white" />
+                <ArrowUp className="h-3 w-3 text-primary-foreground" />
               </div>
             )}
 

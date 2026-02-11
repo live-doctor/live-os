@@ -1,0 +1,20 @@
+{
+  "id": "nginx-ui",
+  "title": "Nginx UI",
+  "name": "Nginx UI",
+  "icon": "https://github.com/0xJacky.png",
+  "tagline": "Web UI for managing Nginx configurations",
+  "overview": "Nginx UI is a modern web interface to manage Nginx with a cleaner workflow for configs, certificates, and reloads.",
+  "category": [
+    "networking",
+    "developer-tools"
+  ],
+  "developer": "0xJacky",
+  "screenshots": [],
+  "version": "latest",
+  "releaseNotes": "Initial local store entry.",
+  "port": 9000,
+  "path": "",
+  "website": "https://github.com/0xJacky/nginx-ui",
+  "repo": "https://github.com/0xJacky/nginx-ui"
+}

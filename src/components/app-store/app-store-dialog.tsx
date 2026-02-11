@@ -15,8 +15,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { AppDetailDialog } from "./app-detail-dialog";
 import { AppListItem } from "./app-list-item";
@@ -126,18 +127,34 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
 
             <div className="min-w-0 space-y-8">
               {s.loading && (
-                <div className="flex flex-col items-center justify-center gap-3 py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-white/60" />
-                  <span className="text-sm text-zinc-400">Loading apps...</span>
+                <div className="space-y-6 py-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <div
+                        key={`app-skeleton-${index}`}
+                        className="space-y-3 rounded-lg border border-border bg-secondary/30 p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-11 w-11 rounded-lg" />
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <Skeleton className="h-4 w-2/3" />
+                            <Skeleton className="h-3 w-1/2" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-4/5" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {s.error && (
                 <div className="flex flex-col items-center justify-center gap-4 py-20">
-                  <p className="text-red-400">{s.error}</p>
+                  <p className="text-destructive">{s.error}</p>
                   <Button
                     variant="outline"
                     onClick={s.loadApps}
-                    className="border-white/20 bg-white/5 text-white"
+                    className="border-border bg-secondary/60 text-foreground hover:bg-secondary"
                   >
                     Try Again
                   </Button>
@@ -145,7 +162,9 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
               )}
               {!s.loading && !s.error && s.apps.length === 0 && (
                 <div className="flex flex-col items-center justify-center gap-3 py-16">
-                  <p className="text-zinc-400">No applications found</p>
+                  <p className="text-muted-foreground">
+                    No applications found
+                  </p>
                 </div>
               )}
               {!s.loading && !s.error && s.apps.length > 0 && (
@@ -208,11 +227,13 @@ export function AppStoreDialog({ open, onOpenChange }: AppStoreDialogProps) {
                     <>
                       {s.filteredApps.length === 0 && (
                         <div className="flex flex-col items-center justify-center gap-3 py-16">
-                          <p className="text-zinc-400">No applications found</p>
+                          <p className="text-muted-foreground">
+                            No applications found
+                          </p>
                           {s.searchQuery && (
                             <button
                               onClick={handleClearSearch}
-                              className="text-sm text-blue-400 hover:text-blue-300"
+                              className="text-sm text-primary hover:opacity-80"
                             >
                               Clear search
                             </button>

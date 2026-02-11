@@ -9,7 +9,7 @@ export function SettingsTabTrigger({ value, children }: SettingsTabTriggerProps)
   return (
     <TabsTrigger
       value={value}
-      className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70"
+      className="data-[state=active]:bg-secondary/60 data-[state=active]:text-foreground text-muted-foreground"
     >
       {children}
     </TabsTrigger>

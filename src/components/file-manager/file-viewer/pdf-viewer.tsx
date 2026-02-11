@@ -22,9 +22,14 @@ export function PdfViewer({ item }: Omit<FileViewerProps, "onClose">) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
-        <p className="text-white/60">Unable to preview PDF in browser</p>
-        <Button onClick={openInNewTab} className="bg-white/10 hover:bg-white/20">
+      <div className="flex flex-col items-center gap-4 p-8 rounded-lg bg-secondary/40 backdrop-blur-xl border border-border">
+        <p className="text-muted-foreground">
+          Unable to preview PDF in browser
+        </p>
+        <Button
+          onClick={openInNewTab}
+          className="bg-secondary/60 text-foreground hover:bg-secondary"
+        >
           <ExternalLink className="w-4 h-4 mr-2" />
           Open in new tab
         </Button>
@@ -33,10 +38,10 @@ export function PdfViewer({ item }: Omit<FileViewerProps, "onClose">) {
   }
 
   return (
-    <div className="relative w-[80vw] h-[80vh] max-w-5xl rounded-lg overflow-hidden bg-white shadow-2xl">
+    <div className="relative w-[80vw] h-[80vh] max-w-5xl rounded-lg overflow-hidden bg-card shadow-2xl">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-          <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 

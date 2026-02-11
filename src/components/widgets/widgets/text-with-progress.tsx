@@ -19,7 +19,7 @@ export function TextWithProgressWidget({ data }: TextWithProgressProps) {
         <h3 className={cn(text.label, "uppercase tracking-wider mb-1")}>
           {title}
         </h3>
-        <div className="text-xl font-bold text-white/90 -tracking-[0.02em]">
+        <div className="text-xl font-bold text-foreground -tracking-[0.02em]">
           {value}
         </div>
         {subtext && <p className={cn(text.muted, "mt-0.5")}>{subtext}</p>}

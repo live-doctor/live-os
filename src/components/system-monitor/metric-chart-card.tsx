@@ -54,7 +54,10 @@ export function MetricChartCard({
         <div className={text.valueLarge}>
           {value}
           {unit && (
-            <span className="text-sm font-normal text-white/40"> {unit}</span>
+            <span className="text-sm font-normal text-muted-foreground">
+              {" "}
+              {unit}
+            </span>
           )}
         </div>
 

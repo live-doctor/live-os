@@ -12,7 +12,7 @@ type StorageSectionProps = {
 export function StorageSection({ onOpenDialog }: StorageSectionProps) {
   return (
     <SettingsSectionShell
-      icon={<HardDrive className="h-4 w-4 text-white" />}
+      icon={<HardDrive className="h-4 w-4 text-foreground" />}
       title="Storage"
       subtitle="Disks, partitions, volumes"
       actions={

@@ -7,10 +7,8 @@ import { type LanDevice, listLanDevices } from "@/app/actions/network";
 import { getWallpapers, updateSettings } from "@/app/actions/auth/settings";
 import { getSystemInfo, getUptime } from "@/app/actions/system";
 import { type UpdateStatus, checkForUpdates } from "@/app/actions/maintenance/update";
-import { useRebootTracker } from "@/hooks/useRebootTracker";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { formatBytes, formatUptime } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { HardwareInfo } from "./hardware-utils";
@@ -30,9 +28,7 @@ type Params = {
 };
 
 export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
-  const router = useRouter();
-  const { systemStats, storageStats } = useSystemStatus();
-  const { requestReboot } = useRebootTracker();
+  const { systemStats, storageStats } = useSystemStatus({ enabled: open });
 
   // Static data
   const [systemInfo, setSystemInfo] = useState<any>(null);
@@ -46,6 +42,7 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [savingWallpaper, setSavingWallpaper] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
 
   // Bluetooth
   const [bluetoothStatus, setBtStatus] = useState<HardwareInfo["bluetooth"] | null>(null);
@@ -132,13 +129,28 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
 
   // Bootstrap on open
   useEffect(() => {
-    if (open) {
-      fetchSystemInfo();
-      fetchWallpapers();
-      fetchUptime();
-      fetchFirewallStatus();
-      refreshBluetooth();
+    if (!open) {
+      setInitialLoading(false);
+      return;
     }
+    let cancelled = false;
+    const bootstrap = async () => {
+      setInitialLoading(true);
+      await Promise.allSettled([
+        fetchSystemInfo(),
+        fetchWallpapers(),
+        fetchUptime(),
+        fetchFirewallStatus(),
+        refreshBluetooth(),
+      ]);
+      if (!cancelled) {
+        setInitialLoading(false);
+      }
+    };
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, [open, fetchSystemInfo, fetchWallpapers, fetchUptime, fetchFirewallStatus, refreshBluetooth]);
 
   const hardware: HardwareInfo | undefined = systemStats?.hardware;
@@ -172,28 +184,6 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     },
     [onWallpaperChange],
   );
-
-  const handleLogout = useCallback(async () => {
-    const res = await fetch("/api/auth/logout", { method: "POST" });
-    if (res.ok) {
-      toast.success("Logged out");
-      router.push("/login");
-    } else {
-      toast.error("Failed to log out");
-    }
-  }, [router]);
-
-  const handleRestart = useCallback(async () => {
-    const result = await requestReboot();
-    if (result.ok) toast.success("Restarting system...");
-    else toast.error(result.error ?? "Restart failed");
-  }, [requestReboot]);
-
-  const handleShutdown = useCallback(async () => {
-    const res = await fetch("/api/system/shutdown", { method: "POST" });
-    if (res.ok) toast.success("Shutting down...");
-    else toast.error("Shutdown failed");
-  }, []);
 
   const handleCheckUpdate = useCallback(async () => {
     setCheckingUpdate(true);
@@ -263,6 +253,7 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     systemInfo,
     wallpapers,
     wallpapersLoading,
+    initialLoading,
     firewallEnabled,
     lanDevices,
     lanDevicesLoading,
@@ -294,9 +285,6 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     // Handlers
     fetchLanDevices,
     handleWallpaperSelect,
-    handleLogout,
-    handleRestart,
-    handleShutdown,
     handleCheckUpdate,
     handleToggleBluetooth,
     refreshBluetooth,
@@ -306,3 +294,5 @@ export function useSettingsDialogData({ open, onWallpaperChange }: Params) {
     getMetricColor,
   };
 }
+
+export type SettingsDialogData = ReturnType<typeof useSettingsDialogData>;

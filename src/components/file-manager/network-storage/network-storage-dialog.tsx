@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { HOMEIO_DIALOG_SHELL_CLASS } from "@/components/ui/dialog-chrome";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { CredentialPromptDialog } from "./credential-prompt-dialog";
@@ -23,7 +24,7 @@ export function NetworkStorageDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[50vh] max-w-[80vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl"
+        className={`${HOMEIO_DIALOG_SHELL_CLASS} max-h-[50vh] max-w-[80vw]`}
       >
         <ScrollArea
           className="h-[50vh] w-full"
@@ -38,7 +39,7 @@ export function NetworkStorageDialog({
             />
             <div className="space-y-4 pb-8">
               {ns.globalError && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-100">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                   <div>{ns.globalError}</div>
                 </div>
@@ -101,7 +102,7 @@ export function NetworkStorageDialog({
         </ScrollArea>
 
         {ns.discoverStatus && ns.view === "list" && (
-          <div className="pointer-events-none absolute bottom-3 right-4 flex items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[11px] text-white/70">
+          <div className="pointer-events-none absolute bottom-3 right-4 flex items-center gap-2 rounded-lg border border-border bg-background/70 px-3 py-1 text-[11px] text-muted-foreground">
             {ns.discovering && (
               <Loader2 className="h-3 w-3 animate-spin text-cyan-200" />
             )}

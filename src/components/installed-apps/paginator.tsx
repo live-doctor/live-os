@@ -79,7 +79,7 @@ export function PaginationArrows({
   if (!show) return null;
 
   const buttonClass =
-    "grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors hover:bg-white/16 disabled:pointer-events-none disabled:text-white/30";
+    "grid h-10 w-10 place-items-center rounded-lg border border-border bg-secondary/60 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:bg-secondary disabled:pointer-events-none disabled:text-muted-foreground/60";
 
   return (
     <>
@@ -127,7 +127,9 @@ export function PaginationPills({
             onClick={() => onSelectPage(index)}
             aria-label={`Go to apps page ${index + 1}`}
             className={`h-2.5 rounded-full transition-all ${
-              active ? "w-5 bg-white/85" : "w-2.5 bg-white/30 hover:bg-white/45"
+              active
+                ? "w-5 bg-foreground/85"
+                : "w-2.5 bg-muted-foreground/35 hover:bg-muted-foreground/55"
             }`}
           />
         );

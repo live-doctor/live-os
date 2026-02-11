@@ -30,7 +30,7 @@ export function AppList({
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className={text.valueSmall}>Application</h3>
         {activeMetric && (
-          <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-white/80">
+          <span className="inline-flex items-center rounded-lg border border-border bg-secondary/60 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             {metricBadgeLabel[activeMetric]}
           </span>
         )}

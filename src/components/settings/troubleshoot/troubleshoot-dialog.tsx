@@ -10,13 +10,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { text } from "@/components/ui/design-tokens";
+import { dialog as dialogTokens, text } from "@/components/ui/design-tokens";
 import { DiagnosticsCard } from "./diagnostics-card";
 import { ServicesCard } from "./services-card";
 import { LogsCard } from "./logs-card";
 import type { DiagnosticResult } from "./types";
 import { Eraser, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type TroubleshootDialogProps = {
   open: boolean;
@@ -60,20 +61,22 @@ export function TroubleshootDialog({ open, onOpenChange }: TroubleshootDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[95vw] p-0 sm:max-w-5xl">
+      <DialogContent
+        className={cn(dialogTokens.content, dialogTokens.size.full, "sm:max-w-5xl", dialogTokens.padding.none)}
+      >
         <div className="space-y-3 px-5 py-6">
           <DialogTitle className="sr-only">Troubleshoot & maintenance</DialogTitle>
           <DialogDescription className="sr-only">
             Run diagnostics, inspect services, clear caches, and view logs.
           </DialogDescription>
           <div className="flex items-center justify-between">
-            <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-white">
+            <h2 className="text-left text-[17px] font-semibold leading-snug tracking-[-0.02em] text-foreground">
               Troubleshoot
             </h2>
             <Button
               variant="ghost"
               size="sm"
-              className="inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-white transition-[color,background-color,box-shadow] duration-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="inline-flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2.5 text-[12px] font-medium tracking-[-0.02em] text-foreground transition-[color,background-color,box-shadow] duration-300 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring/30"
               onClick={handleClearCaches}
               disabled={clearing}
             >
@@ -85,7 +88,7 @@ export function TroubleshootDialog({ open, onOpenChange }: TroubleshootDialogPro
               Clear caches
             </Button>
           </div>
-          <p className="text-[13px] leading-tight text-white opacity-45">
+          <p className="text-[13px] leading-tight text-muted-foreground">
             Run diagnostics, inspect services, clear caches, and view logs without leaving settings.
           </p>
         </div>

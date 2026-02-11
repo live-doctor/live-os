@@ -5,6 +5,7 @@ import {
   deployApp,
 } from "@/app/actions/docker";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { HOMEIO_DIALOG_SHELL_CLASS } from "@/components/ui/dialog-chrome";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -177,7 +178,7 @@ export function CustomDeployDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[92vh] max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl sm:max-w-3xl"
+        className={`${HOMEIO_DIALOG_SHELL_CLASS} sm:max-w-3xl`}
         aria-describedby="custom-deploy-description"
       >
         <CustomDeployHeader
@@ -195,7 +196,7 @@ export function CustomDeployDialog({
           <div className="min-w-0 max-w-full space-y-5 overflow-hidden px-3 pb-6 pt-4 md:px-6 md:pt-5">
             {/* App Name */}
             <div className="space-y-2">
-              <Label htmlFor="app-name" className="text-white/85">
+              <Label htmlFor="app-name" className="text-foreground">
                 App Name *
               </Label>
               <Input
@@ -203,17 +204,17 @@ export function CustomDeployDialog({
                 placeholder="my-custom-app"
                 value={appName}
                 onChange={(e) => setAppName(e.target.value)}
-                className="border-white/20 bg-white/8 text-white placeholder:text-white/40"
+                className="border-border bg-secondary/60 text-foreground placeholder:text-muted-foreground"
                 disabled={loading || isEditMode}
               />
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-muted-foreground">
                 This will be used as the container/app identifier
               </p>
             </div>
 
             {/* Icon URL */}
             <div className="space-y-2">
-              <Label htmlFor="icon-url" className="text-white/85">
+              <Label htmlFor="icon-url" className="text-foreground">
                 Icon URL (optional)
               </Label>
               <Input
@@ -221,17 +222,17 @@ export function CustomDeployDialog({
                 placeholder="https://example.com/icon.png"
                 value={iconUrl}
                 onChange={(event) => setIconUrl(event.target.value)}
-                className="border-white/20 bg-white/8 text-white placeholder:text-white/40"
+                className="border-border bg-secondary/60 text-foreground placeholder:text-muted-foreground"
                 disabled={loading}
               />
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-muted-foreground">
                 Supports absolute http(s) URLs and local paths like /icons/my-app.png
               </p>
             </div>
 
             {/* Web UI Port */}
             <div className="space-y-2">
-              <Label htmlFor="webui-port" className="text-white/85">
+              <Label htmlFor="webui-port" className="text-foreground">
                 Web UI Port
               </Label>
               <Input
@@ -240,10 +241,10 @@ export function CustomDeployDialog({
                 placeholder="e.g. 8096"
                 value={uiPort}
                 onChange={(e) => setUiPort(e.target.value)}
-                className="border-white/20 bg-white/8 text-white placeholder:text-white/40"
+                className="border-border bg-secondary/60 text-foreground placeholder:text-muted-foreground"
                 disabled={loading}
               />
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-muted-foreground">
                 Port used to access the web interface. Auto-detected from
                 compose, but you can override it here.
               </p>

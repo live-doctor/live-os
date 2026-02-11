@@ -15,11 +15,11 @@ export function StatusBar({ children, onWifiClick }: StatusBarProps) {
   const status = useStatusData();
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-black/30 backdrop-blur-xl border border-white/10">
+    <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/60 backdrop-blur-xl border border-border">
       <button
         type="button"
         onClick={onWifiClick}
-        className="rounded-full p-1 hover:bg-white/10 transition-colors"
+        className="rounded-lg p-1 hover:bg-secondary/60 transition-colors"
         title="Wi-Fi settings"
       >
         <WifiIcon status={status.wifi} />

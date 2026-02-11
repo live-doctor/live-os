@@ -1,7 +1,7 @@
 "use client";
 
+import { dialog as dialogTokens, surface } from "@/components/ui/design-tokens";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { surface } from "@/components/ui/design-tokens";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -93,7 +93,10 @@ export function CommandPaletteDialog({
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className={`top-4 left-1/2 -translate-x-1/2 translate-y-0 gap-5 rounded-[20px] p-3 text-white ${surface.panel} duration-200 max-h-[calc(100%-16px)] w-full max-w-[calc(100%-40px)] sm:max-w-[700px] md:p-[30px] lg:top-[10%] z-[999]`}
+        className={cn(
+          dialogTokens.content,
+          "top-4 left-1/2 -translate-x-1/2 translate-y-0 gap-5 p-3 duration-200 max-h-[calc(100%-16px)] w-full max-w-[calc(100%-40px)] sm:max-w-[700px] md:p-[30px] lg:top-[10%] z-[999]",
+        )}
         onKeyDown={(event) => {
           if (event.key === "ArrowDown") {
             event.preventDefault();
@@ -112,25 +115,25 @@ export function CommandPaletteDialog({
         }}
       >
         <div className="h-full w-full overflow-hidden flex flex-col gap-3 md:gap-5">
-          <div className="flex items-center rounded-[12px] border border-white/10 bg-white/[0.04] px-2">
+          <div className="flex items-center rounded-lg border border-border bg-secondary/40 px-2">
             <input
               ref={inputRef}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search for apps, settings, or actions"
-              className={`h-9 w-full rounded-md bg-transparent px-1.5 text-[14px] tracking-[-0.02em] outline-none placeholder:text-white/25 disabled:cursor-not-allowed disabled:opacity-50 ${surface.label}`}
+              className={`h-9 w-full rounded-md bg-transparent px-1.5 text-[14px] tracking-[-0.02em] text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 ${surface.label}`}
             />
             <button
               type="button"
               onClick={() => handleDialogOpenChange(false)}
-              className="flex h-7 w-7 items-center justify-center rounded-full opacity-40 outline-none ring-white/60 transition-opacity hover:opacity-60 focus-visible:opacity-60 focus-visible:ring-2"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground opacity-60 outline-none ring-ring/60 transition-opacity hover:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2"
               aria-label="Close search"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="h-[1px] w-full shrink-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="h-[1px] w-full shrink-0 bg-gradient-to-r from-transparent via-border to-transparent" />
 
           <div
             className={cn(
@@ -150,9 +153,9 @@ export function CommandPaletteDialog({
                         key={action.id}
                         type="button"
                         onClick={() => runAction(action)}
-                        className={`mr-2 inline-flex w-[75px] flex-col items-center gap-2 overflow-hidden rounded-[8px] border border-transparent p-1.5 outline-none ${surface.panelInteractive} focus-visible:border-white/10 md:w-[100px] md:p-2`}
+                        className={`mr-2 inline-flex w-[75px] flex-col items-center gap-2 overflow-hidden rounded-lg border border-transparent p-1.5 outline-none ${surface.panelInteractive} focus-visible:border-white/10 md:w-[100px] md:p-2`}
                       >
-                        <div className="flex h-12 w-12 min-h-12 min-w-12 items-center justify-center rounded-[10px] border border-slate-100/10 bg-white/10 text-white/85 lg:rounded-[15px]">
+                        <div className="flex h-12 w-12 min-h-12 min-w-12 items-center justify-center rounded-lg border border-slate-100/10 bg-white/10 text-white/85 lg:rounded-[15px]">
                           {action.icon}
                         </div>
                         <div
@@ -168,7 +171,11 @@ export function CommandPaletteDialog({
               </div>
             )}
 
-            <div className="flex flex-col gap-0.5" role="listbox" aria-label="Suggestions">
+            <div
+              className="flex flex-col gap-0.5"
+              role="listbox"
+              aria-label="Suggestions"
+            >
               {!hasQuery ? (
                 visibleFrequentActions.length === 0 ? (
                   <div className="px-3 py-10 text-center text-sm text-white/45">
@@ -187,7 +194,7 @@ export function CommandPaletteDialog({
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => runSelected(index)}
                     className={cn(
-                      `group relative flex cursor-default select-none items-start gap-3 rounded-[8px] p-2 text-left outline-none`,
+                      `group relative flex cursor-default select-none items-start gap-3 rounded-lg p-2 text-left outline-none`,
                       index === normalizedActiveIndex
                         ? "bg-white/[0.04]"
                         : "hover:bg-white/[0.03]",
@@ -195,11 +202,16 @@ export function CommandPaletteDialog({
                     role="option"
                     aria-selected={index === normalizedActiveIndex}
                   >
-                    <div className="flex h-6 w-6 min-h-6 min-w-6 items-center justify-center rounded-[6px] border border-slate-100/10 bg-white/10 sm:rounded-[8px]">
+                    <div className="flex h-6 w-6 min-h-6 min-w-6 items-center justify-center rounded-[6px] border border-slate-100/10 bg-white/10 sm:rounded-lg">
                       {action.icon}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={cn("truncate text-[13px] md:text-[15px]", surface.label)}>
+                      <div
+                        className={cn(
+                          "truncate text-[13px] md:text-[15px]",
+                          surface.label,
+                        )}
+                      >
                         {action.title}
                       </div>
                       {action.subtitle ? (

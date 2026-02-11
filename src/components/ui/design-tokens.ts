@@ -5,14 +5,14 @@
 
 // Card Styles
 export const card = {
-  base: "bg-black/30 backdrop-blur-xl rounded-2xl border border-white/15 shadow-lg shadow-black/25",
+  base: "bg-card/95 text-card-foreground backdrop-blur-xl rounded-lg border border-border shadow-lg",
   padding: {
     sm: "p-4",
     md: "p-5",
     lg: "p-6",
   },
-  hover: "hover:border-white/30 hover:bg-black/40",
-  selected: "bg-black/40 border-cyan-500/50 ring-1 ring-cyan-500/30",
+  hover: "hover:border-border/70 hover:bg-secondary/60",
+  selected: "bg-primary/10 border-primary/30 ring-1 ring-primary/20",
 } as const;
 
 // Shared glass surfaces used on home widgets, dock, and app tiles
@@ -27,35 +27,47 @@ export const surface = {
 // Dialog Styles
 export const dialog = {
   content:
-    "overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl",
+    "overflow-hidden rounded-lg border border-border bg-[color:var(--dialog-background)] text-foreground shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl",
+  size: {
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-[760px]",
+    xl: "sm:max-w-3xl",
+    full: "max-h-[90vh] max-w-[95vw]",
+  },
+  padding: {
+    default: "p-6",
+    roomy: "p-4 sm:p-6",
+    none: "p-0",
+  },
   header:
-    "border-b border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent backdrop-blur",
+    "border-b border-border bg-gradient-to-r from-secondary/50 via-secondary/25 to-transparent backdrop-blur",
 } as const;
 
 // Typography
 export const text = {
   // Labels
-  label: "text-xs text-white/40 -tracking-[0.01em]",
-  labelUppercase: "text-xs text-white/40 -tracking-[0.01em] uppercase",
+  label: "text-xs text-muted-foreground -tracking-[0.01em]",
+  labelUppercase: "text-xs text-muted-foreground -tracking-[0.01em] uppercase",
 
   // Values
-  value: "text-white/90",
-  valueLarge: "text-2xl font-bold text-white/90 -tracking-[0.02em]",
-  valueSmall: "text-sm font-medium text-white/90 -tracking-[0.01em]",
+  value: "text-foreground",
+  valueLarge: "text-2xl font-bold text-foreground -tracking-[0.02em]",
+  valueSmall: "text-sm font-medium text-foreground -tracking-[0.01em]",
 
   // Headings
-  heading: "text-lg font-semibold text-white -tracking-[0.01em]",
-  headingLarge: "text-2xl font-semibold text-white",
-  headingXL: "text-4xl font-semibold text-white leading-tight drop-shadow",
+  heading: "text-lg font-semibold text-foreground -tracking-[0.01em]",
+  headingLarge: "text-2xl font-semibold text-foreground",
+  headingXL: "text-4xl font-semibold text-foreground leading-tight",
 
   // Subdued
-  muted: "text-xs text-white/60 -tracking-[0.01em]",
-  subdued: "text-sm text-white/60",
+  muted: "text-xs text-muted-foreground -tracking-[0.01em]",
+  subdued: "text-sm text-muted-foreground",
 } as const;
 
 // Badge/Tag
 export const badge = {
-  base: "rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/70",
+  base: "rounded-lg border border-border bg-secondary/60 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-muted-foreground",
 } as const;
 
 // Status Indicators
@@ -81,35 +93,44 @@ export const colors = {
 
 // Icon containers
 export const iconBox = {
-  sm: "h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center",
-  md: "h-10 w-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center",
-  lg: "h-14 w-14 rounded-full border border-white/15 bg-white/10 flex items-center justify-center",
+  sm: "h-8 w-8 rounded-lg bg-secondary/60 flex items-center justify-center",
+  md: "h-10 w-10 rounded-lg bg-secondary/60 border border-border flex items-center justify-center",
+  lg: "h-14 w-14 rounded-lg border border-border bg-secondary/60 flex items-center justify-center",
+} as const;
+
+// Theme option buttons
+export const themeButton = {
+  base: "rounded-lg border px-3 py-1.5 text-xs transition-colors",
+  active:
+    "border-primary/30 bg-primary/10 text-foreground font-medium ring-1 ring-primary/20",
+  inactive:
+    "border-border bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground",
 } as const;
 
 // Buttons
 export const button = {
-  ghost: "border border-white/15 bg-white/10 hover:bg-white/20 text-white",
+  ghost: "border border-border bg-secondary/60 hover:bg-secondary text-foreground",
   closeIcon:
-    "h-10 w-10 rounded-full border border-white/15 bg-white/10 text-white/60 hover:text-white hover:bg-white/20 transition-colors",
+    "h-10 w-10 rounded-lg border border-border bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors",
 } as const;
 
 // Alert boxes
 export const alert = {
-  error: "rounded-xl border border-red-500/30 bg-red-500/10 p-4",
-  warning: "rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4",
-  info: "rounded-xl border border-blue-500/30 bg-blue-500/10 p-4",
-  success: "rounded-xl border border-green-500/30 bg-green-500/10 p-4",
+  error: "rounded-lg border border-red-500/30 bg-red-500/10 p-4",
+  warning: "rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4",
+  info: "rounded-lg border border-blue-500/30 bg-blue-500/10 p-4",
+  success: "rounded-lg border border-green-500/30 bg-green-500/10 p-4",
 } as const;
 
 // Inputs
 export const input = {
-  base: "bg-white/5 text-white border-white/20 backdrop-blur",
-  placeholder: "placeholder:text-white/40",
+  base: "bg-input text-foreground border-border backdrop-blur",
+  placeholder: "placeholder:text-muted-foreground",
 } as const;
 
 // Progress bars
 export const progressBar = {
-  track: "h-1 w-full overflow-hidden rounded-full bg-white/10",
+  track: "h-1 w-full overflow-hidden rounded-full bg-secondary/60",
   fill: "h-full transition-all duration-300",
 } as const;
 

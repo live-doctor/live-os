@@ -70,18 +70,18 @@ export function AudioViewer({ item }: Omit<FileViewerProps, "onClose">) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 p-8 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 min-w-[320px]">
+    <div className="flex flex-col items-center gap-6 p-8 rounded-lg bg-secondary/40 backdrop-blur-xl border border-border min-w-[320px]">
       {/* Album art placeholder */}
-      <div className="w-48 h-48 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center">
-        <Music className="w-20 h-20 text-white/40" />
+      <div className="w-48 h-48 rounded-lg bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center">
+        <Music className="w-20 h-20 text-muted-foreground" />
       </div>
 
       {/* File name */}
       <div className="text-center">
-        <h4 className="text-white font-semibold text-lg truncate max-w-[280px]">
+        <h4 className="text-foreground font-semibold text-lg truncate max-w-[280px]">
           {item.name}
         </h4>
-        <p className="text-white/50 text-sm mt-1">Audio File</p>
+        <p className="text-muted-foreground text-sm mt-1">Audio File</p>
       </div>
 
       {/* Progress bar */}
@@ -92,9 +92,9 @@ export function AudioViewer({ item }: Omit<FileViewerProps, "onClose">) {
           max={duration || 100}
           value={currentTime}
           onChange={handleSeek}
-          className="w-full h-1 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+          className="w-full h-1 bg-secondary/60 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-lg [&::-webkit-slider-thumb]:bg-primary"
         />
-        <div className="flex justify-between text-xs text-white/50">
+        <div className="flex justify-between text-xs text-muted-foreground">
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -104,15 +104,15 @@ export function AudioViewer({ item }: Omit<FileViewerProps, "onClose">) {
       <div className="flex items-center gap-4">
         <button
           onClick={togglePlay}
-          className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+          className="w-14 h-14 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center transition-colors"
         >
           {isPlaying ? (
-            <Pause className="w-6 h-6 text-white" />
+            <Pause className="w-6 h-6 text-foreground" />
           ) : (
-            <Play className="w-6 h-6 text-white ml-1" />
+            <Play className="w-6 h-6 text-foreground ml-1" />
           )}
         </button>
-        <Volume2 className="w-5 h-5 text-white/50" />
+        <Volume2 className="w-5 h-5 text-muted-foreground" />
       </div>
 
       {/* Hidden audio element */}

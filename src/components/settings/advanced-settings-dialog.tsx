@@ -6,7 +6,9 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { dialog as dialogTokens } from "@/components/ui/design-tokens";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { AdvancedSettingsContent } from "./sections";
 
 type AdvancedSettingsDialogProps = {
@@ -20,7 +22,9 @@ export function AdvancedSettingsDialog({
 }: AdvancedSettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[760px] p-0">
+      <DialogContent
+        className={cn(dialogTokens.content, dialogTokens.size.lg, dialogTokens.padding.none)}
+      >
         <DialogTitle className="sr-only">Advanced settings</DialogTitle>
         <DialogDescription className="sr-only">
           Network tweaks, terminal access, and maintenance tools.

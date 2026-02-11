@@ -41,7 +41,7 @@ export function BluetoothSection({
 
   return (
     <SettingsSectionShell
-      icon={<Bluetooth className="h-4 w-4 text-white" />}
+      icon={<Bluetooth className="h-4 w-4 text-foreground" />}
       title="Bluetooth"
       subtitle={[statusLabel, adapterLabel].filter(Boolean).join(" • ")}
       badge={badge}
@@ -60,9 +60,6 @@ export function BluetoothSection({
         )
       }
     >
-      {/* {subtitleParts.length > 0 && (
-        <div className="text-xs text-white/60">{subtitleParts.join(" • ")}</div>
-      )} */}
       {/* Hide low-level errors on the card; they are surfaced in the dialog */}
     </SettingsSectionShell>
   );

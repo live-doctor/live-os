@@ -16,7 +16,7 @@ export function FirewallSection({ onOpenDialog, enabled }: FirewallSectionProps)
 
   return (
     <SettingsSectionShell
-      icon={<Shield className="h-4 w-4 text-white" />}
+      icon={<Shield className="h-4 w-4 text-foreground" />}
       title="Firewall"
       subtitle={statusLabel}
       actions={

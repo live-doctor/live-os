@@ -1,0 +1,20 @@
+{
+  "id": "databasement",
+  "title": "Databasement",
+  "name": "Databasement",
+  "icon": "https://github.com/David-Crty.png",
+  "tagline": "Simple database management from your browser",
+  "overview": "Databasement is a lightweight self-hosted database management interface focused on quick setup and clean administration workflows.",
+  "category": [
+    "database",
+    "developer-tools"
+  ],
+  "developer": "David-Crty",
+  "screenshots": [],
+  "version": "latest",
+  "releaseNotes": "Initial local store entry.",
+  "port": 3000,
+  "path": "",
+  "website": "https://github.com/David-Crty/databasement",
+  "repo": "https://github.com/David-Crty/databasement"
+}

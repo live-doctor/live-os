@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/button";
 import {
   card,
+  badge,
   dialog as dialogTokens,
   text,
 } from "@/components/ui/design-tokens";
+import { HOMEIO_DIALOG_CLOSE_BUTTON_CLASS } from "@/components/ui/dialog-chrome";
 import {
   Dialog,
   DialogContent,
@@ -56,18 +58,16 @@ export function WidgetSelector({
           "max-w-[900px] sm:max-w-[1000px] max-h-[85vh] overflow-hidden flex flex-col",
         )}
       >
-        <DialogHeader className="px-8 py-5 border-b border-white/5 bg-gradient-to-r from-white/10 via-white/5 to-transparent backdrop-blur">
+        <DialogHeader className={cn(dialogTokens.header, "px-8 py-5")}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/70">
-                Widgets
-              </span>
+              <span className={badge.base}>Widgets</span>
               <div className="flex items-center gap-3">
                 <div>
-                  <DialogTitle className="text-3xl font-semibold text-white drop-shadow">
+                  <DialogTitle className="text-3xl font-semibold">
                     Edit widgets
                   </DialogTitle>
-                  <p className={cn(text.muted, "text-sm text-white/70")}>
+                  <p className={cn(text.muted, "text-sm")}>
                     Select up to {MAX_WIDGETS} widgets ({selectedIds.length}/
                     {MAX_WIDGETS})
                   </p>
@@ -78,7 +78,7 @@ export function WidgetSelector({
               variant="ghost"
               size="icon"
               onClick={() => onOpenChange(false)}
-              className="h-10 w-10 rounded-full border border-white/15 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
+              className={cn(HOMEIO_DIALOG_CLOSE_BUTTON_CLASS, "h-10 w-10")}
             >
               <X className="h-5 w-5" />
             </Button>
@@ -86,7 +86,7 @@ export function WidgetSelector({
         </DialogHeader>
 
         {/* Preview area */}
-        <div className="px-6 py-3 border-b border-white/5">
+        <div className="px-6 py-3 border-b border-border">
           <p className={cn(text.label, "uppercase tracking-wider mb-2")}>
             Preview
           </p>
@@ -107,7 +107,7 @@ export function WidgetSelector({
                     key={slot}
                     className={cn(
                       "rounded-xl overflow-hidden h-[160px]",
-                      !widgetInfo && "border-2 border-dashed border-white/20",
+                      !widgetInfo && "border-2 border-dashed border-border/60",
                     )}
                   >
                     {widgetInfo ? (
@@ -204,7 +204,7 @@ function WidgetPreviewCard({
       {customData ? (
         <button
           type="button"
-          className="absolute right-2 top-2 z-20 rounded-md border border-white/25 bg-black/30 p-1 text-white/75 hover:bg-black/45 hover:text-white"
+          className="absolute right-2 top-2 z-20 rounded-md border border-border bg-secondary/60 p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
           onClick={(event) => {
             event.stopPropagation();
             handleEditCustomWidget();
@@ -226,7 +226,7 @@ function WidgetPreviewCard({
             <Widget type={info.type} data={info.data} />
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center bg-white/5 rounded-lg">
+          <div className="h-full flex items-center justify-center bg-secondary/40 rounded-lg">
             <span className={cn(text.muted, "text-[10px]")}>No data</span>
           </div>
         )}

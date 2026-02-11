@@ -31,10 +31,10 @@ export function CustomDeployHeader({
       : "Custom Docker Deploy";
 
   return (
-    <div className="relative border-b border-white/10 bg-gradient-to-r from-white/10 via-white/5 to-transparent px-6 py-5">
+    <div className="relative border-b border-border bg-gradient-to-r from-secondary/60 via-secondary/30 to-transparent px-6 py-5">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[12px] border border-slate-100/10 bg-white/10">
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/60">
             <img
               src={imageSrc}
               alt={data?.appTitle || fallbackTitle || "App"}
@@ -46,10 +46,10 @@ export function CustomDeployHeader({
             />
           </div>
           <div>
-            <DialogTitle className="text-[24px] font-bold leading-none tracking-[-0.04em] text-white/75">
+            <DialogTitle className="text-[24px] font-bold leading-none tracking-[-0.04em] text-foreground">
               {title}
             </DialogTitle>
-            <DialogDescription id={descriptionId} className="mt-1 text-[13px] leading-tight text-white/55">
+            <DialogDescription id={descriptionId} className="mt-1 text-[13px] leading-tight text-muted-foreground">
               {data?.appTitle
                 ? "Modify the configuration before deploying"
                 : "Deploy your own Docker container or compose file"}
@@ -60,7 +60,7 @@ export function CustomDeployHeader({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="h-8 w-8 cursor-pointer rounded-full border border-white/15 bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
+          className="h-8 w-8 cursor-pointer rounded-lg border border-border bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           <X className="h-5 w-5" />
         </Button>

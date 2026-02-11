@@ -162,20 +162,20 @@ export function HomeClient({ initialWallpaper }: HomeClientProps) {
               <WidgetGrid selectedIds={selectedIds} widgetData={widgetData} />
               <button
                 onClick={openWidgetSelector}
-                className="absolute -top-2 -right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 transition-colors hover:bg-white/20"
+                className="absolute -top-2 -right-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-secondary/60 transition-colors hover:bg-secondary"
                 title="Edit widgets"
               >
-                <LayoutGrid className="h-4 w-4 text-white/70" />
+                <LayoutGrid className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
           )}
           {!widgetsLoading && selectedIds.length === 0 && (
             <button
               onClick={openWidgetSelector}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/20 py-8 transition-colors hover:border-white/30 hover:bg-white/5"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-border/70 hover:bg-secondary/40"
             >
-              <LayoutGrid className="h-5 w-5 text-white/50" />
-              <span className="text-white/50">Add widgets</span>
+              <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+              <span className="text-muted-foreground">Add widgets</span>
             </button>
           )}
         </div>
@@ -187,7 +187,7 @@ export function HomeClient({ initialWallpaper }: HomeClientProps) {
             <button
               type="button"
               onClick={openSearch}
-              className={`absolute -top-12 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] ${surface.label} ring-1 ring-white/20 ${surface.panel} ${surface.panelInteractive} hover:scale-105 hover:text-white active:scale-95`}
+              className={`absolute -top-12 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${surface.label} ring-1 ring-border/60 ${surface.panel} ${surface.panelInteractive} hover:scale-105 hover:text-foreground active:scale-95`}
               title="Search apps"
               aria-label="Search apps"
             >
@@ -233,7 +233,7 @@ export function HomeClient({ initialWallpaper }: HomeClientProps) {
       </main>
       <LockScreen open={locked} onUnlock={() => setLocked(false)} />
       <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end space-y-1">
-        <div className="text-xs text-white/50">Homeio - v{VERSION}</div>
+        <div className="text-xs text-muted-foreground">Homeio - v{VERSION}</div>
       </div>
       <RebootOverlay />
     </WallpaperLayout>

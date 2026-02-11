@@ -19,7 +19,9 @@ export function CustomWidget({ data }: CustomWidgetProps) {
         <h3 className={cn(text.label, "uppercase tracking-wider mb-1")}>
           {data.title}
         </h3>
-        <p className="text-sm leading-5 text-white/85 line-clamp-4">{data.body}</p>
+        <p className="text-sm leading-5 text-foreground line-clamp-4">
+          {data.body}
+        </p>
       </div>
       {data.updatedAt ? (
         <p className={cn(text.muted, "mt-3")}>

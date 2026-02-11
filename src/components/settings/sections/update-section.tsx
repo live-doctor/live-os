@@ -31,7 +31,7 @@ export function UpdateSection({
 
   return (
     <SettingsSectionShell
-      icon={<DownloadCloud className="h-4 w-4 text-white" />}
+      icon={<DownloadCloud className="h-4 w-4 text-foreground" />}
       title="Updates"
       subtitle={subtitle}
       actions={

@@ -7,6 +7,10 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  HOMEIO_DIALOG_CLOSE_BUTTON_CLASS,
+  HOMEIO_DIALOG_SHELL_CLASS,
+} from "@/components/ui/dialog-chrome";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, ExternalLink, Loader2, Settings2, X } from "lucide-react";
 import Image from "next/image";
@@ -66,7 +70,7 @@ export function AppDetailView({
     <Button
       onClick={isInstalled ? onOpen : onQuickInstall}
       disabled={isInstalled ? false : isInstalling}
-      className="h-[40px] rounded-full px-[15px] text-[15px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] hover:brightness-110 max-md:h-[30px] max-md:w-full max-md:text-[13px]"
+      className="h-[40px] rounded-lg px-[15px] text-[15px] font-medium text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] hover:brightness-110 max-md:h-[30px] max-md:w-full max-md:text-[13px]"
       style={{ backgroundColor: "hsl(var(--color-brand, 211 100% 50%))" }}
     >
       {isInstalled ? (
@@ -89,7 +93,7 @@ export function AppDetailView({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[92vh] max-w-[95vw] overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(47,51,57,0.72)] p-0 text-white shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-3xl sm:max-w-[1280px]"
+        className={HOMEIO_DIALOG_SHELL_CLASS}
       >
         <DialogTitle className="sr-only">{app.title}</DialogTitle>
         <DialogDescription className="sr-only">{app.tagline}</DialogDescription>
@@ -97,7 +101,7 @@ export function AppDetailView({
           variant="ghost"
           size="icon"
           onClick={() => onOpenChange(false)}
-          className="absolute right-5 top-5 z-20 h-8 w-8 cursor-pointer rounded-full border border-white/15 bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
+          className={HOMEIO_DIALOG_CLOSE_BUTTON_CLASS}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -109,14 +113,14 @@ export function AppDetailView({
                 <button
                   type="button"
                   onClick={() => onOpenChange(false)}
-                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
 
                 <div className="flex flex-col items-stretch gap-5 md:flex-row md:items-center">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 max-md:px-2.5 md:gap-5">
-                    <div className="relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-[12px] border border-slate-100/10 bg-white/10 lg:rounded-[20px]">
+                    <div className="relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/60">
                       <Image
                         src={iconSrc}
                         alt={app.title}
@@ -129,7 +133,7 @@ export function AppDetailView({
                       <h1 className="flex flex-wrap items-center gap-2 text-[16px] font-semibold leading-tight md:text-[24px]">
                         {app.title}
                       </h1>
-                      <p className="line-clamp-2 w-full text-[12px] leading-tight text-white/50 md:line-clamp-1 md:text-[16px]">
+                      <p className="line-clamp-2 w-full text-[12px] leading-tight text-muted-foreground md:line-clamp-1 md:text-[16px]">
                         {app.tagline}
                       </p>
                       <div className="flex-1" />
@@ -143,7 +147,7 @@ export function AppDetailView({
                         variant="outline"
                         size="icon"
                         disabled={loadingCompose}
-                        className="h-[40px] w-[40px] rounded-full border border-white/20 bg-white/10 text-white hover:bg-white/20 max-md:h-[30px] max-md:w-[30px]"
+                        className="h-[40px] w-[40px] rounded-lg border border-border bg-secondary/60 text-foreground hover:bg-secondary max-md:h-[30px] max-md:w-[30px]"
                         title="Customize install"
                       >
                         {loadingCompose ? (
@@ -166,7 +170,7 @@ export function AppDetailView({
                       href={screenshot}
                       target="_blank"
                       rel="noreferrer"
-                      className="group aspect-[1.6] h-[200px] shrink-0 overflow-hidden rounded-[12px] bg-white/10 outline-none ring-inset ring-white/80 transition-opacity focus-visible:ring-4 md:h-[292px]"
+                      className="group aspect-[1.6] h-[200px] shrink-0 overflow-hidden rounded-lg bg-secondary/60 outline-none ring-inset ring-border/70 transition-opacity focus-visible:ring-4 md:h-[292px]"
                     >
                       <Image
                         src={screenshot}
@@ -181,7 +185,9 @@ export function AppDetailView({
                 </div>
               )}
               {screenshotsList.length === 0 && loadingMedia && (
-                <p className="text-[13px] text-white/60">Loading screenshots...</p>
+                <p className="text-[13px] text-muted-foreground">
+                  Loading screenshots...
+                </p>
               )}
 
               <div className="hidden flex-row gap-5 lg:flex">

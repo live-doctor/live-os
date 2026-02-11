@@ -66,6 +66,12 @@ export function useFileNavigation(homePath: string) {
     }
   }, []);
 
+  const resetHistory = useCallback((path: string) => {
+    setHistory([path]);
+    setHistoryIndex(0);
+    setCurrentPath(path);
+  }, []);
+
   const breadcrumbs = useMemo(() => {
     const normalizedHome = homePath.endsWith("/")
       ? homePath.slice(0, -1)
@@ -77,7 +83,7 @@ export function useFileNavigation(homePath: string) {
     const parts = relative.split("/").filter(Boolean);
     const trail: { label: string; path: string }[] = [];
     trail.push({
-      label: normalizedHome.split("/").filter(Boolean).pop() || "Home",
+      label: "Home",
       path: normalizedHome || "/",
     });
 
@@ -102,10 +108,6 @@ export function useFileNavigation(homePath: string) {
     forward: handleForward,
     goToParent: handleGoToParent,
     openNative: handleOpenNative,
-    resetHistory: (path: string) => {
-      setHistory([path]);
-      setHistoryIndex(0);
-      setCurrentPath(path);
-    },
+    resetHistory,
   };
 }

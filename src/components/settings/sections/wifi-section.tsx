@@ -18,7 +18,7 @@ export function WifiSection({ onOpenDialog, ssid, quality }: WifiSectionProps) {
 
   return (
     <SettingsSectionShell
-      icon={<Wifi className="h-4 w-4 text-white" />}
+      icon={<Wifi className="h-4 w-4 text-foreground" />}
       title="Wi-Fi"
       subtitle={
         qualityLabel ? `${wifiLabel} • ${qualityLabel}` : wifiLabel

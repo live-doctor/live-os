@@ -28,8 +28,8 @@ export function FilesGridWidget({ data }: FilesGridProps) {
           >
             <div
               className={cn(
-                "flex h-10 w-12 items-center justify-center rounded-md",
-                "bg-white/[0.06] hover:bg-white/[0.12] transition-colors cursor-pointer",
+                "flex h-10 w-12 items-center justify-center rounded-lg",
+                "bg-secondary/60 hover:bg-secondary transition-colors cursor-pointer border border-border",
               )}
             >
               <FolderIcon className="w-full h-full drop-shadow" />

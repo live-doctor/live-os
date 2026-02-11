@@ -1,0 +1,12 @@
+services:
+  nginx-ui:
+    image: uozi/nginx-ui:latest
+    container_name: nginx-ui
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - ${APP_DATA_DIR}/nginx-ui:/etc/nginx-ui
+      - ${APP_DATA_DIR}/nginx:/etc/nginx
+      - ${APP_DATA_DIR}/letsencrypt:/etc/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro

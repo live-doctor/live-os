@@ -65,12 +65,12 @@ export function ViewerWrapper({
 
   const overlay = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/90 backdrop-blur-sm"
       onClick={handleOverlayClick}
     >
       {/* Header with file name and controls */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
-        <h3 className="text-white font-medium truncate max-w-[60%]">
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-background/90 to-transparent">
+        <h3 className="text-foreground font-medium truncate max-w-[60%]">
           {fileName}
         </h3>
         <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export function ViewerWrapper({
               variant="ghost"
               size="icon"
               onClick={onDownload}
-              className="h-10 w-10 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+              className="h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             >
               <Download className="h-5 w-5" />
             </Button>
@@ -88,7 +88,7 @@ export function ViewerWrapper({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-10 w-10 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+            className="h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -104,7 +104,7 @@ export function ViewerWrapper({
             e.stopPropagation();
             onPrevious();
           }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+          className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
         >
           <ChevronLeft className="h-8 w-8" />
         </Button>
@@ -118,7 +118,7 @@ export function ViewerWrapper({
             e.stopPropagation();
             onNext();
           }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+          className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60"
         >
           <ChevronRight className="h-8 w-8" />
         </Button>
@@ -133,7 +133,7 @@ export function ViewerWrapper({
       </div>
 
       {/* Footer hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/40 text-xs">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-muted-foreground text-xs">
         Press ESC to close{hasPrevious || hasNext ? " • Arrow keys to navigate" : ""}
       </div>
     </div>

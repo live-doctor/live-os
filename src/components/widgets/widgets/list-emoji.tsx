@@ -20,7 +20,7 @@ export function ListEmojiWidget({ data }: ListEmojiProps) {
             key={item.id}
             className={cn(
               "flex items-center gap-3 py-1.5 px-2 rounded-lg",
-              "hover:bg-white/5 transition-colors"
+              "hover:bg-secondary/40 transition-colors"
             )}
           >
             <span className="text-xl shrink-0">{item.emoji}</span>

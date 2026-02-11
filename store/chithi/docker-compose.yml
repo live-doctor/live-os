@@ -1,0 +1,11 @@
+services:
+  chithi:
+    image: ghcr.io/chithi-dev/chithi:latest
+    container_name: chithi
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${APP_DATA_DIR}/data:/app/data
+    environment:
+      - NODE_ENV=production

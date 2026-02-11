@@ -23,7 +23,7 @@ export function ShareList({
   if (shares.length > 0) {
     return (
       <div className="space-y-2">
-        <div className="text-xs text-white/60 uppercase tracking-[0.2em] px-1">
+        <div className="text-xs text-muted-foreground uppercase tracking-[0.2em] px-1">
           Your Shares
         </div>
         {shares.map((share) => (
@@ -42,7 +42,7 @@ export function ShareList({
   if (loading) {
     return (
       <div
-        className={`${card.base} bg-white/5 border-white/10 text-white/80 p-3 flex items-center gap-3`}
+        className={`${card.base} bg-secondary/40 border-border text-muted-foreground p-3 flex items-center gap-3`}
       >
         <Loader2 className="h-4 w-4 animate-spin" />
         <div>Loading network shares...</div>

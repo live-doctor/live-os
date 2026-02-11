@@ -14,6 +14,7 @@ import {
 } from "@/components/app-store/custom-deploy-dialog";
 import type { InstalledApp } from "@/components/app-store/types";
 import { Button } from "@/components/ui/button";
+import { dialog as dialogTokens } from "@/components/ui/design-tokens";
 import { HOMEIO_CONTEXT_MENU_SURFACE_CLASS } from "@/components/ui/dialog-chrome";
 import {
   Dialog,
@@ -56,6 +57,7 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
     onLoadingChange?.(v);
   };
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
+  const [removeAppData, setRemoveAppData] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [showCustomDeploy, setShowCustomDeploy] = useState(false);
   const [customData, setCustomData] = useState<CustomDeployInitialData | null>(
@@ -65,7 +67,7 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
   const [menuOpen, setMenuOpen] = useState(false);
   const lastOpenedViaContext = useRef(false);
   const itemClassName =
-    "rounded-md px-2.5 py-1.5 text-[14px] font-medium leading-tight tracking-[-0.015em] text-white transition-colors hover:bg-white/6 focus:bg-white/6 focus:text-white";
+    "rounded-lg px-2.5 py-1.5 text-[14px] font-medium leading-tight tracking-[-0.015em] text-foreground transition-colors hover:bg-secondary focus:bg-secondary focus:text-foreground";
 
   const handleOpen = async () => {
     try {
@@ -162,10 +164,15 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
   const handleUninstall = async () => {
     setLoading(true);
     try {
-      const success = await uninstallApp(app.containerName);
+      const success = await uninstallApp(app.appId, { removeAppData });
       if (success) {
-        toast.success(`${app.name} uninstalled`);
+        toast.success(
+          removeAppData
+            ? `${app.name} uninstalled and data deleted`
+            : `${app.name} uninstalled`,
+        );
         setShowUninstallConfirm(false);
+        setRemoveAppData(false);
       } else {
         toast.error("Failed to uninstall app");
       }
@@ -215,11 +222,11 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
                   app.status === "running" ? "#34d399" : "#fbbf24",
               }}
             />
-            <div className="truncate text-[13px] font-semibold text-white/90">
+            <div className="truncate text-[13px] font-semibold text-foreground">
               {app.name}
             </div>
           </div>
-          <DropdownMenuSeparator className="mx-0.5 my-1 h-px bg-white/10" />
+          <DropdownMenuSeparator className="mx-0.5 my-1 h-px bg-border" />
 
           <DropdownMenuItem
             onClick={handleOpen}
@@ -293,12 +300,15 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
             Edit / Redeploy
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="mx-0.5 my-1 h-px bg-white/10" />
+          <DropdownMenuSeparator className="mx-0.5 my-1 h-px bg-border" />
 
           <DropdownMenuItem
-            onClick={() => setShowUninstallConfirm(true)}
+            onClick={() => {
+              setRemoveAppData(false);
+              setShowUninstallConfirm(true);
+            }}
             disabled={loading}
-            className="rounded-md px-2.5 py-1.5 text-[14px] font-medium leading-tight tracking-[-0.015em] text-red-400 transition-colors hover:bg-white/6 focus:bg-white/6 focus:text-red-300"
+            className="rounded-lg px-2.5 py-1.5 text-[14px] font-medium leading-tight tracking-[-0.015em] text-red-500 transition-colors hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400"
           >
             <Trash2 className="mr-2 h-3.5 w-3.5" />
             Uninstall
@@ -309,16 +319,42 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
       {/* Uninstall Confirmation Dialog */}
       <Dialog
         open={showUninstallConfirm}
-        onOpenChange={setShowUninstallConfirm}
+        onOpenChange={(next) => {
+          setShowUninstallConfirm(next);
+          if (!next) setRemoveAppData(false);
+        }}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className={`${dialogTokens.content} ${dialogTokens.size.sm}`}>
           <DialogHeader>
             <DialogTitle>Uninstall {app.name}?</DialogTitle>
             <DialogDescription>
-              This will remove the app. Data will be moved to trash and can be
-              recovered later.
+              This will remove the app container and stop it.
             </DialogDescription>
           </DialogHeader>
+          <div className="rounded-lg border border-border bg-secondary/40 p-3">
+            <label
+              htmlFor={`remove-data-${app.appId}`}
+              className="flex cursor-pointer items-start gap-2"
+            >
+              <input
+                id={`remove-data-${app.appId}`}
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                checked={removeAppData}
+                onChange={(event) => setRemoveAppData(event.target.checked)}
+                disabled={loading}
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Remove app folder and lose data
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Deletes <code>/DATA/AppData/{app.appId}</code> permanently.
+                  If unchecked, data is moved to trash.
+                </p>
+              </div>
+            </label>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -333,7 +369,7 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
               disabled={loading}
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Uninstall
+              {removeAppData ? "Uninstall & Delete Data" : "Uninstall"}
             </Button>
           </DialogFooter>
         </DialogContent>

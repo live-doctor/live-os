@@ -13,16 +13,20 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 
 export type BorderStyle = "soft" | "balanced" | "strong";
 export type BackgroundStyle = "subtle" | "balanced" | "deep";
+export type DialogBackground = "background" | "card" | "secondary" | "accent";
 
 type AppearanceContextValue = {
   borderStyle: BorderStyle;
   backgroundStyle: BackgroundStyle;
+  dialogBackground: DialogBackground;
   setBorderStyle: (value: BorderStyle) => void;
   setBackgroundStyle: (value: BackgroundStyle) => void;
+  setDialogBackground: (value: DialogBackground) => void;
 };
 
 const BORDER_KEY = "homeio-border-style";
 const BACKGROUND_KEY = "homeio-background-style";
+const DIALOG_BG_KEY = "homeio-dialog-bg";
 
 const borderAlphaByStyle: Record<BorderStyle, string> = {
   soft: "0.12",
@@ -84,12 +88,32 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
       return "balanced";
     },
   );
+  const [dialogBackground, setDialogBackgroundState] =
+    useState<DialogBackground>(() => {
+      if (typeof window === "undefined") return "background";
+      const storedDialogBg = window.localStorage.getItem(DIALOG_BG_KEY);
+      if (
+        storedDialogBg === "background" ||
+        storedDialogBg === "card" ||
+        storedDialogBg === "secondary" ||
+        storedDialogBg === "accent"
+      ) {
+        return storedDialogBg;
+      }
+      return "background";
+    });
 
   useEffect(() => {
     applyAppearanceVars(borderStyle, backgroundStyle);
     window.localStorage.setItem(BORDER_KEY, borderStyle);
     window.localStorage.setItem(BACKGROUND_KEY, backgroundStyle);
   }, [borderStyle, backgroundStyle]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.dialogBg = dialogBackground;
+    window.localStorage.setItem(DIALOG_BG_KEY, dialogBackground);
+  }, [dialogBackground]);
 
   const setBorderStyle = useCallback((value: BorderStyle) => {
     setBorderStyleState(value);
@@ -99,14 +123,27 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
     setBackgroundStyleState(value);
   }, []);
 
+  const setDialogBackground = useCallback((value: DialogBackground) => {
+    setDialogBackgroundState(value);
+  }, []);
+
   const value = useMemo(
     () => ({
       borderStyle,
       backgroundStyle,
+      dialogBackground,
       setBorderStyle,
       setBackgroundStyle,
+      setDialogBackground,
     }),
-    [backgroundStyle, borderStyle, setBackgroundStyle, setBorderStyle],
+    [
+      backgroundStyle,
+      borderStyle,
+      dialogBackground,
+      setBackgroundStyle,
+      setBorderStyle,
+      setDialogBackground,
+    ],
   );
 
   return (

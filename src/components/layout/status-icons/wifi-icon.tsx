@@ -20,9 +20,9 @@ function getIconType(connected: boolean, quality: number | null): IconType {
 }
 
 function getWifiColor(connected: boolean, quality: number | null) {
-  if (!connected) return "text-white/40";
-  if (quality === null) return "text-white/60";
-  if (quality >= 70) return "text-white/80";
+  if (!connected) return "text-muted-foreground";
+  if (quality === null) return "text-muted-foreground";
+  if (quality >= 70) return "text-foreground";
   if (quality >= 40) return "text-yellow-400";
   return "text-red-400";
 }

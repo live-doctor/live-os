@@ -21,7 +21,7 @@ export function ListWidget({ data }: ListWidgetProps) {
             key={item.id}
             className={cn(
               "flex items-center justify-between py-1.5 px-2 rounded-lg",
-              "hover:bg-white/5 transition-colors"
+              "hover:bg-secondary/40 transition-colors"
             )}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -51,7 +51,7 @@ export function ListWidget({ data }: ListWidgetProps) {
 
         {/* Gradient fade at bottom */}
         {items.length > maxItems && (
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background/70 to-transparent pointer-events-none" />
         )}
       </div>
     </div>
