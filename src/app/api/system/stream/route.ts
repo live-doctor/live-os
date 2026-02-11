@@ -91,6 +91,18 @@ interface CollectedAppsResult {
   otherContainers: OtherContainerResult[];
 }
 
+interface RunningAppMetric {
+  id: string;
+  name: string;
+  icon?: string;
+  cpuUsage: number;
+  memoryUsage: number;
+  memoryLimit: number;
+  memoryPercent: number;
+  netRx: number;
+  netTx: number;
+}
+
 async function getInstalledApps(): Promise<CollectedAppsResult> {
   try {
     const [knownApps, storeApps] = await Promise.all([
@@ -267,6 +279,66 @@ async function resolveHostPort(containerName: string): Promise<string | null> {
   }
 }
 
+function aggregateRunningAppsByInstalled(
+  runningApps: RunningAppMetric[],
+  installedApps: InstalledAppResult[],
+): RunningAppMetric[] {
+  const containerToInstalled = new Map<string, InstalledAppResult>();
+  for (const installed of installedApps) {
+    const allContainerNames = new Set([
+      installed.containerName,
+      ...(installed.containers || []),
+    ]);
+    for (const containerName of allContainerNames) {
+      if (containerName) {
+        containerToInstalled.set(containerName, installed);
+      }
+    }
+  }
+
+  const aggregatedByApp = new Map<string, RunningAppMetric>();
+  const passthrough: RunningAppMetric[] = [];
+
+  for (const metric of runningApps) {
+    const installed = containerToInstalled.get(metric.id);
+    if (!installed) {
+      passthrough.push(metric);
+      continue;
+    }
+
+    const aggregateKey = installed.appId || installed.containerName;
+    const existing = aggregatedByApp.get(aggregateKey);
+    if (!existing) {
+      aggregatedByApp.set(aggregateKey, {
+        id: aggregateKey,
+        name: installed.name,
+        icon: installed.icon,
+        cpuUsage: metric.cpuUsage,
+        memoryUsage: metric.memoryUsage,
+        memoryLimit: metric.memoryLimit,
+        memoryPercent: metric.memoryPercent,
+        netRx: metric.netRx ?? 0,
+        netTx: metric.netTx ?? 0,
+      });
+      continue;
+    }
+
+    existing.cpuUsage += metric.cpuUsage;
+    existing.memoryUsage += metric.memoryUsage;
+    existing.memoryLimit += metric.memoryLimit;
+    existing.netRx = (existing.netRx ?? 0) + (metric.netRx ?? 0);
+    existing.netTx = (existing.netTx ?? 0) + (metric.netTx ?? 0);
+    existing.memoryPercent =
+      existing.memoryLimit > 0
+        ? (existing.memoryUsage / existing.memoryLimit) * 100
+        : metric.memoryPercent;
+  }
+
+  return [...aggregatedByApp.values(), ...passthrough].sort(
+    (a, b) => b.cpuUsage - a.cpuUsage,
+  );
+}
+
 function getAppIdFromContainerName(name: string): string {
   return CONTAINER_PREFIX
     ? name.replace(new RegExp(`^${CONTAINER_PREFIX}`), "")
@@ -289,7 +361,7 @@ export async function pollAndBroadcast() {
       storageInfo,
       networkStats,
       appsResult,
-      runningApps,
+      runningAppsRaw,
     ] = await Promise.all([
       getSystemStatus(),
       getStorageInfo(),
@@ -297,6 +369,10 @@ export async function pollAndBroadcast() {
       getInstalledApps(),
       getRunningApps(),
     ]);
+    const runningApps = aggregateRunningAppsByInstalled(
+      runningAppsRaw,
+      appsResult.installedApps,
+    );
     latestPayload = {
       type: "metrics",
       systemStatus,

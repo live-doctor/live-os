@@ -477,19 +477,27 @@ build_HOMEIO() {
     # Note: TypeScript is needed for build even in production
     export HUSKY=0
     npm install --ignore-scripts
+    export npm_config_build_from_source=true
 
     print_status "Building native modules (node-pty for terminal)..."
     # node-pty requires compilation - rebuild it after install
-    npm rebuild node-pty 2>&1 | tee /tmp/node-pty-build.log || {
+    npm rebuild node-pty --build-from-source 2>&1 | tee /tmp/node-pty-build.log || {
         print_error "Warning: node-pty build failed. Terminal feature will not be available."
         print_error "Check /tmp/node-pty-build.log for details"
         print_info "The application will still work without terminal functionality"
     }
 
     print_status "Building native modules (better-sqlite3 for database)..."
-    npm rebuild better-sqlite3 2>&1 | tee /tmp/better-sqlite3-build.log || {
+    npm rebuild better-sqlite3 --build-from-source 2>&1 | tee /tmp/better-sqlite3-build.log || {
         print_error "Error: better-sqlite3 build failed. Database will not work."
         print_error "Check /tmp/better-sqlite3-build.log for details"
+        exit 1
+    }
+
+    print_status "Verifying better-sqlite3 native module..."
+    node -e "require('better-sqlite3'); console.log('better-sqlite3:ok')" >/tmp/better-sqlite3-verify.log 2>&1 || {
+        print_error "Error: better-sqlite3 verification failed (ABI mismatch or missing native binary)."
+        print_error "Check /tmp/better-sqlite3-verify.log for details"
         exit 1
     }
 

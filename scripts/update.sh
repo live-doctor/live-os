@@ -18,6 +18,31 @@ print_status() { echo -e "${GREEN}[+]${NC} $1"; }
 print_error() { echo -e "${RED}[!]${NC} $1"; }
 print_info() { echo -e "${BLUE}[i]${NC} $1"; }
 
+rebuild_native_modules() {
+    print_status "Rebuilding native modules for $(node -v)..."
+    export npm_config_build_from_source=true
+
+    npm rebuild node-pty --build-from-source 2>&1 | tee /tmp/node-pty-build.log || {
+        print_error "Warning: node-pty build failed. Terminal feature will not be available."
+        print_error "Check /tmp/node-pty-build.log for details"
+        print_info "The application will still work without terminal functionality"
+    }
+
+    npm rebuild better-sqlite3 --build-from-source 2>&1 | tee /tmp/better-sqlite3-build.log || {
+        print_error "better-sqlite3 build failed. Database cannot start."
+        print_error "Check /tmp/better-sqlite3-build.log for details"
+        exit 1
+    }
+
+    node -e "require('better-sqlite3'); console.log('better-sqlite3:ok')" >/tmp/better-sqlite3-verify.log 2>&1 || {
+        print_error "better-sqlite3 verification failed (native ABI mismatch)."
+        print_error "Check /tmp/better-sqlite3-verify.log for details"
+        exit 1
+    }
+
+    print_status "Native modules rebuilt successfully"
+}
+
 UPDATE_STATE_FILE="/var/lib/homeio/update-state.json"
 UPDATE_MODE=""
 UPDATE_CURRENT_VERSION=""
@@ -550,6 +575,15 @@ update_from_artifact() {
 
     cd "$INSTALL_DIR"
 
+    if [ ! -d "node_modules" ]; then
+        write_update_state "dependencies" "running" "Installing dependencies"
+        npm ci --include=dev --ignore-scripts
+    fi
+
+    write_update_state "dependencies" "running" "Rebuilding native modules"
+    rebuild_native_modules
+    npx prisma generate --schema=prisma/schema.prisma
+
     write_update_state "migrate" "running" "Running database migrations"
     npx prisma migrate deploy --schema=prisma/schema.prisma
 
@@ -636,16 +670,7 @@ update_from_source() {
     ensure_migrations_ready
 
     write_update_state "build" "running" "Rebuilding native modules"
-    if [ ! -f "node_modules/node-pty/build/Release/pty.node" ]; then
-        print_status "Building node-pty..."
-        npm rebuild node-pty 2>&1 | tee /tmp/node-pty-build.log || {
-            print_error "Warning: node-pty build failed. Terminal feature will not be available."
-            print_info "The application will still work without terminal functionality"
-        }
-    fi
-
-    npm rebuild better-sqlite3 2>&1 | tee /tmp/better-sqlite3-build.log
-    print_status "better-sqlite3 built successfully"
+    rebuild_native_modules
 
     write_update_state "migrate" "running" "Running database migrations"
     npx prisma migrate deploy --schema=prisma/schema.prisma
