@@ -185,7 +185,30 @@ export async function getAppStatus(
 /**
  * Get web UI URL for an app
  */
-export async function getAppWebUI(appId: string): Promise<string | null> {
+function normalizeHost(rawHost: string): string {
+  return rawHost
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "");
+}
+
+function parseClientOrigin(clientOrigin?: string): URL | null {
+  if (!clientOrigin) return null;
+  try {
+    const parsed = new URL(clientOrigin);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function getAppWebUI(
+  appId: string,
+  clientOrigin?: string,
+): Promise<string | null> {
   try {
     if (!validateAppId(appId)) {
       await logAction(
@@ -196,7 +219,11 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
       return null;
     }
 
-    await logAction("app:webui:resolve:start", { appId });
+    const originUrl = parseClientOrigin(clientOrigin);
+    await logAction("app:webui:resolve:start", {
+      appId,
+      clientOrigin: originUrl?.origin,
+    });
 
     const installRecord = await prisma.installedApp.findFirst({
       where: { appId },
@@ -210,13 +237,19 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
       recordedContainer,
       getContainerName(appId),
     ].filter(Boolean) as string[];
-    const host =
+    const configuredHost = normalizeHost(
       process.env.HOMEIO_DOMAIN ||
-      process.env.HOMEIO_HOST ||
-      process.env.HOMEIO_HTTP_HOST ||
-      process.env.HOSTNAME ||
-      "localhost";
-    const protocol = process.env.HOMEIO_HTTPS === "true" ? "https" : "http";
+        process.env.HOMEIO_HOST ||
+        process.env.HOMEIO_HTTP_HOST ||
+        process.env.HOSTNAME ||
+        "localhost",
+    );
+    const configuredHostNoPort = configuredHost.split(":")[0] || configuredHost;
+    const protocol =
+      originUrl?.protocol.replace(":", "") ||
+      (process.env.HOMEIO_HTTPS === "true" ? "https" : "http");
+    const hostWithPort = originUrl?.host || configuredHost;
+    const hostForPort = originUrl?.hostname || configuredHostNoPort;
 
     let resolvedUrl: string | null = null;
     let resolutionMethod:
@@ -257,16 +290,16 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
         : "";
 
     if (hostPort) {
-      resolvedUrl = `${protocol}://${host}:${hostPort}${pathSuffix}`;
+      resolvedUrl = `${protocol}://${hostForPort}:${hostPort}${pathSuffix}`;
       resolutionMethod = "host-port";
     } else if (configWebUIPort && validatePort(configWebUIPort)) {
-      resolvedUrl = `${protocol}://${host}:${configWebUIPort}${pathSuffix}`;
+      resolvedUrl = `${protocol}://${hostForPort}:${configWebUIPort}${pathSuffix}`;
       resolutionMethod = "metadata-port";
     } else if (appMeta?.port && validatePort(appMeta.port)) {
-      resolvedUrl = `${protocol}://${host}:${appMeta.port}${pathSuffix}`;
+      resolvedUrl = `${protocol}://${hostForPort}:${appMeta.port}${pathSuffix}`;
       resolutionMethod = "metadata-port";
     } else if (pathSuffix) {
-      resolvedUrl = `${protocol}://${host}${pathSuffix}`;
+      resolvedUrl = `${protocol}://${hostWithPort}${pathSuffix}`;
       resolutionMethod = "path-only";
     }
 
@@ -294,10 +327,6 @@ export async function getAppWebUI(appId: string): Promise<string | null> {
         message: (error as Error)?.message,
       },
       "error",
-    );
-    console.error(
-      `[Docker] getAppWebUI: failed to resolve URL for ${appId}:`,
-      error,
     );
     return null;
   }

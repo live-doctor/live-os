@@ -332,25 +332,29 @@ ensure_bluez() {
 
     if command -v bluetoothctl >/dev/null 2>&1; then
         print_status "Bluetooth tools already present"
-        return
-    fi
-
-    if [ -x "$(command -v apt-get)" ]; then
-        apt-get update
-        apt-get install -y bluez rfkill
-    elif [ -x "$(command -v dnf)" ]; then
-        dnf install -y bluez rfkill
-    elif [ -x "$(command -v yum)" ]; then
-        yum install -y bluez rfkill
     else
-        print_error "Unsupported package manager. Please install bluez manually (provides bluetoothctl)."
-        return
+        if [ -x "$(command -v apt-get)" ]; then
+            apt-get update
+            apt-get install -y bluez rfkill
+        elif [ -x "$(command -v dnf)" ]; then
+            dnf install -y bluez rfkill
+        elif [ -x "$(command -v yum)" ]; then
+            yum install -y bluez rfkill
+        else
+            print_error "Unsupported package manager. Please install bluez manually (provides bluetoothctl)."
+            return
+        fi
     fi
 
     if command -v bluetoothctl >/dev/null 2>&1; then
         print_status "Bluetooth tools installed successfully"
     else
         print_error "bluez installation may have failed; bluetoothctl not found."
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl enable bluetooth 2>/dev/null || true
+        systemctl start bluetooth 2>/dev/null || true
     fi
 }
 

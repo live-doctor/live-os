@@ -1,6 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
+import {
+  HOMEIO_DIALOG_CLOSE_BUTTON_CLASS,
+  HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+  HOMEIO_DIALOG_SUBTITLE_CLASS,
+  HOMEIO_DIALOG_TITLE_CLASS,
+  HOMEIO_GLASS_HEADER_CLASS,
+} from "@/components/ui/dialog-chrome";
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
 type CustomDeployHeaderData = {
@@ -31,39 +39,42 @@ export function CustomDeployHeader({
       : "Custom Docker Deploy";
 
   return (
-    <div className="relative border-b border-border bg-gradient-to-r from-secondary/60 via-secondary/30 to-transparent px-6 py-5">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/60">
-            <img
-              src={imageSrc}
-              alt={data?.appTitle || fallbackTitle || "App"}
-              className="h-full w-full object-cover"
-              onError={(event) => {
-                event.currentTarget.onerror = null;
-                event.currentTarget.src = "/default-application-icon.png";
-              }}
-            />
-          </div>
-          <div>
-            <DialogTitle className="text-[24px] font-bold leading-none tracking-[-0.04em] text-foreground">
-              {title}
-            </DialogTitle>
-            <DialogDescription id={descriptionId} className="mt-1 text-[13px] leading-tight text-muted-foreground">
-              {data?.appTitle
-                ? "Modify the configuration before deploying"
-                : "Deploy your own Docker container or compose file"}
-            </DialogDescription>
-          </div>
+    <div
+      className={cn(
+        HOMEIO_GLASS_HEADER_CLASS,
+        HOMEIO_DIALOG_CONTENT_GUTTER_CLASS,
+        "relative py-4 md:py-5",
+      )}
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onClose}
+        className={HOMEIO_DIALOG_CLOSE_BUTTON_CLASS}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+
+      <div className="flex items-center gap-4 pr-12">
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/60">
+          <img
+            src={imageSrc}
+            alt={data?.appTitle || fallbackTitle || "App"}
+            className="h-full w-full object-cover"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = "/default-application-icon.png";
+            }}
+          />
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="h-8 w-8 cursor-pointer rounded-lg border border-border bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <X className="h-5 w-5" />
-        </Button>
+        <div>
+          <DialogTitle className={HOMEIO_DIALOG_TITLE_CLASS}>{title}</DialogTitle>
+          <DialogDescription id={descriptionId} className={cn(HOMEIO_DIALOG_SUBTITLE_CLASS, "mt-1")}>
+            {data?.appTitle
+              ? "Modify the configuration before deploying"
+              : "Deploy your own Docker container or compose file"}
+          </DialogDescription>
+        </div>
       </div>
     </div>
   );

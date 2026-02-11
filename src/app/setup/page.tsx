@@ -192,6 +192,7 @@ export default function SetupPage() {
         title="Homeio"
         subtitle="Preparing first-time setup…"
         icon={<Rocket className="h-5 w-5 text-muted-foreground" />}
+        avatarName={username || "Admin"}
       >
         <div className="flex justify-center py-12">
           <OrbitLoader />
@@ -208,6 +209,7 @@ export default function SetupPage() {
         subtitle="Optional preferences before you sign in"
         icon={<CheckCircle2 className="h-6 w-6 text-emerald-300" />}
         widthClass="max-w-4xl"
+        avatarName={username || "Admin"}
       >
         <PostSetup
           locationStatus={locationStatus}
@@ -233,6 +235,7 @@ export default function SetupPage() {
       subtitle="Set a username and a secure PIN"
       icon={<ShieldCheck className="h-5 w-5 text-muted-foreground" />}
       widthClass="max-w-2xl"
+      avatarName={username || "Admin"}
     >
       <RegisterStep
         username={username}

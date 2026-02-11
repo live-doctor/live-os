@@ -18,6 +18,7 @@ export {
   startApp,
   stopApp,
   restartApp,
+  removeContainer,
   updateApp,
   uninstallApp,
   listTrashedApps,

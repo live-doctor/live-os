@@ -3,6 +3,7 @@
 import { execFileAsync } from "@/lib/exec";
 import si from "systeminformation";
 import { logAction } from "../maintenance/logger";
+import { checkNetworkManagerHealth } from "./service-health";
 const EXEC_TIMEOUT = 8000;
 const RESOLVE_TIMEOUT = 2000;
 const MAX_REVERSE_LOOKUPS = 16;
@@ -46,6 +47,9 @@ export type WifiRadioState = {
 };
 
 export async function getWifiRadioState(): Promise<WifiRadioState> {
+  const health = await checkNetworkManagerHealth();
+  if (!health.ok) return { enabled: null, error: health.error };
+
   try {
     const { stdout } = await execFileAsync("nmcli", ["radio", "wifi"], {
       timeout: EXEC_TIMEOUT,
@@ -64,6 +68,9 @@ export async function getWifiRadioState(): Promise<WifiRadioState> {
 }
 
 export async function setWifiRadio(enabled: boolean): Promise<WifiRadioState> {
+  const health = await checkNetworkManagerHealth();
+  if (!health.ok) return { enabled: null, error: health.error };
+
   try {
     await execFileAsync("nmcli", ["radio", "wifi", enabled ? "on" : "off"], {
       timeout: EXEC_TIMEOUT,
@@ -186,6 +193,14 @@ export async function listWifiNetworks(): Promise<WifiListResult> {
   await logNet("network:wifi:list:debug", {
     message: "Scanning for networks...",
   });
+
+  const health = await checkNetworkManagerHealth();
+  if (!health.ok) {
+    return finish("health-check", {
+      networks: [],
+      error: health.error,
+    });
+  }
 
   // Try to detect the currently connected SSID
   try {
@@ -353,6 +368,9 @@ export async function connectToWifi(
   ssid: string,
   password?: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const health = await checkNetworkManagerHealth();
+  if (!health.ok) return { success: false, error: health.error };
+
   if (!ssid.trim()) {
     return { success: false, error: "SSID is required" };
   }

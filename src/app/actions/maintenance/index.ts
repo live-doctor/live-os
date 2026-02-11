@@ -1,5 +1,5 @@
 // Logger
-export { logAction, withActionLogging } from "./logger";
+export { log, logAction, withActionLogging } from "./logger";
 
 // Troubleshooting
 export {

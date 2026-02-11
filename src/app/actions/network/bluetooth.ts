@@ -2,6 +2,7 @@
 
 import { execFileAsync } from "@/lib/exec";
 import { logAction } from "../maintenance/logger";
+import { checkBluetoothDaemonHealth } from "./service-health";
 const EXEC_TIMEOUT_MS = 6000;
 const currentUser = () =>
   process.env.SUDO_USER || process.env.LOGNAME || process.env.USER || "unknown";
@@ -116,6 +117,17 @@ async function readBluetoothctlState(
 }
 
 export async function getBluetoothStatus(): Promise<BluetoothStatus> {
+  const health = await checkBluetoothDaemonHealth();
+  if (!health.ok) {
+    return {
+      available: false,
+      powered: false,
+      blocked: false,
+      adapter: null,
+      error: health.error ?? "Bluetooth service unavailable",
+    };
+  }
+
   const adapter = await detectAdapter();
   const baseState = await readBluetoothctlState(adapter);
   const rfkill = await readRfkillBlocked();
@@ -129,6 +141,22 @@ export async function getBluetoothStatus(): Promise<BluetoothStatus> {
 export async function setBluetoothPower(
   enabled: boolean,
 ): Promise<{ success: boolean; status: BluetoothStatus; error?: string }> {
+  const health = await checkBluetoothDaemonHealth();
+  if (!health.ok) {
+    const error = health.error ?? "Bluetooth service unavailable";
+    return {
+      success: false,
+      status: {
+        available: false,
+        powered: false,
+        blocked: false,
+        adapter: null,
+        error,
+      },
+      error,
+    };
+  }
+
   const actionName = (suffix: string) => `bluetooth:${suffix}`;
   const adapter = await detectAdapter();
   const unavailableStatus: BluetoothStatus = {

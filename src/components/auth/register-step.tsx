@@ -34,13 +34,13 @@ export function RegisterStep({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <div className="rounded-xl border border-white/12 bg-white/[0.07] p-4 text-sm text-white/75">
+      <div className="rounded-lg border border-border bg-secondary/35 p-4 text-sm text-muted-foreground">
         This account has full system access. Choose a memorable username and a{" "}
         {PIN_LENGTH}-digit PIN.
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="username" className="text-white/90">
+        <Label htmlFor="username" className="text-foreground">
           Username
         </Label>
         <Input
@@ -52,14 +52,14 @@ export function RegisterStep({
           required
           minLength={3}
           autoComplete="username"
-          className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-white/40"
+          className="border-border bg-secondary/55 text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/35"
           disabled={loading}
         />
-        <p className="text-xs text-white/50">At least 3 characters</p>
+        <p className="text-xs text-muted-foreground">At least 3 characters</p>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-white/90">Create PIN</Label>
+        <Label className="text-foreground">Create PIN</Label>
         <div className="flex justify-center">
           <PinInput
             value={pin}
@@ -71,7 +71,7 @@ export function RegisterStep({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-white/90">Confirm PIN</Label>
+        <Label className="text-foreground">Confirm PIN</Label>
         <div className="relative flex justify-center">
           <PinInput
             value={confirmPin}
@@ -97,7 +97,7 @@ export function RegisterStep({
       <Button
         type="submit"
         disabled={loading || !username || !pinMatch}
-        className="w-full border border-white/20 bg-white/10 text-white hover:bg-white/20"
+        className="w-full border border-border bg-primary text-primary-foreground hover:bg-primary/90"
       >
         {loading ? (
           <>

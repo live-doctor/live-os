@@ -595,12 +595,24 @@ export async function preSeedDataFiles(
     await fs.mkdir(appDataDir, { recursive: true });
 
     for (const entry of dataFiles) {
+      const src = path.join(storeAppDir, entry.name);
       const dest = path.join(appDataDir, entry.name);
       try {
-        await fs.access(dest);
-        // File already exists — don't overwrite
+        const stat = await fs.lstat(dest);
+        if (stat.isDirectory()) {
+          // Docker can create a directory when a file bind-mount source is missing.
+          // Heal this state by replacing the directory with the expected file.
+          await fs.rm(dest, { recursive: true, force: true });
+          await fs.copyFile(src, dest);
+          if (entry.name.endsWith(".sh")) {
+            await fs.chmod(dest, 0o755);
+          }
+          console.log(
+            `[Docker] preSeedDataFiles: Replaced directory with file ${entry.name} → ${dest}`,
+          );
+        }
+        // Existing regular file — keep user modifications on redeploy.
       } catch {
-        const src = path.join(storeAppDir, entry.name);
         await fs.copyFile(src, dest);
         // Preserve executable bit for scripts
         if (entry.name.endsWith(".sh")) {

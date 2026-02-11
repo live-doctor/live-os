@@ -9,6 +9,7 @@ import fs from "fs/promises";
 import path from "path";
 import { logAction, withActionLogging } from "./maintenance/logger";
 import type { CommunityStore } from "./store/types";
+import { resolveHostPort, validatePort } from "./docker/utils";
 import {
   isLinuxServerApiUrl,
   parseLinuxServerStore,
@@ -797,6 +798,26 @@ export async function getComposeForApp(appId: string): Promise<{
   };
   error?: string;
 }> {
+  const normalizePort = (value: unknown): string | undefined => {
+    if (value === null || value === undefined) return undefined;
+    const raw = String(value).trim();
+    if (!raw) return undefined;
+    if (!/^\d+$/.test(raw)) return undefined;
+    return validatePort(raw) ? raw : undefined;
+  };
+
+  const pickPublishedPort = (value: unknown): string | undefined => {
+    if (!Array.isArray(value)) return undefined;
+    for (const entry of value) {
+      if (!entry || typeof entry !== "object") continue;
+      const published = normalizePort(
+        (entry as Record<string, unknown>).published,
+      );
+      if (published) return published;
+    }
+    return undefined;
+  };
+
   try {
     if (!appId) {
       return { success: false, error: "Missing appId" };
@@ -824,14 +845,15 @@ export async function getComposeForApp(appId: string): Promise<{
       }
     }
 
+    const appRecord = await prisma.app.findFirst({
+      where: installed.storeId ? { appId, storeId: installed.storeId } : { appId },
+      orderBy: { createdAt: "desc" },
+      select: { composePath: true, port: true },
+    });
+
     // Fallback: if composePath was missing or pointed to deleted /tmp file,
     // look up App.composePath from the store App table
     if (!content) {
-      const appRecord = await prisma.app.findFirst({
-        where: { appId },
-        orderBy: { createdAt: "desc" },
-        select: { composePath: true },
-      });
       if (appRecord?.composePath) {
         const fallbackResult = await getAppComposeContent(
           appRecord.composePath,
@@ -852,9 +874,25 @@ export async function getComposeForApp(appId: string): Promise<{
       };
     }
 
-    const webUIPort = config?.webUIPort
-      ? String(config.webUIPort)
-      : undefined;
+    let webUIPort = normalizePort(config?.webUIPort);
+
+    if (!webUIPort) {
+      webUIPort = pickPublishedPort(config?.ports);
+    }
+
+    if (!webUIPort) {
+      webUIPort = pickPublishedPort((container as Record<string, unknown>)?.ports);
+    }
+
+    if (!webUIPort && appRecord?.port) {
+      webUIPort = normalizePort(appRecord.port);
+    }
+
+    if (!webUIPort) {
+      const preferred = normalizePort(appRecord?.port);
+      const hostPort = await resolveHostPort(installed.containerName, preferred ?? null);
+      webUIPort = normalizePort(hostPort);
+    }
 
     return {
       success: true,

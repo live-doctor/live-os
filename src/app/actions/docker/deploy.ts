@@ -11,7 +11,7 @@ import { spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 import YAML from "yaml";
-import { logAction } from "../maintenance/logger";
+import { log, logAction } from "../maintenance/logger";
 import { getAppMeta, recordInstalledApp } from "./db";
 import { checkDependencies } from "./dependencies";
 import { buildDefaultEnvVars } from "./env";
@@ -77,6 +77,63 @@ function errorDetails(error: unknown): Record<string, unknown> {
   };
 }
 
+function mergeErrorDetails(error: unknown): Record<string, unknown> {
+  const e = error as DeployError;
+  const nested =
+    e.details && typeof e.details === "object"
+      ? (e.details as Record<string, unknown>)
+      : {};
+  return {
+    ...nested,
+    ...errorDetails(error),
+    cause: e.message,
+    causeStage: e.stage,
+  };
+}
+
+function summarizeDeployFailure(
+  stage: string,
+  fallbackMessage: string,
+  details: Record<string, unknown>,
+): string {
+  const stderr = String(details.stderr || "").toLowerCase();
+  const stdout = String(details.stdout || "").toLowerCase();
+  const combined = `${stderr}\n${stdout}`;
+
+  if (stage === "compose:pull") {
+    if (combined.includes("toomanyrequests")) {
+      return "Docker registry rate limit reached. Try again later or use authenticated pulls.";
+    }
+    if (
+      combined.includes("pull access denied") ||
+      combined.includes("requested access to the resource is denied") ||
+      combined.includes("unauthorized")
+    ) {
+      return "Docker image access denied. Check registry visibility or authentication.";
+    }
+    if (combined.includes("manifest unknown") || combined.includes("not found")) {
+      return "Docker image tag/digest not found in registry.";
+    }
+    if (combined.includes("no matching manifest for")) {
+      return "Docker image does not support this CPU architecture.";
+    }
+    if (combined.includes("i/o timeout") || combined.includes("tls handshake timeout")) {
+      return "Docker registry network timeout. Check internet/DNS and retry.";
+    }
+  }
+
+  if (stage === "compose:up") {
+    if (
+      combined.includes("is a directory") &&
+      combined.includes("entrypoint.sh")
+    ) {
+      return "Container start failed because /entrypoint.sh was mounted from a directory instead of a file.";
+    }
+  }
+
+  return fallbackMessage;
+}
+
 function stageError(
   stage: string,
   message: string,
@@ -98,7 +155,7 @@ export async function deployApp(
   const { appId, config, meta: metaOverride, containerMeta } = options;
 
   await logAction("deploy:start", { appId });
-  console.log(`[Docker] deployApp: Starting deployment for "${appId}"`);
+  await log.info("docker:deploy:start", { appId });
 
   let meta = { name: appId, icon: DEFAULT_APP_ICON };
 
@@ -112,6 +169,7 @@ export async function deployApp(
     ) =>
       sendInstallProgress({
         type: "install-progress",
+        appId,
         containerName: appId,
         name: meta.name,
         icon: meta.icon,
@@ -185,9 +243,11 @@ export async function deployApp(
     const { sanitizedPath, originalPath } =
       await sanitizeComposeFile(resolvedComposePath);
 
-    console.log(
-      `[Docker] deployApp: Using compose at ${sanitizedPath} (original: ${originalPath})`,
-    );
+    await log.info("docker:deploy:compose:selected", {
+      appId,
+      sanitizedPath,
+      originalPath,
+    });
     emitProgress(0.15, "Configuring deployment");
 
     // Build environment variables for the deployment
@@ -206,6 +266,7 @@ export async function deployApp(
     // instead of files, causing "is a directory" errors.
     const appDataDir = envVars.APP_DATA_DIR!;
     await preSeedDataFiles(appDir, appDataDir);
+    await ensureComposeVolumeOwnership(sanitizedPath, envVars, appId);
 
     emitProgress(0.2, "Pre-seeding complete");
 
@@ -221,8 +282,9 @@ export async function deployApp(
           emitProgress(progress, message ?? "Pulling images"),
       );
     } catch (error) {
+      const details = mergeErrorDetails(error);
       throw stageError("compose:pull", "Failed to pull Docker images", {
-        ...errorDetails(error),
+        ...details,
       });
     }
 
@@ -244,10 +306,16 @@ export async function deployApp(
     }
 
     if (stdout) {
-      console.log(`[Docker] deployApp: stdout: ${stdout.substring(0, 200)}`);
+      await log.info("docker:deploy:compose:up:stdout", {
+        appId,
+        stdout: stdout.substring(0, 200),
+      });
     }
     if (stderr && !isComposeNoise(stderr)) {
-      console.error("[Docker] deployApp: stderr:", stderr);
+      await log.warn("docker:deploy:compose:up:stderr", {
+        appId,
+        stderr: clipText(stderr),
+      });
       await logAction(
         "deploy:compose:stderr",
         {
@@ -281,9 +349,7 @@ export async function deployApp(
 
     if (!detectedContainer) {
       // Final fallback: use the generated name
-      console.warn(
-        `[Docker] deployApp: Could not detect container name for "${appId}", using fallback`,
-      );
+      await log.warn("docker:deploy:container:fallback", { appId, containerName });
       detectedContainer = containerName;
     }
 
@@ -327,20 +393,29 @@ export async function deployApp(
       containerName: detectedContainer,
     });
     emitProgress(1, "Deployment complete", "completed");
-    console.log(`[Docker] deployApp: Successfully deployed "${appId}"`);
+    await log.info("docker:deploy:success", {
+      appId,
+      containerName: detectedContainer,
+    });
     return { success: true };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const deployError = error as DeployError;
     const stage = deployError.stage || "unknown";
-    const details = deployError.details ?? errorDetails(error);
-    console.error(`[Docker] deployApp: Error deploying "${appId}":`, error);
+    const details = (deployError.details as Record<string, unknown>) || errorDetails(error);
+    const userMessage = summarizeDeployFailure(stage, errorMessage, details);
+    await log.error("docker:deploy:error", {
+      appId,
+      stage,
+      error: errorMessage,
+    });
     await logAction(
       "deploy:error",
       {
         appId,
         stage,
-        error: errorMessage,
+        error: userMessage,
+        rawError: errorMessage,
         ...details,
         stack: clipText(deployError.stack, 3000),
       },
@@ -348,6 +423,7 @@ export async function deployApp(
     );
     sendInstallProgress({
       type: "install-progress",
+      appId,
       containerName: appId,
       name: meta.name,
       icon: meta.icon,
@@ -355,12 +431,12 @@ export async function deployApp(
       status: "error",
       message:
         stage && stage !== "unknown"
-          ? `Deployment failed at ${stage}`
-          : "Deployment failed",
+          ? `Deployment failed at ${stage}: ${userMessage}`
+          : `Deployment failed: ${userMessage}`,
     });
     return {
       success: false,
-      error: errorMessage || "Failed to deploy app",
+      error: userMessage || "Failed to deploy app",
     };
   }
 }
@@ -381,7 +457,9 @@ export async function convertDockerRunToCompose(
     const yaml = composerize(command.trim());
     return { success: true, yaml };
   } catch (error: unknown) {
-    console.error("[Docker] composerize error:", error);
+    await log.error("docker:composerize:error", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return {
       success: false,
       error:
@@ -414,7 +492,7 @@ async function resolveCompose(
     await fs.mkdir(appDir, { recursive: true });
     const filePath = path.join(appDir, "docker-compose.yml");
     await fs.writeFile(filePath, composeContent, "utf-8");
-    console.log(`[Docker] resolveCompose: Wrote compose to ${filePath}`);
+    await log.info("docker:resolve-compose:wrote", { appId, filePath });
     return { appDir, composePath: filePath };
   }
 
@@ -422,9 +500,10 @@ async function resolveCompose(
   // This handles re-deploys and edits of already-installed apps
   const installedApp = await getInstalledAppDir(appId);
   if (installedApp) {
-    console.log(
-      `[Docker] resolveCompose: Using existing installed app at ${installedApp.composePath}`,
-    );
+    await log.info("docker:resolve-compose:installed", {
+      appId,
+      composePath: installedApp.composePath,
+    });
     return installedApp;
   }
 
@@ -440,14 +519,13 @@ async function resolveCompose(
       const storeAppDir = path.dirname(fullPath);
       // Copy store app to installed-apps
       const copied = await copyAppToInstalledApps(storeAppDir, appId);
-      console.log(
-        `[Docker] resolveCompose: Copied store app to ${copied.composePath}`,
-      );
+      await log.info("docker:resolve-compose:copied:provided", {
+        appId,
+        composePath: copied.composePath,
+      });
       return copied;
     } catch {
-      console.warn(
-        `[Docker] resolveCompose: Provided composePath not found: ${fullPath}`,
-      );
+      await log.warn("docker:resolve-compose:missing:provided", { appId, fullPath });
       // Fall through to DB/filesystem search
     }
   }
@@ -468,14 +546,13 @@ async function resolveCompose(
       const storeAppDir = path.dirname(dbPath);
       // Copy store app to installed-apps
       const copied = await copyAppToInstalledApps(storeAppDir, appId);
-      console.log(
-        `[Docker] resolveCompose: Copied store app (from DB) to ${copied.composePath}`,
-      );
+      await log.info("docker:resolve-compose:copied:db", {
+        appId,
+        composePath: copied.composePath,
+      });
       return copied;
     } catch {
-      console.warn(
-        `[Docker] resolveCompose: DB composePath not found: ${dbPath}`,
-      );
+      await log.warn("docker:resolve-compose:missing:db", { appId, dbPath });
     }
   }
 
@@ -488,9 +565,10 @@ async function resolveCompose(
       found.appDir.includes("internal-apps")
     ) {
       const copied = await copyAppToInstalledApps(found.appDir, appId);
-      console.log(
-        `[Docker] resolveCompose: Copied found app to ${copied.composePath}`,
-      );
+      await log.info("docker:resolve-compose:copied:found", {
+        appId,
+        composePath: copied.composePath,
+      });
       return copied;
     }
     return found;
@@ -505,9 +583,7 @@ async function resolveCompose(
 async function tearDownExisting(appDir: string, appId: string): Promise<void> {
   try {
     await execAsync(`cd "${appDir}" && docker compose down`);
-    console.log(
-      `[Docker] tearDownExisting: Tore down existing containers for "${appId}"`,
-    );
+    await log.info("docker:teardown-existing:success", { appId });
   } catch {
     // Fallback: force remove the container directly
     try {
@@ -525,9 +601,7 @@ async function buildEnvVars(
   appId: string,
   config?: InstallConfig,
 ): Promise<NodeJS.ProcessEnv> {
-  console.log(
-    `[Docker] buildEnvVars: Using default env builder for "${appId}"`,
-  );
+  await log.info("docker:build-env:default", { appId });
   return buildDefaultEnvVars(appId, config);
 }
 
@@ -592,85 +666,203 @@ function streamComposePull(
   envVars: NodeJS.ProcessEnv,
   onProgress: (progress: number, message?: string) => void,
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const pull = spawn("docker", ["compose", "--project-name", appId, "-f", composePath, "pull"], {
-      cwd: appDir,
-      env: envVars,
-    });
-    const stdoutLines: string[] = [];
-    const stderrLines: string[] = [];
-    const pushLine = (target: string[], value: string) => {
-      target.push(value);
-      if (target.length > 40) target.shift();
-    };
+  const runPull = (useJsonProgress: boolean): Promise<void> =>
+    new Promise((resolve, reject) => {
+      const args = useJsonProgress
+        ? [
+            "compose",
+            "--progress",
+            "json",
+            "--project-name",
+            appId,
+            "-f",
+            composePath,
+            "pull",
+          ]
+        : ["compose", "--project-name", appId, "-f", composePath, "pull"];
 
-    let events = 0;
-    let lastEmit = Date.now();
-    const maxProgress = 0.85;
-    const minProgress = 0.35;
+      const pull = spawn("docker", args, { cwd: appDir, env: envVars });
+      const stdoutLines: string[] = [];
+      const stderrLines: string[] = [];
+      const pushLine = (target: string[], value: string) => {
+        target.push(value);
+        if (target.length > 60) target.shift();
+      };
 
-    const advance = (incMessage?: string) => {
-      events += 1;
-      const pct = Math.min(
-        maxProgress,
-        minProgress + (events / 40) * (maxProgress - minProgress),
-      );
-      const now = Date.now();
-      if (now - lastEmit > 200) {
-        onProgress(pct, incMessage);
-        lastEmit = now;
-      }
-    };
+      let events = 0;
+      let lastEmit = 0;
+      let lastProgress = 0.35;
+      const maxProgress = 0.85;
+      const minProgress = 0.35;
+      const layers = new Map<string, { current: number; total: number }>();
 
-    pull.stdout.on("data", (data) => {
-      const lines = data.toString().split("\n");
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        pushLine(stdoutLines, trimmed);
-        if (
-          /download/i.test(trimmed) ||
-          /extract/i.test(trimmed) ||
-          /pulling/i.test(trimmed) ||
-          /pull complete/i.test(trimmed)
-        ) {
+      const emitProgress = (value: number, incMessage?: string) => {
+        const bounded = Math.min(maxProgress, Math.max(minProgress, value));
+        if (bounded < lastProgress) return;
+        const now = Date.now();
+        if (now - lastEmit >= 160 || bounded >= maxProgress) {
+          onProgress(bounded, incMessage);
+          lastEmit = now;
+          lastProgress = bounded;
+        }
+      };
+
+      const advance = (incMessage?: string) => {
+        events += 1;
+        const pct = minProgress + (events / 50) * (maxProgress - minProgress);
+        emitProgress(pct, incMessage);
+      };
+
+      const processJsonProgress = (line: string) => {
+        try {
+          const payload = JSON.parse(line) as {
+            id?: string;
+            status?: string;
+            error?: string;
+            progressDetail?: { current?: number; total?: number };
+          };
+
+          if (payload.error) {
+            advance(payload.error);
+            return;
+          }
+
+          const layerId = payload.id;
+          const current = Number(payload.progressDetail?.current ?? 0);
+          const total = Number(payload.progressDetail?.total ?? 0);
+          if (layerId && Number.isFinite(current) && Number.isFinite(total)) {
+            const normalizedTotal = total > 0 ? total : 0;
+            const normalizedCurrent =
+              normalizedTotal > 0
+                ? Math.min(Math.max(current, 0), normalizedTotal)
+                : 0;
+            layers.set(layerId, {
+              current: normalizedCurrent,
+              total: normalizedTotal,
+            });
+          }
+
+          const doneStatus = /pull complete|already exists|download complete/i;
+          if (layerId && doneStatus.test(payload.status || "")) {
+            const existing = layers.get(layerId);
+            if (existing && existing.total > 0) {
+              layers.set(layerId, { ...existing, current: existing.total });
+            }
+          }
+
+          let totalCurrent = 0;
+          let totalTotal = 0;
+          for (const layer of layers.values()) {
+            if (layer.total > 0) {
+              totalCurrent += layer.current;
+              totalTotal += layer.total;
+            }
+          }
+
+          if (totalTotal > 0) {
+            const ratio = totalCurrent / totalTotal;
+            emitProgress(
+              minProgress + ratio * (maxProgress - minProgress),
+              payload.status,
+            );
+            return;
+          }
+
+          if (payload.status) {
+            advance(payload.status);
+          }
+        } catch {
+          if (
+            /download|extract|pulling|pull complete|already exists/i.test(line)
+          ) {
+            advance(line);
+          }
+        }
+      };
+
+      pull.stdout.on("data", (data) => {
+        const lines = data.toString().split("\n");
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          pushLine(stdoutLines, trimmed);
+          if (useJsonProgress) {
+            processJsonProgress(trimmed);
+            continue;
+          }
+          if (
+            /download/i.test(trimmed) ||
+            /extract/i.test(trimmed) ||
+            /pulling/i.test(trimmed) ||
+            /pull complete/i.test(trimmed)
+          ) {
+            advance(trimmed);
+          }
+        }
+      });
+
+      pull.stderr.on("data", (data) => {
+        const lines = data.toString().split("\n");
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          pushLine(stderrLines, trimmed);
+          if (useJsonProgress) {
+            processJsonProgress(trimmed);
+            continue;
+          }
           advance(trimmed);
         }
-      }
-    });
-
-    pull.stderr.on("data", (data) => {
-      const lines = data.toString().split("\n");
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        pushLine(stderrLines, trimmed);
-        advance(trimmed);
-      }
-    });
-
-    pull.on("error", (err) => {
-      const e = stageError("compose:pull", "docker compose pull failed to start", {
-        ...errorDetails(err),
-        stdout: clipText(stdoutLines.join("\n")),
-        stderr: clipText(stderrLines.join("\n")),
       });
-      reject(e);
+
+      pull.on("error", (err) => {
+        const e = stageError("compose:pull", "docker compose pull failed to start", {
+          ...errorDetails(err),
+          stdout: clipText(stdoutLines.join("\n")),
+          stderr: clipText(stderrLines.join("\n")),
+          usedJsonProgress: useJsonProgress,
+        });
+        reject(e);
+      });
+      pull.on("close", (code) => {
+        if (code === 0) {
+          onProgress(0.85, "Images pulled");
+          resolve();
+        } else {
+          reject(
+            stageError(
+              "compose:pull",
+              `docker compose pull exited with code ${code}`,
+              {
+                code,
+                stdout: clipText(stdoutLines.join("\n")),
+                stderr: clipText(stderrLines.join("\n")),
+                usedJsonProgress: useJsonProgress,
+              },
+            ),
+          );
+        }
+      });
     });
-    pull.on("close", (code) => {
-      if (code === 0) {
-        onProgress(0.85, "Images pulled");
-        resolve();
-      } else {
-        reject(
-          stageError("compose:pull", `docker compose pull exited with code ${code}`, {
-            code,
-            stdout: clipText(stdoutLines.join("\n")),
-            stderr: clipText(stderrLines.join("\n")),
-          }),
-        );
-      }
-    });
+
+  const shouldFallbackToPlainPull = (error: unknown) => {
+    const e = error as DeployError;
+    const details = mergeErrorDetails(error);
+    const combined = `${String(details.stderr || e.stderr || "")}\n${String(
+      details.stdout || e.stdout || "",
+    )}\n${String(e.message || "")}`.toLowerCase();
+    return (
+      combined.includes("unknown flag: --progress") ||
+      combined.includes("invalid argument \"json\" for \"--progress\"") ||
+      combined.includes("unknown flag: --project-name")
+    );
+  };
+
+  return runPull(true).catch((error) => {
+    if (!shouldFallbackToPlainPull(error)) {
+      throw error;
+    }
+    return runPull(false);
   });
 }
 
@@ -711,10 +903,9 @@ async function extractComposeMeta(
         : undefined;
     return { webUIPort, networkMode };
   } catch (error) {
-    console.warn(
-      "[Docker] extractComposeMeta failed:",
-      (error as Error)?.message,
-    );
+    await log.warn("docker:extract-compose-meta:failed", {
+      error: (error as Error)?.message,
+    });
     return {};
   }
 }
@@ -728,4 +919,114 @@ function isComposeNoise(stderr: string): boolean {
     lower.includes("pulling") ||
     lower.includes("downloaded")
   );
+}
+
+type ComposeService = {
+  user?: string | number;
+  volumes?: Array<string | { type?: string; source?: string }>;
+};
+
+function parseNumericUser(user: unknown): { uid: number; gid: number } | null {
+  if (typeof user === "number" && Number.isFinite(user)) {
+    const id = Math.trunc(user);
+    return id >= 0 ? { uid: id, gid: id } : null;
+  }
+
+  if (typeof user !== "string") return null;
+  const trimmed = user.trim();
+  if (!trimmed) return null;
+
+  const match = trimmed.match(/^(\d+)(?::(\d+))?$/);
+  if (!match) return null;
+
+  const uid = Number(match[1]);
+  const gid = Number(match[2] ?? match[1]);
+  if (!Number.isFinite(uid) || !Number.isFinite(gid)) return null;
+  return { uid, gid };
+}
+
+function resolveAppDataSource(
+  source: string,
+  envVars: NodeJS.ProcessEnv,
+): string | null {
+  const appDataDir = envVars.APP_DATA_DIR;
+  if (!appDataDir) return null;
+  const normalizedBase = path.resolve(appDataDir);
+  const trimmed = source.trim();
+  if (!trimmed) return null;
+
+  let resolved: string | null = null;
+  if (trimmed.startsWith("${APP_DATA_DIR}")) {
+    resolved = path.join(
+      appDataDir,
+      trimmed.slice("${APP_DATA_DIR}".length).replace(/^\/+/, ""),
+    );
+  } else if (trimmed.startsWith("$APP_DATA_DIR")) {
+    resolved = path.join(
+      appDataDir,
+      trimmed.slice("$APP_DATA_DIR".length).replace(/^\/+/, ""),
+    );
+  } else if (trimmed.startsWith(appDataDir)) {
+    resolved = trimmed;
+  }
+
+  if (!resolved) return null;
+  const normalizedResolved = path.resolve(resolved);
+  return normalizedResolved.startsWith(normalizedBase) ? normalizedResolved : null;
+}
+
+async function ensureComposeVolumeOwnership(
+  composePath: string,
+  envVars: NodeJS.ProcessEnv,
+  appId: string,
+): Promise<void> {
+  try {
+    const raw = await fs.readFile(composePath, "utf-8");
+    const parsed = YAML.parse(raw) as { services?: Record<string, ComposeService> };
+    const services = parsed.services || {};
+
+    for (const [serviceName, service] of Object.entries(services)) {
+      const user = parseNumericUser(service.user);
+      if (!user) continue;
+
+      const volumes = Array.isArray(service.volumes) ? service.volumes : [];
+      for (const volume of volumes) {
+        let source: string | undefined;
+        if (typeof volume === "string") {
+          source = volume.split(":")[0];
+        } else if (volume && typeof volume === "object") {
+          source = volume.source;
+        }
+        if (!source) continue;
+
+        const hostPath = resolveAppDataSource(source, envVars);
+        if (!hostPath) continue;
+
+        await fs.mkdir(hostPath, { recursive: true });
+        try {
+          await fs.chown(hostPath, user.uid, user.gid);
+        } catch (error) {
+          await log.warn("docker:compose:ownership:chown-failed", {
+            appId,
+            service: serviceName,
+            hostPath,
+            uid: user.uid,
+            gid: user.gid,
+            error: (error as Error)?.message || String(error),
+          });
+        }
+        try {
+          await fs.chmod(hostPath, 0o775);
+        } catch {
+          // Best effort; chown is the main requirement.
+        }
+      }
+    }
+  } catch (error) {
+    await log.warn("docker:compose:ownership:parse-failed", {
+      appId,
+      composePath,
+      error: (error as Error)?.message || String(error),
+    });
+  }
 }

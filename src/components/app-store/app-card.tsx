@@ -22,7 +22,7 @@ export function AppCard({ app, installedApp, onInstallSuccess }: AppCardProps) {
 
   const handleOpen = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = await getAppWebUI(app.id);
+    const url = await getAppWebUI(app.id, window.location.origin);
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
     } else {

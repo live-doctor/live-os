@@ -71,7 +71,7 @@ export function AppContextMenu({ app, children, onLoadingChange }: AppContextMen
 
   const handleOpen = async () => {
     try {
-      const url = await getAppWebUI(app.appId);
+      const url = await getAppWebUI(app.appId, window.location.origin);
       if (url) {
         window.open(url, "_blank");
       } else {

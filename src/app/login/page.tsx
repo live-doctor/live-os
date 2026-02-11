@@ -59,6 +59,7 @@ export default function LoginPage() {
         title="Homeio"
         subtitle="Preparing sign-in…"
         icon={<LogIn className="h-5 w-5 text-muted-foreground" />}
+        avatarName={username || "Homeio"}
       >
         <div className="flex justify-center py-12">
           <OrbitLoader />
@@ -74,6 +75,7 @@ export default function LoginPage() {
       subtitle="Sign in to Homeio"
       icon={<LogIn className="h-5 w-5 text-muted-foreground" />}
       widthClass="max-w-xl"
+      avatarName={username || "Homeio"}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-lg border border-border bg-secondary/40 p-6 shadow-inner">

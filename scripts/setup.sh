@@ -286,6 +286,44 @@ EOF
   fi
 }
 
+configure_avahi_http_service() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    print_dry "Configure Avahi HTTP service advertisement"
+    return
+  fi
+
+  local service_dir="/etc/avahi/services"
+  local service_file="${service_dir}/homeio-http.service"
+
+  if [ ! -d "$service_dir" ]; then
+    print_info "Skipping Avahi service configuration: $service_dir not found"
+    return
+  fi
+
+  # Create Avahi service file to advertise HTTP
+  cat > "$service_file" <<EOF
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name replace-wildcards="yes">Homeio on %h</name>
+  <service>
+    <type>_http._tcp</type>
+    <port>${HTTP_PORT}</port>
+  </service>
+</service-group>
+EOF
+
+  print_status "Created Avahi HTTP service file at $service_file"
+
+  # Reload Avahi to pick up the new service
+  if command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-active --quiet avahi-daemon; then
+      systemctl reload avahi-daemon 2>/dev/null || systemctl restart avahi-daemon 2>/dev/null
+      print_status "Reloaded Avahi daemon to advertise HTTP service on port ${HTTP_PORT}"
+    fi
+  fi
+}
+
 ensure_nsswitch_mdns() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Ensure /etc/nsswitch.conf hosts includes mDNS resolver"; return; fi
 
@@ -391,15 +429,23 @@ EOF
 
 install_bluez() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install Bluetooth stack (bluez + rfkill)"; return; fi
-  command -v bluetoothctl >/dev/null 2>&1 && { print_status "Bluetooth tools already present"; return; }
-  if [ -x "$(command -v apt-get)" ]; then
-    apt-get update && apt-get install -y bluez rfkill
-  elif [ -x "$(command -v dnf)" ]; then
-    dnf install -y bluez rfkill
-  elif [ -x "$(command -v yum)" ]; then
-    yum install -y bluez rfkill
+  if command -v bluetoothctl >/dev/null 2>&1; then
+    print_status "Bluetooth tools already present"
   else
-    print_error "Unsupported package manager for bluez"; return
+    if [ -x "$(command -v apt-get)" ]; then
+      apt-get update && apt-get install -y bluez rfkill
+    elif [ -x "$(command -v dnf)" ]; then
+      dnf install -y bluez rfkill
+    elif [ -x "$(command -v yum)" ]; then
+      yum install -y bluez rfkill
+    else
+      print_error "Unsupported package manager for bluez"; return
+    fi
+  fi
+
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl enable bluetooth 2>/dev/null || true
+    systemctl start bluetooth 2>/dev/null || true
   fi
 }
 
@@ -593,6 +639,7 @@ ensure_docker_permissions
 install_avahi
 configure_mdns_stack
 ensure_nsswitch_mdns
+configure_avahi_http_service
 install_nmcli
 ensure_nm_manages_wifi
 install_bluez

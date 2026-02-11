@@ -60,6 +60,18 @@ export interface OtherContainer {
 
 export interface InstallProgress {
   appId: string;
+  containerName?: string;
+  name: string;
+  icon: string;
+  progress: number;
+  status: "starting" | "running" | "completed" | "error";
+  message?: string;
+}
+
+export interface SSEInstallProgressMessage {
+  type: "install-progress";
+  appId?: string;
+  containerName?: string;
   name: string;
   icon: string;
   progress: number;
@@ -98,7 +110,7 @@ export interface ErrorMessage {
 export type SSEMessage =
   | MetricsMessage
   | ErrorMessage
-  | (InstallProgress & { type: "install-progress" });
+  | SSEInstallProgressMessage;
 
 export type SharedState = {
   systemStats: SystemStats | null;

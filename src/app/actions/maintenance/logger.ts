@@ -1,5 +1,3 @@
-'use server';
-
 type LogLevel = 'info' | 'warn' | 'error';
 
 export async function logAction(event: string, meta: Record<string, unknown> = {}, level: LogLevel = 'info') {
@@ -21,6 +19,18 @@ export async function logAction(event: string, meta: Record<string, unknown> = {
     console.log(serialized);
   }
 }
+
+export const log = {
+  info(event: string, meta: Record<string, unknown> = {}) {
+    return logAction(event, meta, "info");
+  },
+  warn(event: string, meta: Record<string, unknown> = {}) {
+    return logAction(event, meta, "warn");
+  },
+  error(event: string, meta: Record<string, unknown> = {}) {
+    return logAction(event, meta, "error");
+  },
+} as const;
 
 export async function withActionLogging<T>(
   event: string,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type {
   InstallProgress,
+  SSEInstallProgressMessage,
   SSEMessage,
   SharedState,
   Subscriber,
@@ -67,20 +68,36 @@ function scheduleInstallRemoval(appId: string) {
 
 function updateInstallProgress(
   prev: InstallProgress[],
-  update: InstallProgress,
+  update: InstallProgress | SSEInstallProgressMessage,
 ): InstallProgress[] {
-  const existingTimer = installRemovalTimers.get(update.appId);
+  const installId = (update.appId || update.containerName || "").trim();
+  if (!installId) return prev;
+
+  const normalizedUpdate: InstallProgress = {
+    appId: installId,
+    containerName: update.containerName || installId,
+    name: update.name,
+    icon: update.icon,
+    progress: update.progress,
+    status: update.status,
+    message: update.message,
+  };
+
+  const existingTimer = installRemovalTimers.get(normalizedUpdate.appId);
   if (existingTimer) {
     clearTimeout(existingTimer);
-    installRemovalTimers.delete(update.appId);
+    installRemovalTimers.delete(normalizedUpdate.appId);
   }
-  const filtered = prev.filter((p) => p.appId !== update.appId);
+  const filtered = prev.filter((p) => p.appId !== normalizedUpdate.appId);
 
-  if (update.status === "completed" || update.status === "error") {
-    scheduleInstallRemoval(update.appId);
+  if (
+    normalizedUpdate.status === "completed" ||
+    normalizedUpdate.status === "error"
+  ) {
+    scheduleInstallRemoval(normalizedUpdate.appId);
   }
 
-  return [...filtered, update];
+  return [...filtered, normalizedUpdate];
 }
 
 function stopEventSource() {
@@ -178,7 +195,10 @@ function connectEventSource(wantFast: boolean) {
           });
         } else if (data.type === "install-progress") {
           updateSharedState({
-            installProgress: updateInstallProgress(sharedState.installProgress, data),
+            installProgress: updateInstallProgress(
+              sharedState.installProgress,
+              data,
+            ),
           });
         } else if (data.type === "error") {
           console.error("[SystemStatus] Server error:", data.message);

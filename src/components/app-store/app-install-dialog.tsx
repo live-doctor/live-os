@@ -114,7 +114,7 @@ export function AppInstallDialog({
       if (result.success) {
         toast.success('Application installed successfully!');
         onInstallSuccess?.();
-        const url = await getAppWebUI(app.id);
+        const url = await getAppWebUI(app.id, window.location.origin);
         if (url) {
           window.open(url, "_blank", "noopener,noreferrer");
         }

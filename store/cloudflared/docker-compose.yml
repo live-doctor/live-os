@@ -7,7 +7,7 @@ services:
       APP_PORT: 3000
 
   web:
-    image: ghcr.io/radiokot/umbrel-cloudflared:1.0.2@sha256:9660fb4e90317036d2b418f1c9437cc2cdb7f7bdd8d820084237a0c37bb94f5b
+    image: ghcr.io/radiokot/umbrel-cloudflared:1.0.2
     hostname: cloudflared-web
     restart: on-failure
     stop_grace_period: 1s
@@ -21,7 +21,7 @@ services:
       CLOUDFLARED_TOKEN_FILE: "/app/data/token"
 
   connector:
-    image: ghcr.io/radiokot/umbrel-cloudflared-connector:1.0.1-cf.2026.1.2@sha256:ea7fa000e30bf610cc09a4ba173c3d0f93811d5d87b6f740ed5eab517d858b60
+    image: ghcr.io/radiokot/umbrel-cloudflared-connector:1.0.1-cf.2026.1.2
     hostname: cloudflared-connector
     restart: on-failure
     stop_grace_period: 3s

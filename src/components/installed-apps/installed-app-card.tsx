@@ -48,7 +48,7 @@ export function InstalledAppCard({
           className="relative cursor-pointer p-2"
           onClick={async () => {
             try {
-              const url = await getAppWebUI(app.appId);
+              const url = await getAppWebUI(app.appId, window.location.origin);
               if (url) {
                 window.open(url, "_blank", "noopener,noreferrer");
               } else {

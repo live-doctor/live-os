@@ -9,7 +9,7 @@ import { triggerAppsUpdate } from "@/lib/system-status/websocket-server";
 import prisma from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
-import { logAction } from "../maintenance/logger";
+import { log, logAction } from "../maintenance/logger";
 import { backupComposeFile, cleanupBackup, restoreComposeFile } from "./backup";
 import {
   getAppMeta,
@@ -39,9 +39,10 @@ async function resolveComposeForLifecycle(
   // Check installed-apps first (new persistent location)
   const installedApp = await getInstalledAppDir(appId);
   if (installedApp) {
-    console.log(
-      `[Docker] resolveComposeForLifecycle: Found in installed-apps: ${installedApp.composePath}`,
-    );
+    await log.info("docker:lifecycle:resolve-compose:installed", {
+      appId,
+      composePath: installedApp.composePath,
+    });
     return installedApp;
   }
 
@@ -63,9 +64,10 @@ async function resolveComposeForLifecycle(
       await fs.access(fullPath);
       return { appDir: path.dirname(fullPath), composePath: fullPath };
     } catch {
-      console.warn(
-        `[Docker] resolveComposeForLifecycle: DB composePath not found on disk: ${fullPath}`,
-      );
+      await log.warn("docker:lifecycle:resolve-compose:db-missing", {
+        appId,
+        fullPath,
+      });
     }
   }
 
@@ -85,9 +87,11 @@ async function composeLifecycle(
   const resolved = await resolveComposeForLifecycle(appId);
   if (resolved) {
     const { sanitizedPath } = await sanitizeComposeFile(resolved.composePath);
-    console.log(
-      `[Docker] ${action}App: Using compose for "${appId}" at ${sanitizedPath}`,
-    );
+    await log.info("docker:lifecycle:compose-action", {
+      appId,
+      action,
+      composePath: sanitizedPath,
+    });
     await execAsync(
       `cd "${resolved.appDir}" && docker compose --project-name "${appId}" -f "${sanitizedPath}" ${action}`,
     );
@@ -100,11 +104,11 @@ async function composeLifecycle(
  * Stop an app
  */
 export async function stopApp(containerName: string): Promise<boolean> {
-  console.log(`[Docker] stopApp: Stopping app "${containerName}"...`);
+  await log.info("docker:stop:start", { containerName });
 
   try {
     if (!validateAppId(containerName)) {
-      console.warn(`[Docker] stopApp: Invalid app ID: "${containerName}"`);
+      await log.warn("docker:stop:invalid-app-id", { containerName });
       return false;
     }
 
@@ -113,14 +117,14 @@ export async function stopApp(containerName: string): Promise<boolean> {
       await execAsync(`docker stop ${containerName}`);
     }
 
-    console.log(`[Docker] stopApp: Successfully stopped "${containerName}"`);
+    await log.info("docker:stop:success", { containerName });
     void pollAndBroadcast();
     return true;
   } catch (error) {
-    console.error(
-      `[Docker] stopApp: Error stopping "${containerName}":`,
-      error,
-    );
+    await log.error("docker:stop:error", {
+      containerName,
+      error: (error as Error)?.message || String(error),
+    });
     return false;
   }
 }
@@ -129,11 +133,11 @@ export async function stopApp(containerName: string): Promise<boolean> {
  * Start an app
  */
 export async function startApp(containerName: string): Promise<boolean> {
-  console.log(`[Docker] startApp: Starting app "${containerName}"...`);
+  await log.info("docker:start:start", { containerName });
 
   try {
     if (!validateAppId(containerName)) {
-      console.warn(`[Docker] startApp: Invalid app ID: "${containerName}"`);
+      await log.warn("docker:start:invalid-app-id", { containerName });
       return false;
     }
 
@@ -144,19 +148,17 @@ export async function startApp(containerName: string): Promise<boolean> {
 
     const healthy = await waitForContainerRunning(containerName, 5, 2000);
     if (!healthy) {
-      console.warn(
-        `[Docker] startApp: Container "${containerName}" not running after start`,
-      );
+      await log.warn("docker:start:container-not-running", { containerName });
       return false;
     }
-    console.log(`[Docker] startApp: Successfully started "${containerName}"`);
+    await log.info("docker:start:success", { containerName });
     void pollAndBroadcast();
     return true;
   } catch (error) {
-    console.error(
-      `[Docker] startApp: Error starting "${containerName}":`,
-      error,
-    );
+    await log.error("docker:start:error", {
+      containerName,
+      error: (error as Error)?.message || String(error),
+    });
     return false;
   }
 }
@@ -165,11 +167,11 @@ export async function startApp(containerName: string): Promise<boolean> {
  * Restart an app
  */
 export async function restartApp(containerName: string): Promise<boolean> {
-  console.log(`[Docker] restartApp: Restarting app "${containerName}"...`);
+  await log.info("docker:restart:start", { containerName });
 
   try {
     if (!validateAppId(containerName)) {
-      console.warn(`[Docker] restartApp: Invalid app ID: "${containerName}"`);
+      await log.warn("docker:restart:invalid-app-id", { containerName });
       return false;
     }
 
@@ -180,21 +182,17 @@ export async function restartApp(containerName: string): Promise<boolean> {
 
     const healthy = await waitForContainerRunning(containerName, 5, 2000);
     if (!healthy) {
-      console.warn(
-        `[Docker] restartApp: Container "${containerName}" not running after restart`,
-      );
+      await log.warn("docker:restart:container-not-running", { containerName });
       return false;
     }
-    console.log(
-      `[Docker] restartApp: Successfully restarted "${containerName}"`,
-    );
+    await log.info("docker:restart:success", { containerName });
     void pollAndBroadcast();
     return true;
   } catch (error) {
-    console.error(
-      `[Docker] restartApp: Error restarting "${containerName}":`,
-      error,
-    );
+    await log.error("docker:restart:error", {
+      containerName,
+      error: (error as Error)?.message || String(error),
+    });
     return false;
   }
 }
@@ -219,6 +217,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
   ) =>
     sendInstallProgress({
       type: "install-progress",
+      appId: containerName,
       containerName,
       name: meta.name,
       icon: meta.icon,
@@ -231,7 +230,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
 
   const resolved = await resolveComposeForLifecycle(containerName);
   if (!resolved) {
-    console.warn(`[Docker] updateApp: compose not found for ${containerName}`);
+    await log.warn("docker:update:compose-not-found", { containerName });
     emitProgress(1, "Compose file not found", "error");
     return false;
   }
@@ -263,9 +262,7 @@ export async function updateApp(containerName: string): Promise<boolean> {
     emitProgress(0.85, "Verifying container health");
     const healthy = await waitForContainerRunning(containerName, 5, 2000);
     if (!healthy) {
-      console.warn(
-        `[Docker] updateApp: container not healthy after update for ${containerName}`,
-      );
+      await log.warn("docker:update:container-not-healthy", { containerName });
 
       // Attempt rollback
       if (backupPath) {
@@ -295,7 +292,10 @@ export async function updateApp(containerName: string): Promise<boolean> {
     emitProgress(1, "Update complete", "completed");
     return true;
   } catch (error) {
-    console.error(`[Docker] updateApp: failed for ${containerName}:`, error);
+    await log.error("docker:update:error", {
+      containerName,
+      error: (error as Error)?.message || String(error),
+    });
 
     // Attempt rollback on exception
     if (backupPath) {
@@ -340,11 +340,11 @@ export async function uninstallApp(
   appId: string,
   options?: UninstallOptions,
 ): Promise<boolean> {
-  console.log(`[Docker] uninstallApp: Uninstalling app "${appId}"...`);
+  await log.info("docker:uninstall:start", { appId });
 
   try {
     if (!validateAppId(appId)) {
-      console.warn(`[Docker] uninstallApp: Invalid app ID: "${appId}"`);
+      await log.warn("docker:uninstall:invalid-app-id", { appId });
       return false;
     }
 
@@ -361,30 +361,29 @@ export async function uninstallApp(
         const { sanitizedPath } = await sanitizeComposeFile(
           resolved.composePath,
         );
-        console.log(
-          `[Docker] uninstallApp: docker compose down for "${appId}" at ${sanitizedPath}`,
-        );
+        await log.info("docker:uninstall:compose-down", { appId, composePath: sanitizedPath });
         await execAsync(
           `cd "${resolved.appDir}" && docker compose --project-name "${appId}" -f "${sanitizedPath}" down -v --remove-orphans`,
         );
       } catch (composeErr) {
-        console.warn(
-          `[Docker] uninstallApp: compose down failed for "${appId}":`,
-          composeErr,
-        );
+        await log.warn("docker:uninstall:compose-down-failed", {
+          appId,
+          error: (composeErr as Error)?.message || String(composeErr),
+        });
       }
     }
 
     // Explicitly remove any remaining candidate containers
     for (const name of containerCandidates) {
       try {
-        console.log(`[Docker] uninstallApp: Removing container "${name}"...`);
+        await log.info("docker:uninstall:remove-container", { appId, containerName: name });
         await execAsync(`docker rm -f ${name}`);
       } catch (err) {
-        console.warn(
-          `[Docker] uninstallApp: Failed to remove container "${name}":`,
-          err,
-        );
+        await log.warn("docker:uninstall:remove-container-failed", {
+          appId,
+          containerName: name,
+          error: (err as Error)?.message || String(err),
+        });
       }
     }
 
@@ -393,24 +392,26 @@ export async function uninstallApp(
     if (removeAppData) {
       try {
         await fs.rm(appDataPath, { recursive: true, force: true });
-        console.log(`[Docker] uninstallApp: Removed data dir ${appDataPath}`);
+        await log.info("docker:uninstall:removed-data", { appId, appDataPath });
       } catch (cleanupError) {
-        console.warn(
-          `[Docker] uninstallApp: Failed to remove data dir ${appDataPath}:`,
-          cleanupError,
-        );
+        await log.warn("docker:uninstall:remove-data-failed", {
+          appId,
+          appDataPath,
+          error: (cleanupError as Error)?.message || String(cleanupError),
+        });
       }
     } else {
       try {
         const trashDir = path.join(TRASH_ROOT, `${appId}_${Date.now()}`);
         await fs.mkdir(TRASH_ROOT, { recursive: true });
         await fs.rename(appDataPath, trashDir);
-        console.log(`[Docker] uninstallApp: Moved data to trash ${trashDir}`);
+        await log.info("docker:uninstall:moved-to-trash", { appId, trashDir });
       } catch (moveError) {
-        console.warn(
-          `[Docker] uninstallApp: Failed to move data dir ${appDataPath} to trash. Keeping it in place:`,
-          moveError,
-        );
+        await log.warn("docker:uninstall:move-to-trash-failed", {
+          appId,
+          appDataPath,
+          error: (moveError as Error)?.message || String(moveError),
+        });
       }
     }
 
@@ -423,13 +424,41 @@ export async function uninstallApp(
     await triggerAppsUpdate();
     void pollAndBroadcast();
 
-    console.log(`[Docker] uninstallApp: Successfully uninstalled "${appId}"`);
+    await log.info("docker:uninstall:success", { appId });
     return true;
   } catch (error) {
-    console.error(
-      `[Docker] uninstallApp: Error uninstalling "${appId}":`,
-      error,
-    );
+    await log.error("docker:uninstall:error", {
+      appId,
+      error: (error as Error)?.message || String(error),
+    });
+    return false;
+  }
+}
+
+/**
+ * Remove an unmanaged container.
+ * This only removes the container itself (docker rm -f) and does not touch
+ * app data directories managed by Homeio.
+ */
+export async function removeContainer(containerName: string): Promise<boolean> {
+  await log.info("docker:container:remove:start", { containerName });
+
+  try {
+    if (!validateAppId(containerName)) {
+      await log.warn("docker:container:remove:invalid-name", { containerName });
+      return false;
+    }
+
+    await execAsync(`docker rm -f ${containerName}`);
+    void pollAndBroadcast();
+    await triggerAppsUpdate();
+    await log.info("docker:container:remove:success", { containerName });
+    return true;
+  } catch (error) {
+    await log.error("docker:container:remove:error", {
+      containerName,
+      error: (error as Error)?.message || String(error),
+    });
     return false;
   }
 }

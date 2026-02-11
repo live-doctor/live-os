@@ -156,7 +156,7 @@ export function AppDetailDialog({
   };
 
   const handleOpen = async () => {
-    const url = await getAppWebUI(app.id);
+    const url = await getAppWebUI(app.id, window.location.origin);
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
       return;

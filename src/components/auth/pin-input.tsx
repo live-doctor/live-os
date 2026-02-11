@@ -31,7 +31,7 @@ export function PinInput({ value, onChange, disabled, center }: PinInputProps) {
             key={index}
             mask
             index={index}
-            className="h-12 w-12 rounded-xl border border-white/20 bg-white/5 text-xl text-white backdrop-blur focus:border-white/40"
+            className="h-12 w-12 rounded-lg border border-border bg-secondary/55 text-xl text-foreground backdrop-blur focus:border-ring/50"
           />
         ))}
       </InputOTPGroup>

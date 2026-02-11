@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { MapPin, Store } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -33,62 +35,78 @@ export function PostSetup({
   onFinish,
 }: PostSetupProps) {
   return (
-    <>
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-inner shadow-black/25 space-y-3">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="space-y-5"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.04, duration: 0.18 }}
+        className="space-y-3 rounded-lg border border-border bg-secondary/35 p-6 shadow-inner"
+      >
         <CardHeader
           title="Location (optional)"
           description="Improves weather and widget defaults."
-          icon={<MapPin className="h-5 w-5 text-white" />}
+          icon={<MapPin className="h-5 w-5 text-muted-foreground" />}
         />
         <Button
           variant="ghost"
           onClick={onUseLocation}
-          className="w-full border border-white/15 text-white"
+          className="w-full border border-border bg-secondary/55 text-foreground hover:bg-secondary"
           disabled={isLocating}
         >
           Use my location
         </Button>
-        {locationStatus && (
-          <p className="text-xs text-white/60">{locationStatus}</p>
-        )}
+        {locationStatus && <p className="text-xs text-muted-foreground">{locationStatus}</p>}
         {locationError && (
-          <p className="text-xs text-red-400">{locationError}</p>
+          <p className="text-xs text-red-400/90">{locationError}</p>
         )}
-      </div>
+      </motion.div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-inner shadow-black/25 space-y-3">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.09, duration: 0.18 }}
+        className="space-y-3 rounded-lg border border-border bg-secondary/35 p-6 shadow-inner"
+      >
         <CardHeader
           title="LinuxServer.io catalog (optional)"
           description="Import LinuxServer.io apps during setup."
-          icon={<Store className="h-5 w-5 text-white" />}
+          icon={<Store className="h-5 w-5 text-muted-foreground" />}
         />
-        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-          <p className="text-sm text-white/85">Include LinuxServer.io apps</p>
+        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/55 px-3 py-2">
+          <p className="text-sm text-foreground">Include LinuxServer.io apps</p>
           <Switch
             checked={includeLinuxServerStore}
             onCheckedChange={onIncludeLinuxServerStoreChange}
             disabled={isFinishing}
           />
         </div>
-        {linuxServerStatus && (
-          <p className="text-xs text-white/60">{linuxServerStatus}</p>
-        )}
+        {linuxServerStatus && <p className="text-xs text-muted-foreground">{linuxServerStatus}</p>}
         {linuxServerError && (
-          <p className="text-xs text-red-400">{linuxServerError}</p>
+          <p className="text-xs text-red-400/90">{linuxServerError}</p>
         )}
-      </div>
+      </motion.div>
 
-      <div className="flex items-center justify-between text-sm text-white/60 mt-4">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.14, duration: 0.18 }}
+        className="mt-4 flex items-center justify-between text-sm text-muted-foreground"
+      >
         <span>Version {version}</span>
         <Button
           onClick={onFinish}
           disabled={isFinishing}
-          className="bg-white/10 text-white hover:bg-white/20 border border-white/15"
+          className="border border-border bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {isFinishing ? "Finishing setup…" : "Go to login"}
         </Button>
-      </div>
-    </>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -103,12 +121,16 @@ function CardHeader({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10">
+      <div
+        className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/55",
+        )}
+      >
         {icon}
       </div>
       <div>
-        <p className="text-white font-medium">{title}</p>
-        <p className="text-sm text-white/60">{description}</p>
+        <p className="font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </div>
   );

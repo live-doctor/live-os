@@ -3,6 +3,7 @@ import {
   getStorageInfo,
   getSystemStatus,
 } from "@/app/actions/system/system-status";
+import { log } from "@/app/actions/maintenance/logger";
 import prisma from "@/lib/prisma";
 import { execAsync } from "@/lib/exec";
 const CONTAINER_PREFIX = process.env.CONTAINER_PREFIX || "";
@@ -19,7 +20,8 @@ type MetricsPayload = {
 
 export type InstallProgressPayload = {
   type: "install-progress";
-  containerName: string;
+  appId: string;
+  containerName?: string;
   name: string;
   icon: string;
   progress: number; // 0-1
@@ -44,6 +46,42 @@ let currentIntervalMs = SLOW_POLL_INTERVAL_MS;
 let isPolling = false;
 
 let latestPayload: MetricsPayload | null = null;
+const activeInstallProgress = new Map<string, InstallProgressPayload>();
+const installCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const TERMINAL_INSTALL_TTL_MS = 8000;
+
+function installProgressKey(update: InstallProgressPayload): string {
+  return (update.appId || update.containerName || "").trim();
+}
+
+function clearInstallCleanupTimer(key: string) {
+  const timer = installCleanupTimers.get(key);
+  if (!timer) return;
+  clearTimeout(timer);
+  installCleanupTimers.delete(key);
+}
+
+function rememberInstallProgress(update: InstallProgressPayload) {
+  const key = installProgressKey(update);
+  if (!key) return;
+
+  const normalized: InstallProgressPayload = {
+    ...update,
+    appId: update.appId || update.containerName || key,
+    containerName: update.containerName || update.appId || key,
+  };
+
+  activeInstallProgress.set(key, normalized);
+  clearInstallCleanupTimer(key);
+
+  if (normalized.status === "completed" || normalized.status === "error") {
+    const cleanupTimer = setTimeout(() => {
+      activeInstallProgress.delete(key);
+      installCleanupTimers.delete(key);
+    }, TERMINAL_INSTALL_TTL_MS);
+    installCleanupTimers.set(key, cleanupTimer);
+  }
+}
 
 function broadcast(data: object) {
   const message = `data: ${JSON.stringify(data)}\n\n`;
@@ -63,7 +101,13 @@ function broadcast(data: object) {
 }
 
 export function sendInstallProgress(update: InstallProgressPayload) {
-  broadcast(update);
+  const normalized: InstallProgressPayload = {
+    ...update,
+    appId: update.appId || update.containerName || "unknown",
+    containerName: update.containerName || update.appId || "unknown",
+  };
+  rememberInstallProgress(normalized);
+  broadcast(normalized);
 }
 
 interface InstalledAppResult {
@@ -252,7 +296,9 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
 
     return { installedApps, otherContainers };
   } catch (error) {
-    console.error("[SSE] Failed to collect installed apps:", error);
+    void log.error("sse:installed-apps:collect:error", {
+      error: (error as Error)?.message || String(error),
+    });
     return { installedApps: [], otherContainers: [] };
   }
 }
@@ -274,7 +320,10 @@ async function resolveHostPort(containerName: string): Promise<string | null> {
 
     return firstMapping?.[0]?.HostPort ?? null;
   } catch (error) {
-    console.error(`[SSE] resolveHostPort: failed for ${containerName}:`, error);
+    void log.warn("sse:resolve-host-port:failed", {
+      containerName,
+      error: (error as Error)?.message || String(error),
+    });
     return null;
   }
 }
@@ -384,7 +433,9 @@ export async function pollAndBroadcast() {
     };
     broadcast(latestPayload);
   } catch (error) {
-    console.error("[SSE] Metrics fetch error:", error);
+    void log.error("sse:metrics:poll:error", {
+      error: (error as Error)?.message || String(error),
+    });
     broadcast({ type: "error", message: "Failed to fetch metrics" });
   } finally {
     isPolling = false;
@@ -481,7 +532,9 @@ async function getRunningApps() {
       })
       .sort((a, b) => b.cpuUsage - a.cpuUsage);
   } catch (error) {
-    console.error("[SSE] Failed to collect running apps:", error);
+    void log.error("sse:running-apps:collect:error", {
+      error: (error as Error)?.message || String(error),
+    });
     return [];
   }
 }
@@ -552,6 +605,18 @@ export async function GET(request: Request) {
         }
       } else {
         void pollAndBroadcast();
+      }
+
+      if (activeInstallProgress.size > 0) {
+        for (const install of activeInstallProgress.values()) {
+          try {
+            const message = `data: ${JSON.stringify(install)}\n\n`;
+            controller.enqueue(encoder.encode(message));
+          } catch {
+            removeClient();
+            return;
+          }
+        }
       }
 
       ensurePoller();
