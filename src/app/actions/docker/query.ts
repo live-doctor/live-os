@@ -135,13 +135,80 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
  */
 export async function getAppById(appId: string): Promise<InstalledApp | null> {
   if (!validateAppId(appId)) return null;
-  const apps = await getInstalledApps();
-  const match = apps.find(
-    (a) =>
-      a.appId.toLowerCase() === appId.toLowerCase() ||
-      a.containerName === getContainerName(appId),
-  );
-  return match ?? null;
+  try {
+    const normalizedId = appId.toLowerCase();
+    const fallbackContainerName = getContainerName(appId);
+
+    const [record, containers] = await Promise.all([
+      prisma.installedApp.findFirst({
+        where: {
+          OR: [
+            { appId },
+            { appId: normalizedId },
+            { containerName: fallbackContainerName },
+          ],
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      listContainersWithLabels(),
+    ]);
+
+    if (!record) return null;
+
+    const storeMetaCandidates = await prisma.app.findMany({
+      where: { appId: record.appId },
+      orderBy: { createdAt: "desc" },
+      select: { title: true, name: true, icon: true, storeId: true },
+    });
+    const storeMeta = record.storeId
+      ? storeMetaCandidates.find((meta) => meta.storeId === record.storeId) ||
+        storeMetaCandidates[0]
+      : storeMetaCandidates[0];
+
+    const groups = groupContainersByProject(containers);
+    const matchingGroup = Array.from(groups.values()).find((group) =>
+      group.some(
+        (container) =>
+          container.name === record.containerName ||
+          container.name === fallbackContainerName ||
+          container.composeProject === record.appId,
+      ),
+    );
+
+    const groupContainers = matchingGroup ?? [];
+    const primaryContainer =
+      groupContainers.find((container) => container.name === record.containerName) ||
+      groupContainers[0];
+    const containerName =
+      primaryContainer?.name || record.containerName || fallbackContainerName;
+
+    const storedWebUIPort = (record.installConfig as Record<string, unknown>)
+      ?.webUIPort as string | number | undefined;
+    const hostPort = await resolveHostPort(containerName, storedWebUIPort ?? null);
+    const webUIPort = hostPort ? parseInt(hostPort, 10) : undefined;
+
+    const containerNames = groupContainers.map((container) => container.name);
+    const dbContainers = (record.installConfig as Record<string, unknown>)
+      ?.containers as string[] | undefined;
+    const fallbackName = record.appId || appId;
+
+    return {
+      id: containerName,
+      appId: record.appId || appId,
+      name: record.name || storeMeta?.title || storeMeta?.name || fallbackName,
+      icon: record.icon || storeMeta?.icon || DEFAULT_APP_ICON,
+      status: groupContainers.length > 0 ? aggregateStatus(groupContainers) : "error",
+      webUIPort,
+      containerName,
+      containers:
+        containerNames.length > 1
+          ? containerNames
+          : dbContainers || (containerNames.length > 0 ? containerNames : [containerName]),
+      installedAt: record.createdAt?.getTime?.() || Date.now(),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**

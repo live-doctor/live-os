@@ -18,6 +18,7 @@ print_dry() { echo -e "${BLUE}[DRY]${NC} Would: $1"; }
 DRY_RUN=0
 FROM_SOURCE=0
 HTTP_PORT=${HOMEIO_HTTP_PORT:-80}
+HOMEIO_INSTALL_EXTRAS=${HOMEIO_INSTALL_EXTRAS:-true}
 
 while [[ "$#" -gt 0 ]]; do
   case $1 in
@@ -35,6 +36,95 @@ if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ]; then
 fi
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
+
+detect_arch() {
+  case "$(uname -m)" in
+    x86_64|amd64) echo "x64" ;;
+    aarch64|arm64) echo "arm64" ;;
+    *) echo "unknown" ;;
+  esac
+}
+
+install_umbrel_os_profile() {
+  if [ "$HOMEIO_INSTALL_EXTRAS" != "true" ]; then
+    print_info "Skipping Umbrel-style extras (HOMEIO_INSTALL_EXTRAS=$HOMEIO_INSTALL_EXTRAS)"
+    return
+  fi
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    print_dry "Install Umbrel-style OS packages for WiFi/Bluetooth/Avahi and file sharing"
+    print_dry "Disable smbd/wsdd services; enable avahi-daemon"
+    return
+  fi
+
+  if ! [ -x "$(command -v apt-get)" ]; then
+    print_info "Umbrel-style extras are only applied on apt-based systems"
+    return
+  fi
+
+  print_status "Installing Umbrel-style OS packages (network, Bluetooth, Avahi, SMB)..."
+  apt-get update
+  apt-get install -y \
+    ca-certificates \
+    curl \
+    gnupg \
+    git \
+    jq \
+    rsync \
+    python3 \
+    build-essential \
+    libudev-dev \
+    tar \
+    xz-utils \
+    unzip \
+    procps \
+    network-manager \
+    systemd-timesyncd \
+    openssh-server \
+    avahi-daemon \
+    avahi-discover \
+    avahi-utils \
+    libnss-mdns \
+    bluez \
+    rfkill \
+    sudo \
+    nano \
+    vim \
+    less \
+    man-db \
+    iproute2 \
+    iputils-ping \
+    wget \
+    usbutils \
+    whois \
+    gettext-base \
+    dmidecode \
+    unar \
+    imagemagick \
+    ffmpeg \
+    samba \
+    wsdd2 \
+    cifs-utils \
+    smbclient \
+    gdisk \
+    parted \
+    e2fsprogs \
+    exfatprogs || true
+
+  if [ "$(detect_arch)" = "x64" ]; then
+    apt-get install -y ntfs-3g || true
+  fi
+
+  if command -v systemctl >/dev/null 2>&1; then
+    # Match UmbrelOS behavior: install Samba stack but don't auto-serve until app enables it.
+    systemctl disable smbd wsdd2 wsdd 2>/dev/null || true
+    systemctl stop smbd wsdd2 wsdd 2>/dev/null || true
+    systemctl enable --now avahi-daemon 2>/dev/null || true
+    systemctl enable --now NetworkManager 2>/dev/null || true
+    systemctl enable --now bluetooth 2>/dev/null || true
+    systemctl enable --now systemd-timesyncd 2>/dev/null || true
+  fi
+}
 
 install_git() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install git"; return; fi
@@ -107,8 +197,9 @@ install_samba() {
     fi
   fi
   command -v systemctl >/dev/null 2>&1 && {
-    systemctl enable smbd nmbd wsdd2 wsdd 2>/dev/null || true
-    systemctl start smbd nmbd wsdd2 wsdd 2>/dev/null || true
+    # Keep services installed but disabled by default (Umbrel-style behavior).
+    systemctl disable smbd wsdd2 wsdd 2>/dev/null || true
+    systemctl stop smbd wsdd2 wsdd 2>/dev/null || true
   }
 }
 
@@ -230,7 +321,7 @@ install_avahi() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Install Avahi (mDNS)"; return; fi
   if ! command -v avahi-daemon >/dev/null 2>&1; then
     if [ -x "$(command -v apt-get)" ]; then
-      apt-get update && apt-get install -y avahi-daemon avahi-utils libnss-mdns
+      apt-get update && apt-get install -y avahi-daemon avahi-discover avahi-utils libnss-mdns
     elif [ -x "$(command -v dnf)" ]; then
       dnf install -y avahi avahi-tools nss-mdns || dnf install -y avahi avahi-tools
     elif [ -x "$(command -v yum)" ]; then
@@ -628,6 +719,7 @@ if [ "$FROM_SOURCE" -eq 1 ]; then
   install_build_tools
 fi
 
+install_umbrel_os_profile
 install_archive_tools
 install_cifs_utils
 install_samba

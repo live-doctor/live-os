@@ -40,12 +40,15 @@ const encoder = new TextEncoder();
 const clients = new Set<Client>();
 const SLOW_POLL_INTERVAL_MS = 2000;
 const FAST_POLL_INTERVAL_MS = 1000;
+const INSTALLED_APPS_REFRESH_MS = 10_000;
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let currentIntervalMs = SLOW_POLL_INTERVAL_MS;
 let isPolling = false;
 
 let latestPayload: MetricsPayload | null = null;
+let installedAppsSnapshot: { value: CollectedAppsResult; timestamp: number } | null =
+  null;
 const activeInstallProgress = new Map<string, InstallProgressPayload>();
 const installCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const TERMINAL_INSTALL_TTL_MS = 8000;
@@ -147,6 +150,72 @@ interface RunningAppMetric {
   netTx: number;
 }
 
+type DockerPortMapping = {
+  hostPort: number;
+  containerPort: number;
+  protocol: string;
+};
+
+function parseDockerPortMappings(rawPorts: string): DockerPortMapping[] {
+  if (!rawPorts.trim()) return [];
+
+  return rawPorts
+    .split(",")
+    .map((segment) => segment.trim())
+    .flatMap((segment) => {
+      if (!segment.includes("->")) return [];
+      const [hostSide, containerSide] = segment.split("->");
+      if (!hostSide || !containerSide) return [];
+
+      const containerMatch = containerSide.trim().match(/^(\d+)\/([a-z]+)/i);
+      const hostMatch = hostSide.trim().match(/(\d+)\s*$/);
+      if (!containerMatch || !hostMatch) return [];
+
+      const containerPort = Number.parseInt(containerMatch[1] || "", 10);
+      const hostPort = Number.parseInt(hostMatch[1] || "", 10);
+      if (!Number.isFinite(containerPort) || !Number.isFinite(hostPort)) {
+        return [];
+      }
+
+      return [
+        {
+          hostPort,
+          containerPort,
+          protocol: (containerMatch[2] || "").toLowerCase(),
+        },
+      ];
+    });
+}
+
+function resolveHostPortFromDockerPorts(
+  rawPorts: string,
+  preferredPort?: string | number | null,
+): number | undefined {
+  const mappings = parseDockerPortMappings(rawPorts);
+  if (mappings.length === 0) return undefined;
+
+  const preferred = preferredPort ? Number.parseInt(String(preferredPort), 10) : NaN;
+  if (Number.isFinite(preferred)) {
+    const preferredMapping = mappings.find(
+      (mapping) =>
+        mapping.protocol === "tcp" &&
+        (mapping.containerPort === preferred || mapping.hostPort === preferred),
+    );
+    if (preferredMapping) return preferredMapping.hostPort;
+  }
+
+  const firstTcp = [...mappings]
+    .filter((mapping) => mapping.protocol === "tcp")
+    .sort((a, b) => a.containerPort - b.containerPort)[0];
+  if (firstTcp) return firstTcp.hostPort;
+
+  return mappings[0]?.hostPort;
+}
+
+export function invalidateInstalledAppsCache() {
+  installedAppsSnapshot = null;
+}
+
 async function getInstalledApps(): Promise<CollectedAppsResult> {
   try {
     const [knownApps, storeApps] = await Promise.all([
@@ -156,6 +225,7 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
     const metaByContainer = new Map(
       knownApps.map((app) => [app.containerName, app]),
     );
+    const metaByAppId = new Map(knownApps.map((app) => [app.appId, app]));
     const storeMetaById = new Map(storeApps.map((app) => [app.appId, app]));
 
     // Get set of managed container names for quick lookup
@@ -163,7 +233,7 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
 
     // Get containers with compose labels for grouping
     const { stdout } = await execAsync(
-      'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Label \\"com.docker.compose.project\\"}}\t{{.Label \\"com.docker.compose.service\\"}}"',
+      'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}\t{{.Label \\"com.docker.compose.project\\"}}\t{{.Label \\"com.docker.compose.service\\"}}"',
     );
 
     if (!stdout.trim()) return { installedApps: [], otherContainers: [] };
@@ -172,12 +242,13 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
 
     // Parse containers
     const containers = lines.map((line) => {
-      const [name, status, image, composeProject, composeService] =
+      const [name, status, image, ports, composeProject, composeService] =
         line.split("\t");
       return {
         name: name || "",
         status: status || "",
         image: image || "",
+        ports: ports || "",
         composeProject: composeProject || "",
         composeService: composeService || "",
       };
@@ -214,15 +285,24 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
     const installedApps: InstalledAppResult[] = [];
     const otherContainers: OtherContainerResult[] = [];
 
-    for (const [, groupContainers] of groups) {
+    for (const [projectKey, groupContainers] of groups) {
       const primaryContainer =
         groupContainers.find((c) => metaByContainer.has(c.name)) ||
         groupContainers[0];
 
       const containerNames = groupContainers.map((c) => c.name);
+      const meta = metaByContainer.get(primaryContainer.name);
+      const anyMeta =
+        meta ||
+        groupContainers
+          .map((c) => metaByContainer.get(c.name))
+          .find(Boolean) ||
+        metaByAppId.get(projectKey);
 
       // Check if any container in the group is managed
-      const isManaged = groupContainers.some((c) => managedContainerNames.has(c.name));
+      const isManaged =
+        groupContainers.some((c) => managedContainerNames.has(c.name)) ||
+        Boolean(anyMeta);
 
       // Aggregate status
       const statuses = groupContainers.map((c) => {
@@ -236,16 +316,15 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
       else if (statuses.every((s) => s === "stopped")) appStatus = "stopped";
       else if (statuses.some((s) => s === "running")) appStatus = "running";
 
-      const hostPort = await resolveHostPort(primaryContainer.name);
+      const preferredPort = (
+        anyMeta?.installConfig as Record<string, unknown> | undefined
+      )?.webUIPort as string | number | undefined;
+      const hostPort = resolveHostPortFromDockerPorts(
+        primaryContainer.ports,
+        preferredPort,
+      );
 
       if (isManaged) {
-        const meta = metaByContainer.get(primaryContainer.name);
-        const anyMeta =
-          meta ||
-          groupContainers
-            .map((c) => metaByContainer.get(c.name))
-            .find(Boolean);
-
         const resolvedAppId =
           anyMeta?.appId ||
           getAppIdFromContainerName(primaryContainer.name);
@@ -272,7 +351,7 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
             storeMeta?.icon ||
             "/default-application-icon.png",
           status: appStatus,
-          webUIPort: hostPort ? Number(hostPort) : undefined,
+          webUIPort: hostPort,
           containerName: primaryContainer.name,
           containers:
             containerNames.length > 1
@@ -289,7 +368,7 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
             .replace(/\b\w/g, (c) => c.toUpperCase()),
           image: primaryContainer.image || "unknown",
           status: appStatus,
-          webUIPort: hostPort ? Number(hostPort) : undefined,
+          webUIPort: hostPort,
         });
       }
     }
@@ -303,29 +382,18 @@ async function getInstalledApps(): Promise<CollectedAppsResult> {
   }
 }
 
-async function resolveHostPort(containerName: string): Promise<string | null> {
-  try {
-    const { stdout } = await execAsync(
-      `docker inspect -f '{{json .NetworkSettings.Ports}}' ${containerName}`,
-    );
-
-    const ports = JSON.parse(stdout || "{}") as Record<
-      string,
-      { HostIp: string; HostPort: string }[] | null
-    >;
-
-    const firstMapping = Object.values(ports).find(
-      (mappings) => Array.isArray(mappings) && mappings.length > 0,
-    );
-
-    return firstMapping?.[0]?.HostPort ?? null;
-  } catch (error) {
-    void log.warn("sse:resolve-host-port:failed", {
-      containerName,
-      error: (error as Error)?.message || String(error),
-    });
-    return null;
+async function getInstalledAppsSnapshot(): Promise<CollectedAppsResult> {
+  const now = Date.now();
+  if (
+    installedAppsSnapshot &&
+    now - installedAppsSnapshot.timestamp < INSTALLED_APPS_REFRESH_MS
+  ) {
+    return installedAppsSnapshot.value;
   }
+
+  const value = await getInstalledApps();
+  installedAppsSnapshot = { value, timestamp: now };
+  return value;
 }
 
 function aggregateRunningAppsByInstalled(
@@ -415,7 +483,7 @@ export async function pollAndBroadcast() {
       getSystemStatus(),
       getStorageInfo(),
       getNetworkStats(),
-      getInstalledApps(),
+      getInstalledAppsSnapshot(),
       getRunningApps(),
     ]);
     const runningApps = aggregateRunningAppsByInstalled(

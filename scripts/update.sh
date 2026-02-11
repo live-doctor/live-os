@@ -318,12 +318,13 @@ ensure_samba() {
     fi
 
     if command -v systemctl >/dev/null 2>&1; then
-        systemctl enable smbd nmbd wsdd2 wsdd 2>/dev/null || true
-        systemctl start smbd nmbd wsdd2 wsdd 2>/dev/null || true
+        # Match Umbrel-style behavior: keep services installed but disabled
+        # unless explicitly managed by the application.
+        systemctl disable smbd wsdd2 wsdd 2>/dev/null || true
+        systemctl stop smbd wsdd2 wsdd 2>/dev/null || true
     else
-        service smbd start 2>/dev/null || true
-        service nmbd start 2>/dev/null || true
-        service wsdd2 start 2>/dev/null || service wsdd start 2>/dev/null || true
+        service smbd stop 2>/dev/null || true
+        service wsdd2 stop 2>/dev/null || service wsdd stop 2>/dev/null || true
     fi
 }
 
@@ -450,7 +451,12 @@ cd "$INSTALL_DIR"
 SETUP_SCRIPT="$INSTALL_DIR/scripts/setup.sh"
 if [ -x "$SETUP_SCRIPT" ]; then
     print_status "Running setup.sh to ensure dependencies are present..."
-    bash "$SETUP_SCRIPT"
+    HOMEIO_port=80
+    if [ -f "$INSTALL_DIR/.env" ]; then
+        HOMEIO_port=$(grep -E '^PORT=' "$INSTALL_DIR/.env" | tail -1 | cut -d'=' -f2)
+        HOMEIO_port=${HOMEIO_port:-80}
+    fi
+    bash "$SETUP_SCRIPT" --http-port "$HOMEIO_port"
 else
     print_info "setup.sh not found; skipping dependency refresh"
 fi

@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { pollAndBroadcast } from "@/app/api/system/stream/route";
+import {
+  invalidateInstalledAppsCache,
+  pollAndBroadcast,
+} from "@/app/api/system/stream/route";
 import { execAsync } from "@/lib/exec";
 import prisma from "@/lib/prisma";
 import type { Server } from "http";
@@ -111,23 +114,53 @@ type ExtendedGraphicsControllerData =
     utilization?: number;
   };
 
-async function resolveHostPort(containerName: string): Promise<string | null> {
-  try {
-    const { stdout } = await execAsync(
-      `docker inspect -f '{{json .NetworkSettings.Ports}}' ${containerName}`,
-    );
-    const ports = JSON.parse(stdout || "{}") as Record<
-      string,
-      { HostIp: string; HostPort: string }[] | null
-    >;
-    const firstMapping = Object.values(ports).find(
-      (mappings) => Array.isArray(mappings) && mappings.length > 0,
-    );
-    return firstMapping?.[0]?.HostPort ?? null;
-  } catch (error) {
-    console.error("[SystemStatus WS] Failed to resolve host port:", error);
-    return null;
-  }
+type DockerPortMapping = {
+  hostPort: number;
+  containerPort: number;
+  protocol: string;
+};
+
+function parseDockerPortMappings(rawPorts: string): DockerPortMapping[] {
+  if (!rawPorts.trim()) return [];
+
+  return rawPorts
+    .split(",")
+    .map((segment) => segment.trim())
+    .flatMap((segment) => {
+      if (!segment.includes("->")) return [];
+      const [hostSide, containerSide] = segment.split("->");
+      if (!hostSide || !containerSide) return [];
+
+      const containerMatch = containerSide.trim().match(/^(\d+)\/([a-z]+)/i);
+      const hostMatch = hostSide.trim().match(/(\d+)\s*$/);
+      if (!containerMatch || !hostMatch) return [];
+
+      const containerPort = Number.parseInt(containerMatch[1] || "", 10);
+      const hostPort = Number.parseInt(hostMatch[1] || "", 10);
+      if (!Number.isFinite(containerPort) || !Number.isFinite(hostPort)) {
+        return [];
+      }
+
+      return [
+        {
+          hostPort,
+          containerPort,
+          protocol: (containerMatch[2] || "").toLowerCase(),
+        },
+      ];
+    });
+}
+
+function resolveHostPortFromDockerPorts(rawPorts: string): number | undefined {
+  const mappings = parseDockerPortMappings(rawPorts);
+  if (mappings.length === 0) return undefined;
+
+  const firstTcp = [...mappings]
+    .filter((mapping) => mapping.protocol === "tcp")
+    .sort((a, b) => a.containerPort - b.containerPort)[0];
+  if (firstTcp) return firstTcp.hostPort;
+
+  return mappings[0]?.hostPort;
 }
 
 // Track network stats for delta calculation
@@ -413,7 +446,7 @@ async function collectInstalledApps(): Promise<CollectedApps> {
     const managedContainerNames = new Set(knownApps.map((app) => app.containerName));
 
     const { stdout } = await execAsync(
-      'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Labels}}"',
+      'docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}\t{{.Labels}}"',
     );
 
     if (!stdout.trim()) return { installedApps: [], otherContainers: [] };
@@ -426,39 +459,36 @@ async function collectInstalledApps(): Promise<CollectedApps> {
     const installedApps: InstalledApp[] = [];
     const otherContainers: OtherContainer[] = [];
 
-    // First pass: resolve all containers with ports
-    const containerData = await Promise.all(
-      lines.map(async (line) => {
-        const [containerName, status, image, labelsRaw] = line.split("\t");
+    // First pass: parse all containers with ports
+    const containerData = lines.map((line) => {
+      const [containerName, status, image, portsRaw, labelsRaw] = line.split("\t");
 
-        const labels: Record<string, string> = {};
-        if (labelsRaw) {
-          labelsRaw.split(",").forEach((pair) => {
-            const eqIdx = pair.indexOf("=");
-            if (eqIdx > 0) {
-              const key = pair.substring(0, eqIdx).trim();
-              const value = pair.substring(eqIdx + 1).trim();
-              labels[key] = value;
-            }
-          });
-        }
+      const labels: Record<string, string> = {};
+      if (labelsRaw) {
+        labelsRaw.split(",").forEach((pair) => {
+          const eqIdx = pair.indexOf("=");
+          if (eqIdx > 0) {
+            const key = pair.substring(0, eqIdx).trim();
+            const value = pair.substring(eqIdx + 1).trim();
+            labels[key] = value;
+          }
+        });
+      }
 
-        let appStatus: "running" | "stopped" | "error" = "error";
-        if (status.toLowerCase().startsWith("up")) {
-          appStatus = "running";
-        } else if (status.toLowerCase().includes("exited")) {
-          appStatus = "stopped";
-        }
+      let appStatus: "running" | "stopped" | "error" = "error";
+      if (status.toLowerCase().startsWith("up")) {
+        appStatus = "running";
+      } else if (status.toLowerCase().includes("exited")) {
+        appStatus = "stopped";
+      }
 
-        const hostPort = await resolveHostPort(containerName);
-        const webUIPort = hostPort ? parseInt(hostPort, 10) : undefined;
+      const webUIPort = resolveHostPortFromDockerPorts(portsRaw || "");
 
-        // Get the compose project name (set by --project-name during deploy)
-        const composeProject = labels["com.docker.compose.project"] || "";
+      // Get the compose project name (set by --project-name during deploy)
+      const composeProject = labels["com.docker.compose.project"] || "";
 
-        return { containerName, status: appStatus, image, labels, webUIPort, composeProject };
-      }),
-    );
+      return { containerName, status: appStatus, image, labels, webUIPort, composeProject };
+    });
 
     for (const container of containerData) {
       const { containerName, status, image, labels, webUIPort, composeProject } = container;
@@ -682,6 +712,7 @@ export function initializeSystemStatusWebSocket(server: Server): void {
  * Trigger an immediate apps update (for use after install/uninstall)
  */
 export async function triggerAppsUpdate(): Promise<void> {
+  invalidateInstalledAppsCache();
   const { installedApps, otherContainers } = await collectInstalledApps();
   broadcast({
     type: "apps-update",

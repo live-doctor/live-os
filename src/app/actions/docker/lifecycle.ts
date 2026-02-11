@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  invalidateInstalledAppsCache,
   pollAndBroadcast,
   sendInstallProgress,
   type InstallProgressPayload,
@@ -118,6 +119,7 @@ export async function stopApp(containerName: string): Promise<boolean> {
     }
 
     await log.info("docker:stop:success", { containerName });
+    invalidateInstalledAppsCache();
     void pollAndBroadcast();
     return true;
   } catch (error) {
@@ -152,6 +154,7 @@ export async function startApp(containerName: string): Promise<boolean> {
       return false;
     }
     await log.info("docker:start:success", { containerName });
+    invalidateInstalledAppsCache();
     void pollAndBroadcast();
     return true;
   } catch (error) {
@@ -186,6 +189,7 @@ export async function restartApp(containerName: string): Promise<boolean> {
       return false;
     }
     await log.info("docker:restart:success", { containerName });
+    invalidateInstalledAppsCache();
     void pollAndBroadcast();
     return true;
   } catch (error) {
@@ -421,6 +425,7 @@ export async function uninstallApp(
     for (const name of containerCandidates) {
       await removeInstalledAppRecord(name);
     }
+    invalidateInstalledAppsCache();
     await triggerAppsUpdate();
     void pollAndBroadcast();
 
@@ -450,6 +455,7 @@ export async function removeContainer(containerName: string): Promise<boolean> {
     }
 
     await execAsync(`docker rm -f ${containerName}`);
+    invalidateInstalledAppsCache();
     void pollAndBroadcast();
     await triggerAppsUpdate();
     await log.info("docker:container:remove:success", { containerName });

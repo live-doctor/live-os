@@ -36,6 +36,41 @@ function normalizeId(value: string | undefined) {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+type InstalledMatch = SharedState["installedApps"][number];
+
+function buildInstalledLookup(installedApps: SharedState["installedApps"]) {
+  const lookup = new Map<string, InstalledMatch>();
+
+  const indexKey = (value: string | undefined, installed: InstalledMatch) => {
+    if (!value) return;
+    lookup.set(value, installed);
+    const normalized = normalizeId(value);
+    if (normalized) {
+      lookup.set(normalized, installed);
+    }
+  };
+
+  for (const installed of installedApps) {
+    indexKey(installed.containerName, installed);
+    indexKey(installed.appId, installed);
+    for (const containerName of installed.containers ?? []) {
+      indexKey(containerName, installed);
+    }
+  }
+
+  return lookup;
+}
+
+function matchInstalledApp(
+  lookup: Map<string, InstalledMatch>,
+  appId: string,
+): InstalledMatch | undefined {
+  const direct = lookup.get(appId);
+  if (direct) return direct;
+  const normalized = normalizeId(appId);
+  return normalized ? lookup.get(normalized) : undefined;
+}
+
 function notifySubscribers() {
   subscribers.forEach(({ callback }) => callback(sharedState));
 }
@@ -158,29 +193,9 @@ function connectEventSource(wantFast: boolean) {
           const nextInstalled = data.installedApps ?? sharedState.installedApps;
           const nextOtherContainers = data.otherContainers ?? sharedState.otherContainers;
           const rawRunning = data.runningApps ?? sharedState.runningApps;
+          const installedLookup = buildInstalledLookup(nextInstalled);
           const runningWithIcons = rawRunning.map((app) => {
-            const appIdNorm = normalizeId(app.id);
-            const match = nextInstalled.find((inst) => {
-              if (inst.containerName === app.id || inst.appId === app.id) {
-                return true;
-              }
-
-              const containerNorm = normalizeId(inst.containerName);
-              const appNorm = normalizeId(inst.appId);
-
-              if (!appIdNorm || (!containerNorm && !appNorm)) {
-                return false;
-              }
-
-              return (
-                containerNorm === appIdNorm ||
-                appNorm === appIdNorm ||
-                containerNorm.includes(appIdNorm) ||
-                appIdNorm.includes(containerNorm) ||
-                appNorm.includes(appIdNorm) ||
-                appIdNorm.includes(appNorm)
-              );
-            });
+            const match = matchInstalledApp(installedLookup, app.id);
             return match ? { ...app, icon: match.icon, name: match.name } : app;
           });
 

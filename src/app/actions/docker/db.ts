@@ -191,21 +191,38 @@ export async function checkAllAppUpdates(): Promise<AppUpdateInfo[]> {
     },
   });
 
+  if (installedApps.length === 0) return [];
+
+  const appIds = Array.from(new Set(installedApps.map((app) => app.appId)));
+  const storeApps = await prisma.app.findMany({
+    where: { appId: { in: appIds } },
+    orderBy: { updatedAt: "desc" },
+    select: { appId: true, storeId: true, version: true },
+  });
+
+  const latestByApp = new Map<string, string | null>();
+  const latestByAppStore = new Map<string, string | null>();
+
+  for (const storeApp of storeApps) {
+    if (!latestByApp.has(storeApp.appId)) {
+      latestByApp.set(storeApp.appId, storeApp.version ?? null);
+    }
+    if (storeApp.storeId) {
+      const key = `${storeApp.appId}::${storeApp.storeId}`;
+      if (!latestByAppStore.has(key)) {
+        latestByAppStore.set(key, storeApp.version ?? null);
+      }
+    }
+  }
+
   const results: AppUpdateInfo[] = [];
-
   for (const installed of installedApps) {
-    // Find the store app to get the latest version
-    const storeApp = await prisma.app.findFirst({
-      where: {
-        appId: installed.appId,
-        ...(installed.storeId && { storeId: installed.storeId }),
-      },
-      orderBy: { updatedAt: "desc" },
-      select: { version: true },
-    });
-
     const installedVersion = installed.version;
-    const availableVersion = storeApp?.version ?? null;
+    const availableVersion = installed.storeId
+      ? (latestByAppStore.get(`${installed.appId}::${installed.storeId}`) ??
+        latestByApp.get(installed.appId) ??
+        null)
+      : (latestByApp.get(installed.appId) ?? null);
 
     let hasUpdate = false;
     if (installedVersion && availableVersion) {
