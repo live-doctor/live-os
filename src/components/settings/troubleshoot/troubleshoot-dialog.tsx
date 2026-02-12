@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { clearCaches, runDiagnostics } from "@/app/actions/maintenance/troubleshoot";
+import { clearCaches, runDiagnostics, fixAvahiMdns } from "@/app/actions/maintenance/troubleshoot";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { dialog as dialogTokens, text } from "@/components/ui/design-tokens";
 import { DiagnosticsCard } from "./diagnostics-card";
 import { ServicesCard } from "./services-card";
 import { LogsCard } from "./logs-card";
+import { AvahiFixCard } from "./avahi-fix-card";
 import type { DiagnosticResult } from "./types";
 import { Eraser, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -101,6 +102,10 @@ export function TroubleshootDialog({ open, onOpenChange }: TroubleshootDialogPro
               onRun={() => void runAllDiagnostics()}
             />
             <ServicesCard open={open} />
+          </div>
+
+          <div className="mt-4 grid grid-cols-1">
+            <AvahiFixCard />
           </div>
 
           <div className="mt-4 grid grid-cols-1">

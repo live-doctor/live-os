@@ -472,3 +472,169 @@ export async function exportDiagnosticReport(): Promise<string> {
 
   return JSON.stringify(report, null, 2);
 }
+
+/**
+ * Fix Avahi mDNS issues (systemd-resolved conflicts and /etc/hosts .local entries)
+ */
+export async function fixAvahiMdns(): Promise<{
+  success: boolean;
+  message: string;
+  details?: string[];
+}> {
+  const details: string[] = [];
+
+  try {
+    // Check if Avahi is installed
+    try {
+      await execAsync("which avahi-daemon");
+    } catch {
+      return {
+        success: false,
+        message: "Avahi is not installed. Run setup.sh first.",
+      };
+    }
+
+    // Step 1: Fix systemd-resolved mDNS conflict
+    try {
+      const { stdout: hasResolved } = await execAsync(
+        "systemctl list-unit-files 2>/dev/null | grep -q '^systemd-resolved' && echo 'yes' || echo 'no'",
+      );
+
+      if (hasResolved.trim() === "yes") {
+        details.push("Detected systemd-resolved - disabling mDNS/LLMNR...");
+
+        // Create drop-in directory
+        await execAsync(
+          "sudo mkdir -p /etc/systemd/resolved.conf.d 2>/dev/null || true",
+        );
+
+        // Create drop-in config
+        await execAsync(`sudo bash -c 'cat > /etc/systemd/resolved.conf.d/90-homeio-mdns.conf << "EOF"
+[Resolve]
+MulticastDNS=no
+LLMNR=no
+EOF'`);
+
+        // Restart systemd-resolved
+        await execAsync(
+          "sudo systemctl restart systemd-resolved 2>/dev/null || true",
+        );
+
+        details.push("✓ systemd-resolved mDNS/LLMNR disabled");
+      } else {
+        details.push("systemd-resolved not detected - skipping");
+      }
+    } catch (error) {
+      details.push(
+        `Warning: Could not configure systemd-resolved: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+
+    // Step 2: Remove .local from /etc/hosts
+    try {
+      const { stdout: hostsContent } = await execAsync("cat /etc/hosts");
+
+      if (hostsContent.includes(".local")) {
+        details.push("Found .local entries in /etc/hosts - removing...");
+
+        // Backup /etc/hosts
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        await execAsync(
+          `sudo cp /etc/hosts /etc/hosts.backup-${timestamp} 2>/dev/null || true`,
+        );
+
+        // Remove .local from all entries
+        await execAsync(
+          `sudo sed -i 's/\\([[:space:]]\\)\\([^[:space:]]*\\.local\\)/\\1/g' /etc/hosts`,
+        );
+        await execAsync(`sudo sed -i 's/[[:space:]]\\+/ /g' /etc/hosts`);
+
+        details.push("✓ Removed .local conflicts from /etc/hosts");
+      } else {
+        details.push("/etc/hosts is clean - no .local conflicts");
+      }
+    } catch (error) {
+      details.push(
+        `Warning: Could not fix /etc/hosts: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+
+    // Step 3: Ensure Avahi service file exists
+    try {
+      const { stdout: serviceExists } = await execAsync(
+        "test -f /etc/avahi/services/homeio-http.service && echo 'yes' || echo 'no'",
+      );
+
+      if (serviceExists.trim() === "no") {
+        details.push("Creating Avahi HTTP service file...");
+
+        // Get HTTP port from environment or default
+        const httpPort = process.env.HOMEIO_HTTP_PORT || "3000";
+
+        // Create service file
+        await execAsync(`sudo bash -c 'cat > /etc/avahi/services/homeio-http.service << "EOF"
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name replace-wildcards="yes">Homeio on %h</name>
+  <service>
+    <type>_http._tcp</type>
+    <port>${httpPort}</port>
+  </service>
+</service-group>
+EOF'`);
+
+        details.push("✓ Created Avahi HTTP service file");
+      } else {
+        details.push("Avahi HTTP service file already exists");
+      }
+    } catch (error) {
+      details.push(
+        `Warning: Could not create Avahi service file: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+
+    // Step 4: Restart Avahi daemon
+    try {
+      details.push("Restarting Avahi daemon...");
+      await execAsync(
+        "sudo systemctl reload avahi-daemon 2>/dev/null || sudo systemctl restart avahi-daemon",
+      );
+      details.push("✓ Avahi daemon restarted");
+    } catch (error) {
+      details.push(
+        `Warning: Could not restart Avahi: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+
+    // Step 5: Verify no conflicts
+    try {
+      const { stdout: conflicts } = await execAsync(
+        "sudo journalctl -u avahi-daemon -n 50 --no-pager 2>/dev/null | grep -i 'WARNING.*another.*mDNS stack' || echo ''",
+      );
+
+      if (conflicts.trim()) {
+        details.push(
+          "⚠️  Still detecting mDNS conflicts. You may need to reboot the server.",
+        );
+      } else {
+        details.push("✓ No mDNS conflicts detected");
+      }
+    } catch {
+      // Ignore verification errors
+    }
+
+    return {
+      success: true,
+      message:
+        "Avahi mDNS fix completed. Access your server at http://<hostname>.local",
+      details,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to fix Avahi mDNS: ${error instanceof Error ? error.message : "Unknown error"}`,
+      details,
+    };
+  }
+}
