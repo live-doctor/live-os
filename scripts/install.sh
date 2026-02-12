@@ -162,6 +162,30 @@ install_from_artifact() {
     print_status "Creating environment configuration..."
     create_env_file
 
+    # Rebuild native modules to match server's Node.js version
+    print_status "Rebuilding native modules for this Node.js version..."
+
+    # better-sqlite3 is REQUIRED for database
+    npm rebuild better-sqlite3 --build-from-source 2>&1 | tee /tmp/better-sqlite3-build.log || {
+        print_error "Error: better-sqlite3 build failed. Database will not work."
+        print_error "Check /tmp/better-sqlite3-build.log for details"
+        exit 1
+    }
+
+    # node-pty is OPTIONAL for terminal
+    npm rebuild node-pty --build-from-source 2>&1 | tee /tmp/node-pty-build.log || {
+        print_error "Warning: node-pty build failed. Terminal feature will not be available."
+        print_info "The application will still work without terminal functionality"
+    }
+
+    # Verify better-sqlite3 works
+    print_status "Verifying better-sqlite3 native module..."
+    node -e "require('better-sqlite3'); console.log('better-sqlite3:ok')" >/tmp/better-sqlite3-verify.log 2>&1 || {
+        print_error "Error: better-sqlite3 verification failed (ABI mismatch or missing native binary)."
+        print_error "Check /tmp/better-sqlite3-verify.log for details"
+        exit 1
+    }
+
     print_status "Artifact extraction complete!"
 }
 

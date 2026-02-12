@@ -3,8 +3,8 @@
 import { getAppWebUI } from "@/app/actions/docker";
 import type { InstalledApp } from "@/components/app-store/types";
 import { surface } from "@/components/ui/design-tokens";
-import { ArrowUp, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUp, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -64,11 +64,11 @@ export function InstalledAppCard({
           <div className="flex flex-col items-center gap-2">
             {/* Icon container with glass frame */}
             <div
-              className={`relative h-14 w-14 overflow-hidden rounded-lg border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
+              className={`relative h-12 w-12 overflow-hidden rounded-lg border shadow-lg sm:h-[4.5rem] sm:w-[4.5rem] transition-all duration-300 ${
                 actionLoading
                   ? "border-border bg-secondary/70 shadow-black/20"
                   : isRunning
-                    ? "border-border bg-secondary/60 shadow-black/20"
+                    ? "border border-border bg-secondary/60"
                     : "border-border/70 bg-secondary/40 shadow-black/10 grayscale opacity-60"
               }`}
             >
@@ -76,7 +76,7 @@ export function InstalledAppCard({
                 src={icon || "/default-application-icon.png"}
                 alt={app.name}
                 fill
-                className={`object-contain p-1.5 transition-all duration-300 ${
+                className={`object-cover transition-all duration-300 ${
                   actionLoading ? "scale-95 blur-[1px]" : ""
                 }`}
                 onError={onIconError}

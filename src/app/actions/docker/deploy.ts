@@ -100,6 +100,13 @@ function summarizeDeployFailure(
   const stdout = String(details.stdout || "").toLowerCase();
   const jsonError = String(details.jsonError || "").toLowerCase();
   const combined = `${stderr}\n${stdout}\n${jsonError}`;
+  const missingComposeVarMatch = combined.match(
+    /the "([a-z0-9_]+)" variable is not set/i,
+  );
+
+  if (combined.includes("bad host name ''") && missingComposeVarMatch?.[1]) {
+    return `Docker compose template is missing required environment variable ${missingComposeVarMatch[1]}.`;
+  }
 
   if (stage === "compose:pull") {
     if (combined.includes("toomanyrequests")) {

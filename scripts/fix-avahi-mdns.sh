@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Quick fix for Avahi mDNS resolution issues
-# This script creates the missing Avahi HTTP service advertisement
+# This script fixes systemd-resolved conflicts with Avahi
 
 set -e
 
@@ -26,13 +26,68 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-print_info "Configuring Avahi HTTP service advertisement on port ${HTTP_PORT}"
+print_info "Fixing Avahi mDNS conflicts and service advertisement on port ${HTTP_PORT}"
 
 # Check if Avahi is installed
 if ! command -v avahi-daemon >/dev/null 2>&1; then
   print_error "Avahi is not installed. Run setup.sh first."
   exit 1
 fi
+
+# ─── Fix systemd-resolved mDNS conflict ─────────────────────────────────────
+
+if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files 2>/dev/null | grep -q '^systemd-resolved'; then
+  print_info "Detected systemd-resolved, checking for mDNS conflicts..."
+
+  RESOLVED_DROPIN_DIR="/etc/systemd/resolved.conf.d"
+  RESOLVED_DROPIN_FILE="${RESOLVED_DROPIN_DIR}/90-homeio-mdns.conf"
+
+  # Create drop-in directory
+  mkdir -p "$RESOLVED_DROPIN_DIR"
+
+  # Create drop-in configuration to disable mDNS/LLMNR
+  print_status "Creating systemd-resolved override to disable mDNS/LLMNR..."
+  cat > "$RESOLVED_DROPIN_FILE" <<'EOF'
+[Resolve]
+MulticastDNS=no
+LLMNR=no
+EOF
+
+  print_status "Created: $RESOLVED_DROPIN_FILE"
+
+  # Restart systemd-resolved to apply changes
+  if systemctl is-active --quiet systemd-resolved; then
+    print_status "Restarting systemd-resolved to apply mDNS override..."
+    systemctl restart systemd-resolved
+    print_status "systemd-resolved mDNS/LLMNR disabled successfully"
+  fi
+else
+  print_info "systemd-resolved not detected, skipping conflict resolution"
+fi
+
+# ─── Fix /etc/hosts conflicting with mDNS ──────────────────────────────────
+
+print_info "Checking /etc/hosts for .local domain conflicts..."
+
+# Remove .local from /etc/hosts if present (it should only be resolved via mDNS)
+if grep -q "\.local" /etc/hosts; then
+  print_status "Removing .local entries from /etc/hosts (these should be resolved via Avahi mDNS only)..."
+
+  # Create backup
+  cp /etc/hosts /etc/hosts.backup-$(date +%Y%m%d-%H%M%S)
+
+  # Remove .local from all entries
+  sed -i 's/\([[:space:]]\)\([^[:space:]]*\.local\)/\1/g' /etc/hosts
+
+  # Clean up any duplicate spaces and empty lines that might have been created
+  sed -i 's/[[:space:]]\+/ /g' /etc/hosts
+
+  print_status "Cleaned /etc/hosts - removed .local domain entries"
+else
+  print_status "/etc/hosts is clean - no .local conflicts"
+fi
+
+# ─── Configure Avahi HTTP service ───────────────────────────────────────────
 
 # Create service directory if it doesn't exist
 SERVICE_DIR="/etc/avahi/services"
@@ -92,3 +147,37 @@ else
 fi
 
 print_status "Done! Try accessing your server from your Mac browser."
+
+echo ""
+print_info "Verifying configuration..."
+echo ""
+
+# Verify systemd-resolved mDNS is disabled
+if command -v resolvectl >/dev/null 2>&1; then
+  print_info "Current systemd-resolved mDNS status:"
+  resolvectl status 2>/dev/null | grep -E "(MulticastDNS|LLMNR)" | head -5 || echo "  Unable to check status"
+else
+  print_info "resolvectl not available, checking config file:"
+  if [ -f "$RESOLVED_DROPIN_FILE" ]; then
+    cat "$RESOLVED_DROPIN_FILE"
+  fi
+fi
+
+echo ""
+print_info "Checking for mDNS stack conflicts in Avahi logs..."
+if journalctl -u avahi-daemon -n 50 --no-pager 2>/dev/null | grep -q "WARNING.*another.*mDNS stack"; then
+  print_error "⚠️  Still detecting mDNS conflicts. You may need to reboot the server."
+  print_info "After reboot, check with: sudo journalctl -u avahi-daemon -n 20"
+else
+  print_status "✓ No mDNS conflicts detected!"
+fi
+
+echo ""
+print_info "Checking /etc/hosts for .local conflicts..."
+if grep -q "\.local" /etc/hosts; then
+  print_error "⚠️  Found .local entries in /etc/hosts - these may cause resolution conflicts"
+  print_info "Conflicting entries:"
+  grep "\.local" /etc/hosts | sed 's/^/  /'
+else
+  print_status "✓ No .local conflicts in /etc/hosts"
+fi

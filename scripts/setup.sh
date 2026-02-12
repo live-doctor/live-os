@@ -415,6 +415,25 @@ EOF
   fi
 }
 
+fix_etc_hosts_local_domain() {
+  if [ "$DRY_RUN" -eq 1 ]; then print_dry "Remove .local domain from /etc/hosts (conflicts with mDNS)"; return; fi
+
+  if [ ! -f /etc/hosts ]; then
+    print_info "Skipping /etc/hosts fix: file not found"
+    return
+  fi
+
+  if grep -q "\.local" /etc/hosts; then
+    print_status "Removing .local domain from /etc/hosts (should only be resolved via Avahi mDNS)"
+    cp /etc/hosts /etc/hosts.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
+    sed -i 's/\([[:space:]]\)\([^[:space:]]*\.local\)/\1/g' /etc/hosts
+    sed -i 's/[[:space:]]\+/ /g' /etc/hosts
+    print_status "Cleaned /etc/hosts - removed .local conflicts"
+  else
+    print_status "/etc/hosts is clean - no .local conflicts"
+  fi
+}
+
 ensure_nsswitch_mdns() {
   if [ "$DRY_RUN" -eq 1 ]; then print_dry "Ensure /etc/nsswitch.conf hosts includes mDNS resolver"; return; fi
 
@@ -730,6 +749,7 @@ install_docker
 ensure_docker_permissions
 install_avahi
 configure_mdns_stack
+fix_etc_hosts_local_domain
 ensure_nsswitch_mdns
 configure_avahi_http_service
 install_nmcli

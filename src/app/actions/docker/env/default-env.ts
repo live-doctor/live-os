@@ -34,6 +34,23 @@ export function getDeviceHostname(): string {
   return process.env.DEVICE_HOSTNAME || os.hostname() || "homeio";
 }
 
+function normalizeHostValue(raw?: string): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  const withoutProtocol = trimmed.replace(/^https?:\/\//i, "");
+  const hostPort = withoutProtocol.split("/")[0] || "";
+  if (!hostPort) return null;
+
+  // Keep IPv6 literals untouched, strip :port for common host:port values
+  if (hostPort.includes("[") && hostPort.includes("]")) {
+    return hostPort;
+  }
+  const [hostOnly] = hostPort.split(":");
+  return hostOnly || null;
+}
+
 /**
  * Build default environment variables for custom app deployments.
  * These are the minimum variables needed for most Docker containers.
@@ -70,8 +87,20 @@ export function buildDefaultEnvVars(
     envVars.APP_DATA_DIR || path.join(dataRoot, "AppData", appId);
 
   // Device info
-  envVars.DEVICE_HOSTNAME = getDeviceHostname();
-  envVars.DEVICE_DOMAIN_NAME = `${getDeviceHostname()}.local`;
+  const deviceHostname = getDeviceHostname();
+  envVars.DEVICE_HOSTNAME = deviceHostname;
+  envVars.DEVICE_DOMAIN_NAME =
+    envVars.DEVICE_DOMAIN_NAME || `${deviceHostname}.local`;
+
+  // Umbrel-style apps often expect APP_DOMAIN for compose templates/extra_hosts.
+  const normalizedConfiguredDomain = normalizeHostValue(
+    envVars.HOMEIO_DOMAIN ||
+      envVars.HOMEIO_HOST ||
+      envVars.HOMEIO_HTTP_HOST ||
+      envVars.HOSTNAME,
+  );
+  envVars.APP_DOMAIN =
+    envVars.APP_DOMAIN || normalizedConfiguredDomain || envVars.DEVICE_DOMAIN_NAME;
 
   // Apply user config overrides
   if (config) {
